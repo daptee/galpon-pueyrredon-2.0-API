@@ -16,7 +16,7 @@ class ApiResponse
             'message' => $message,
             'data' => $result,
         ];
-        if ($code !== 200 || $code !== 201) {
+        if ($code !== 200 && $code !== 201) {
             $response['data'] = null;
             $response['error'] = $result;
         }
