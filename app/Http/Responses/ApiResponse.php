@@ -22,4 +22,18 @@ class ApiResponse
         }
         return response()->json($response, $code);
     }
+
+    public static function paginate($message, $code, $result = [], $meta = [])
+    {
+        $response = [
+            'message' => $message,
+            'data' => $result,
+            'meta_data' => $meta,
+        ];
+        if ($code !== 200 && $code !== 201) {
+            $response['data'] = null;
+            $response['error'] = $result;
+        }
+        return response()->json($response, $code);
+    }
 }

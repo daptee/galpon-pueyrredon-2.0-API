@@ -22,7 +22,10 @@ Route::group([
     'prefix' => 'user'
 ], function () {
     Route::get('/', [UserController::class, 'index'])->middleware('admin');
+    Route::get('/type', [UserController::class, 'getAllUserType'])->middleware('admin');
+    Route::post('/type', [UserController::class, 'storeUserType'])->middleware('admin');
+    Route::put('//type/{id}', [UserController::class, 'updateUserType'])->middleware('admin');
     Route::get('/{id}', [UserController::class, 'show'])->middleware('admin');
-    Route::post('/', [UserController::class, 'store'])->middleware('admin');
+    Route::post('/', [UserController::class, 'store']);
     Route::put('/{id}', [UserController::class, 'update'])->middleware('admin');
 });

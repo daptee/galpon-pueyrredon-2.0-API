@@ -25,6 +25,10 @@ class User extends Authenticatable implements JWTSubject
         'status',
     ];
 
+    protected $hidden = [
+        'password'
+    ];
+
     protected $casts = [
         'permissions' => 'array',
         'is_internal' => 'boolean',
@@ -54,5 +58,10 @@ class User extends Authenticatable implements JWTSubject
     public function theme()
     {
         return $this->belongsTo(Theme::class, 'theme');
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(Status::class, 'status');
     }
 }
