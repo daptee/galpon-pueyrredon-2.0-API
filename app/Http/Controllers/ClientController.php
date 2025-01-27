@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Responses\ApiResponse;
 use App\Models\Client;
 use App\Models\ClientsClasses;
+use App\Models\ClientsContact;
 use Illuminate\Http\Request;
 use App\Models\ClientsType;
 use Illuminate\Support\Facades\Validator;
@@ -19,7 +20,7 @@ class ClientController extends Controller
             $page = $request->query('page', 1);
 
             // Paginación personalizada usando los parámetros
-            $clients = Client::with(['clientType.status', 'clientClass.status', 'status'])
+            $clients = Client::with(['clientType.status', 'clientClass.status', 'contacts', 'status'])
                 ->paginate($perPage, ['*'], 'page', $page);
 
             $data = $clients->items();
@@ -41,7 +42,7 @@ class ClientController extends Controller
     public function show($id)
     {
         try {
-            $client = Client::with(['clientType.status', 'clientClass.status', 'status'])->find($id);
+            $client = Client::with(['clientType.status', 'clientClass.status', 'contacts', 'status'])->find($id);
 
             if (!$client) {
                 return ApiResponse::create('Cliente no encontrado', 404, ['error' => 'Client not found']);
@@ -64,7 +65,15 @@ class ClientController extends Controller
                 'name' => 'required|string|max:255',
                 'lastname' => 'nullable|string|max:255',
                 'mail' => 'required|email|unique:clients,mail',
+                'phone' => 'nullable|string|max:15',
+                'address' => 'nullable|string|max:255',
+                'company' => 'nullable|string|max:255',
                 'status' => 'nullable|in:1,2,3',
+                'contacts' => 'required|array',
+                'contacts.*.name' => 'required|string|max:100',
+                'contacts.*.lastname' => 'required|string|max:100',
+                'contacts.*.mail' => 'required|email|unique:clients_contacts,mail',
+                'contacts.*.phone' => 'nullable|string|max:15',
             ]);
 
             // Verificar si la validación falla
@@ -79,13 +88,30 @@ class ClientController extends Controller
             $validated['status'] = $validated['status'] ?? 1;
 
             // Crear el cliente
-            $client = Client::create($validated);
-
-            $client->load([
-                'clientType.status',
-                'clientClass.status',
-                'status'
+            $client = Client::create([
+                'id_client_type' => $validated['id_client_type'],
+                'id_client_class' => $validated['id_client_class'],
+                'name' => $validated['name'],
+                'lastname' => $validated['lastname'] ?? null,
+                'mail' => $validated['mail'],
+                'phone' => $validated['phone'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'company' => $validated['company'] ?? null,
+                'status' => $validated['status'],
             ]);
+
+            // Crear los contactos asociados
+            foreach ($validated['contacts'] as $contact) {
+                $client->contacts()->create([
+                    'name' => $contact['name'],
+                    'lastname' => $contact['lastname'],
+                    'mail' => $contact['mail'],
+                    'phone' => $contact['phone'] ?? null,
+                ]);
+            }
+
+            // Cargar relaciones necesarias
+            $client->load(['clientType.status', 'clientClass.status', 'contacts', 'status']);
 
             // Responder con éxito
             return ApiResponse::create('Cliente creado correctamente', 201, $client);
@@ -95,47 +121,92 @@ class ClientController extends Controller
         }
     }
 
-
     // PUT: Editar un cliente
     public function update(Request $request, $id)
     {
         try {
-            // Crear el validador
+            // Validar datos de entrada
             $validator = Validator::make($request->all(), [
                 'id_client_type' => 'required|integer|exists:clients_types,id',
                 'id_client_class' => 'required|integer|exists:clients_classes,id',
                 'name' => 'required|string|max:255',
                 'lastname' => 'nullable|string|max:255',
-                'mail' => 'required|email|unique:clients,mail,' . $id, // Ignorar el correo del cliente actual
+                'mail' => "required|email|unique:clients,mail,{$id}",
+                'phone' => 'nullable|string|max:15',
+                'address' => 'nullable|string|max:255',
+                'company' => 'nullable|string|max:255',
                 'status' => 'nullable|in:1,2,3',
+                'contacts' => 'required|array',
+                'contacts.*.id' => 'nullable|integer|exists:clients_contacts,id',
+                'contacts.*.name' => 'required|string|max:100',
+                'contacts.*.lastname' => 'required|string|max:100',
+                'contacts.*.mail' => 'required|email|unique:clients_contacts,mail',
+                'contacts.*.phone' => 'nullable|string|max:15',
             ]);
 
-            // Verificar si la validación falla
             if ($validator->fails()) {
                 return ApiResponse::create('Errores de validación', 422, $validator->errors());
             }
 
-            // Obtener los datos validados
             $validated = $validator->validated();
 
-            // Buscar el cliente
+            // Buscar cliente
             $client = Client::findOrFail($id);
 
-            // Actualizar el cliente
-            $client->update($validated);
-
-            // Cargar relaciones anidadas
-            $client->load([
-                'clientType.status',
-                'clientClass.status',
-                'status'
+            // Actualizar cliente
+            $client->update([
+                'id_client_type' => $validated['id_client_type'],
+                'id_client_class' => $validated['id_client_class'],
+                'name' => $validated['name'],
+                'lastname' => $validated['lastname'] ?? null,
+                'mail' => $validated['mail'],
+                'phone' => $validated['phone'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'company' => $validated['company'] ?? null,
+                'status' => $validated['status'] ?? $client->status,
             ]);
+
+            // Manejo de contactos
+            $receivedContactIds = collect($validated['contacts'])->pluck('id')->filter()->toArray();
+            $existingContactIds = $client->contacts()->pluck('id')->toArray();
+
+            // Identificar contactos a eliminar
+            $contactsToDelete = array_diff($existingContactIds, $receivedContactIds);
+
+            // Eliminar contactos que no estén en la solicitud
+            if (!empty($contactsToDelete)) {
+                ClientsContact::whereIn('id', $contactsToDelete)->delete();
+            }
+
+            // Crear o actualizar contactos
+            foreach ($validated['contacts'] as $contactData) {
+                if (isset($contactData['id'])) {
+                    // Actualizar contacto existente
+                    $contact = ClientsContact::find($contactData['id']);
+                    $contact->update([
+                        'name' => $contactData['name'],
+                        'lastname' => $contactData['lastname'],
+                        'mail' => $contactData['mail'],
+                        'phone' => $contactData['phone'] ?? null,
+                    ]);
+                } else {
+                    // Crear nuevo contacto
+                    $client->contacts()->create([
+                        'name' => $contactData['name'],
+                        'lastname' => $contactData['lastname'],
+                        'mail' => $contactData['mail'],
+                        'phone' => $contactData['phone'] ?? null,
+                    ]);
+                }
+            }
+
+            // Cargar las relaciones actualizadas
+            $client->load(['clientType.status', 'clientClass.status', 'contacts']);
 
             // Responder con éxito
             return ApiResponse::create('Cliente actualizado correctamente', 200, $client);
         } catch (\Exception $e) {
-            // Manejo de errores generales
-            return ApiResponse::create('Error al actualizar el cliente', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar un cliente', 500, ['error' => $e->getMessage()]);
         }
     }
 

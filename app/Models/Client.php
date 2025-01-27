@@ -7,11 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 class Client extends Model
 {
     protected $fillable = [
-        'id_client_type', 'id_client_class', 'name', 'last_name', 'mail', 'status',
+        'id_client_type',
+        'id_client_class',
+        'name',
+        'last_name',
+        'mail',
+        'status',
     ];
 
     protected $hidden = [
-        'id_client_type', 'id_client_class',
+        'id_client_type',
+        'id_client_class',
     ];
 
     // Relación con otros modelos (ejemplo)
@@ -29,5 +35,11 @@ class Client extends Model
     {
         return $this->belongsTo(Status::class, 'status');
     }
+
+    public function contacts()
+    {
+        return $this->hasMany(ClientsContact::class, 'id_client');
+    }
+
 }
 
