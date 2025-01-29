@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\PlaceCollectionTypeController;
+use App\Http\Controllers\PlaceController;
+use App\Http\Controllers\PlaceTypeController;
+use App\Http\Controllers\TollController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -31,6 +35,8 @@ Route::group([
     Route::put('/{id}', [UserController::class, 'update'])->middleware('admin');
 });
 
+//CLIENT
+
 Route::group([
     'middleware' => 'api',
     'prefix' => 'client'
@@ -45,4 +51,43 @@ Route::group([
     Route::get('/{id}', [ClientController::class, 'show'])->middleware('admin');
     Route::post('/', [ClientController::class, 'store'])->middleware('admin');
     Route::put('/{id}', [ClientController::class, 'update'])->middleware('admin');
+});
+
+//PLACE
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'places'
+], function () {
+    Route::get('/', [PlaceController::class, 'index'])->middleware('admin');
+    Route::get('/{id}', [PlaceController::class, 'show'])->middleware('admin');
+    Route::post('/', [PlaceController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PlaceController::class, 'update'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'place-type'
+], function () {
+    Route::get('/', [PlaceTypeController::class, 'index'])->middleware('admin');
+    Route::post('/', [PlaceTypeController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PlaceTypeController::class, 'update'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'places-collections-types'
+], function () {
+    Route::get('/', [PlaceCollectionTypeController::class, 'index'])->middleware('admin');
+    Route::post('/', [PlaceCollectionTypeController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PlaceCollectionTypeController::class, 'update'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'tolls'
+], function () {
+    Route::get('/', [TollController::class, 'index'])->middleware('admin');
+    Route::post('/', [TollController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [TollController::class, 'update'])->middleware('admin');
 });
