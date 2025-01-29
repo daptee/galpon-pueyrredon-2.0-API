@@ -2,22 +2,44 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Client extends Model
 {
-    use HasFactory;
-
-    protected $table = 'clients';
-
     protected $fillable = [
+        'id_client_type',
+        'id_client_class',
         'name',
-        // Agrega los campos adicionales que tenga tu tabla `clients`
+        'last_name',
+        'mail',
+        'status',
     ];
 
-    public function users()
+    protected $hidden = [
+        'id_client_type',
+        'id_client_class',
+    ];
+
+    // Relación con otros modelos (ejemplo)
+    public function clientType()
     {
-        return $this->hasMany(User::class, 'id_client');
+        return $this->belongsTo(ClientsType::class, 'id_client_type');
     }
+
+    public function clientClass()
+    {
+        return $this->belongsTo(ClientsClasses::class, 'id_client_class');
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(Status::class, 'status');
+    }
+
+    public function contacts()
+    {
+        return $this->hasMany(ClientsContact::class, 'id_client');
+    }
+
 }
+

@@ -36,7 +36,9 @@ class AuthController extends Controller
             // Generar el token usando el servicio TokenService
             $token = $this->tokenService->generateToken($user);
 
-            return ApiResponse::create('Inicio de sesión exitoso', 200, $token);
+            $user->load('userType.status', 'client.status', 'theme', 'status');
+
+            return ApiResponse::login('Inicio de sesión exitoso', 201,$user, $token);
 
         } catch (Exception $e) {
             return ApiResponse::create('Error al iniciar sesión', 500, ['error' => $e->getMessage()]);

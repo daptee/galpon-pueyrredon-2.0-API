@@ -17,23 +17,34 @@ class UserController extends Controller
     public function index(Request $request)
     {
         try {
+            // Verificar si se envían los parámetros `page` o `per_page`
+            $page = $request->has('page');
             $perPage = $request->get('per_page', 10); // Default: 10 resultados por página
-            $users = User::with(['userType', 'client', 'theme', 'status'])
-                ->paginate($perPage);
 
-            // Ocultar el campo 'password' en cada usuario
-            $users->getCollection()->makeHidden(['password']);
+            // Obtener los usuarios
+            if ($page) {
+                // Realizar paginación si se envían los parámetros
+                $users = User::with(['userType.status', 'client.status', 'theme', 'status'])
+                    ->paginate($perPage);
 
-            // Construimos el formato de la respuesta
-            $data = $users->items();
-            $meta_data = [
-                'page' => $users->currentPage(),
-                'per_page' => $users->perPage(),
-                'total' => $users->total(),
-                'last_page' => $users->lastPage(),
-            ];
+                // Construir datos de respuesta para paginación
+                $data = $users->items();
+                $meta_data = [
+                    'page' => $users->currentPage(),
+                    'per_page' => $users->perPage(),
+                    'total' => $users->total(),
+                    'last_page' => $users->lastPage(),
+                ];
 
-            return ApiResponse::paginate('Usuarios traidos correctamente', 201, $data, $meta_data );
+                return ApiResponse::paginate('Usuarios traídos correctamente', 200, $data, $meta_data);
+            } else {
+                // Devolver todos los resultados si no se envían los parámetros
+                $users = User::with(['userType.status', 'client.status', 'theme', 'status'])
+                    ->get()
+                    ->makeHidden(['password']);
+
+                return ApiResponse::paginate('Usuarios traídos correctamente', 200, $users, null);
+            }
         } catch (Exception $e) {
             return ApiResponse::create('Error al traer los usuarios', 500, ['error' => $e->getMessage()]);
         }
@@ -43,7 +54,7 @@ class UserController extends Controller
     public function show($id)
     {
         try {
-            $user = User::with(['userType', 'client', 'theme', 'status'])->find($id);
+            $user = User::with(['userType.status', 'client.status', 'theme', 'status'])->find($id);
 
             if (!$user) {
                 return ApiResponse::create('Usuario no encontrado', 500);
@@ -94,7 +105,7 @@ class UserController extends Controller
 
             $user = User::create($data);
 
-            $user->load('userType', 'client', 'theme', 'status');
+            $user->load('userType.status', 'client.status', 'theme', 'status');
             return ApiResponse::create('Usuario creado correctamente', 200, $user);
         } catch (Exception $e) {
             return ApiResponse::create('Error al crear un usuario', 500, ['error' => $e->getMessage()]);
@@ -144,7 +155,7 @@ class UserController extends Controller
             // Actualiza el usuario con los datos validados
             $user->update($data);
 
-            $user->load('userType', 'client', 'theme', 'status');
+            $user->load('userType.status', 'client.status', 'theme', 'status');
 
             return ApiResponse::create('Usuario actualizado correctamente', 200, $user);
         } catch (Exception $e) {

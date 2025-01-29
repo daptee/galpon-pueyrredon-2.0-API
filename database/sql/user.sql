@@ -1,6 +1,6 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS users, user_types, themes, clients, status;
+DROP TABLE IF EXISTS users, user_types, themes, status;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -27,11 +27,6 @@ CREATE TABLE themes (
 );
 
 INSERT INTO themes (name) VALUES ('Default'), ('Galpon Pueyrredon');
-
-CREATE TABLE clients (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL -- Campos adicionales según sea necesario.
-);
 
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
