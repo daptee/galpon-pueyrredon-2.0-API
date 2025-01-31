@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\PawnHourPriceController;
 use App\Http\Controllers\PlaceCollectionTypeController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlaceTypeController;
 use App\Http\Controllers\TollController;
+use App\Http\Controllers\TransportationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -90,4 +92,27 @@ Route::group([
     Route::get('/', [TollController::class, 'index'])->middleware('admin');
     Route::post('/', [TollController::class, 'store'])->middleware('admin');
     Route::put('/{id}', [TollController::class, 'update'])->middleware('admin');
+});
+
+// Transportation
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'transportation'
+], function () {
+    Route::get('/', [TransportationController::class, 'index'])->middleware('admin');
+    Route::get('/{id}', [TransportationController::class, 'show'])->middleware('admin');
+    Route::post('/', [TransportationController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [TransportationController::class, 'update'])->middleware('admin');
+});
+
+// Pawn hour price
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'pawn-hour-price'
+], function () {
+    Route::get('/', [PawnHourPriceController::class, 'index'])->middleware('admin');
+    Route::post('/', [PawnHourPriceController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PawnHourPriceController::class, 'update'])->middleware('admin');
 });
