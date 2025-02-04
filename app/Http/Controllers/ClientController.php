@@ -31,26 +31,46 @@ class ClientController extends Controller
                 'last_page' => $clients->lastPage(),
             ];
 
-            return ApiResponse::paginate('Clientes traidos correctamente', 201, $data, $meta_data);
+            return ApiResponse::paginate('Clientes traidos correctamente', 201, $data, $meta_data, [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Traer todos los clientes',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer los clientes', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al traer los clientes', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Traer todos los clientes',
+            ]);
         }
     }
 
 
     // GET BY ID: Obtener información de un cliente por ID
-    public function show($id)
+    public function show($id, Request $request)
     {
         try {
             $client = Client::with(['clientType.status', 'clientClass.status', 'contacts', 'status'])->find($id);
 
             if (!$client) {
-                return ApiResponse::create('Cliente no encontrado', 404, ['error' => 'Client not found']);
+                return ApiResponse::create('Cliente no encontrado', 404, ['error' => 'Client not found'], [
+                    'request' => $request,
+                    'module' => 'client',
+                    'endpoint' => 'Traer un cliente',
+                ]);
             }
 
-            return ApiResponse::create('Cliente traido correctamente', 200, $client);
+            return ApiResponse::create('Cliente traido correctamente', 200, $client, [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Traer un cliente',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer el cliente', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al traer el cliente', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Traer un cliente',
+            ]);
         }
     }
 
@@ -78,7 +98,11 @@ class ClientController extends Controller
 
             // Verificar si la validación falla
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors());
+                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                    'request' => $request,
+                    'module' => 'client',
+                    'endpoint' => 'Crear un cliente',
+                ]);
             }
 
             // Obtener los datos validados
@@ -114,14 +138,22 @@ class ClientController extends Controller
             $client->load(['clientType.status', 'clientClass.status', 'contacts', 'status']);
 
             // Responder con éxito
-            return ApiResponse::create('Cliente creado correctamente', 201, $client);
+            return ApiResponse::create('Cliente creado correctamente', 201, $client, [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Crear un cliente',
+            ]);
         } catch (\Exception $e) {
             // Manejo de errores generales
-            return ApiResponse::create('Error al crear un cliente', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear un cliente', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Crear un cliente',
+            ]);
         }
     }
 
-    // PUT: Editar un cliente
+    // PUT: actualizar un cliente
     public function update(Request $request, $id)
     {
         try {
@@ -145,7 +177,11 @@ class ClientController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors());
+                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                    'request' => $request,
+                    'module' => 'client',
+                    'endpoint' => 'Actualizar un cliente',
+                ]);
             }
 
             $validated = $validator->validated();
@@ -204,9 +240,17 @@ class ClientController extends Controller
             $client->load(['clientType.status', 'clientClass.status', 'contacts']);
 
             // Responder con éxito
-            return ApiResponse::create('Cliente actualizado correctamente', 200, $client);
+            return ApiResponse::create('Cliente actualizado correctamente', 200, $client, [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Actualizar un cliente',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar un cliente', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar un cliente', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Actualizar un cliente',
+            ]);
         }
     }
 
@@ -224,9 +268,17 @@ class ClientController extends Controller
 
             $clientsTypes = $clientsTypesQuery->get();
 
-            return ApiResponse::create('Tipos de clientes traidos correctamente', 200, $clientsTypes);
+            return ApiResponse::create('Tipos de clientes traidos correctamente', 200, $clientsTypes, [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Traer tipos de clientes',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer los tipos de cliente', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al traer los tipos de cliente', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Traer tipos de clientes',
+            ]);
         }
     }
 
@@ -240,7 +292,11 @@ class ClientController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors());
+                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                    'request' => $request,
+                    'module' => 'client',
+                    'endpoint' => 'Crear tipo de cliente',
+                ]);
             }
 
             $clientsType = ClientsType::create([
@@ -250,9 +306,17 @@ class ClientController extends Controller
 
             $clientsType->load('status');
 
-            return ApiResponse::create('Tipo de cliente creado correctamente', 201, $clientsType);
+            return ApiResponse::create('Tipo de cliente creado correctamente', 201, $clientsType, [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Crear tipo de cliente',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear tipo de cliente', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear tipo de cliente', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Crear tipo de cliente',
+            ]);
         }
     }
 
@@ -263,7 +327,11 @@ class ClientController extends Controller
             $clientsType = ClientsType::find($id);
 
             if (!$clientsType) {
-                return response()->json(['error' => 'Client type not found'], 404);
+                return response()->json(['error' => 'Client type not found'], 404, [
+                    'request' => $request,
+                    'module' => 'client',
+                    'endpoint' => 'Actualizar tipo de cliente',
+                ]);
             }
 
             $validator = Validator::make($request->all(), [
@@ -272,7 +340,11 @@ class ClientController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors());
+                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                    'request' => $request,
+                    'module' => 'client',
+                    'endpoint' => 'Actualizar tipo de cliente',
+                ]);
             }
 
             $clientsType->update([
@@ -282,9 +354,17 @@ class ClientController extends Controller
 
             $clientsType->load('status');
 
-            return ApiResponse::create('Tipo de cliente editado correctamente', 201, $clientsType);
+            return ApiResponse::create('Tipo de cliente actualizado correctamente', 201, $clientsType, [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Actualizar tipo de cliente',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al editar tipo de cliente', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar tipo de cliente', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Actualizar tipo de cliente',
+            ]);
         }
     }
 
@@ -301,9 +381,17 @@ class ClientController extends Controller
 
             $clientsClasses = $clientsClassesQuery->get();
 
-            return ApiResponse::create('Clases de clientes traidas correctamente', 200, $clientsClasses);
+            return ApiResponse::create('Clases de clientes traidas correctamente', 200, $clientsClasses, [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Trear clases de clientes',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer las clases de los clientes', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al traer las clases de los clientes', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Trear clases de clientes',
+            ]);
         }
     }
 
@@ -317,7 +405,11 @@ class ClientController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors());
+                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                    'request' => $request,
+                    'module' => 'client',
+                    'endpoint' => 'Crear clases de clientes',
+                ]);
             }
 
             $clientsClasses = ClientsClasses::create([
@@ -327,9 +419,17 @@ class ClientController extends Controller
 
             $clientsClasses->load('status');
 
-            return ApiResponse::create('Clase del cliente creada correctamente', 201, $clientsClasses);
+            return ApiResponse::create('Clase del cliente creada correctamente', 201, $clientsClasses, [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Crear clases de clientes',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear la clase del cliente', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear la clase del cliente', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Crear clases de clientes',
+            ]);
         }
     }
 
@@ -340,7 +440,11 @@ class ClientController extends Controller
             $clientsClasses = ClientsClasses::find($id);
 
             if (!$clientsClasses) {
-                return response()->json(['error' => 'Client Classes not found'], 404);
+                return ApiResponse::create('Clase del cliente no encontrada', 404, ['error' => 'Client Classes not found'], [
+                    'request' => $request,
+                    'module' => 'client',
+                    'endpoint' => 'Actualizar clases de clientes',
+                ]);
             }
 
             $validator = Validator::make($request->all(), [
@@ -349,7 +453,11 @@ class ClientController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors());
+                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                    'request' => $request,
+                    'module' => 'client',
+                    'endpoint' => 'Actualizar clases de clientes',
+                ]);
             }
 
             $clientsClasses->update([
@@ -359,9 +467,17 @@ class ClientController extends Controller
 
             $clientsClasses->load('status');
 
-            return ApiResponse::create('Clase de cliente editada correctamente', 201, $clientsClasses);
+            return ApiResponse::create('Clase de cliente editada correctamente', 201, $clientsClasses, [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Actualizar clases de clientes',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al editar la clase del cliente', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar la clase del cliente', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'client',
+                'endpoint' => 'Actualizar clases de clientes',
+            ]);
         }
     }
 }

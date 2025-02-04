@@ -112,7 +112,7 @@ class UserController extends Controller
         }
     }
 
-    // PUT - Editar un usuario
+    // PUT - actualizar un usuario
     public function update(Request $request, $id)
     {
         try {
@@ -234,9 +234,9 @@ class UserController extends Controller
 
             $userType->load('status');
 
-            return ApiResponse::create('Tipo de usuario editado correctamente', 201, $userType);
+            return ApiResponse::create('Tipo de usuario actualizado correctamente', 201, $userType);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al editar un tipo de usuario', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar un tipo de usuario', 500, ['error' => $e->getMessage()]);
         }
     }
 }

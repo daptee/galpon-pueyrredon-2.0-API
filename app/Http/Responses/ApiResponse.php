@@ -1,5 +1,7 @@
 <?php
 namespace App\Http\Responses;
+
+use App\Http\Audith\AudithHelper;
 class ApiResponse
 {
     /**
@@ -10,7 +12,7 @@ class ApiResponse
      * @param  mixed  $result
      * @return \Illuminate\Http\JsonResponse
      */
-    public static function create($message, $code, $result = [])
+    public static function create($message, $code, $result = [], $audith = [])
     {
         $response = [
             'message' => $message,
@@ -20,10 +22,11 @@ class ApiResponse
             $response['data'] = null;
             $response['error'] = $result;
         }
+        AudithHelper::create($audith, $response, $code);
         return response()->json($response, $code);
     }
 
-    public static function paginate($message, $code, $result = [], $meta = [])
+    public static function paginate($message, $code, $result = [], $meta = [], $audith = [])
     {
         $response = [
             'message' => $message,
@@ -34,10 +37,11 @@ class ApiResponse
             $response['data'] = null;
             $response['error'] = $result;
         }
+        AudithHelper::create($audith, $response, $code);
         return response()->json($response, $code);
     }
 
-    public static function login($message, $code, $result = [], $token)
+    public static function login($message, $code, $result = [], $token, $audith = [])
     {
         $response = [
             'message' => $message,
@@ -48,6 +52,7 @@ class ApiResponse
             $response['data'] = null;
             $response['error'] = $result;
         }
+        AudithHelper::create($audith, $response, $code);
         return response()->json($response, $code);
     }
 }

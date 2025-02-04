@@ -131,7 +131,7 @@ class PlaceController extends Controller
         }
     }
 
-    // PUT - Editar un lugar
+    // PUT - actualizar un lugar
     public function update(Request $request, $id)
     {
         try {

@@ -81,9 +81,9 @@ class PlaceTypeController extends Controller
 
             $placeType->load(['status']);
 
-            return ApiResponse::create('Tipo de lugar editado correctamente', 201, $placeType);
+            return ApiResponse::create('Tipo de lugar actualizado correctamente', 201, $placeType);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al editar el tipo de lugar',  500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar el tipo de lugar',  500, ['error' => $e->getMessage()]);
         }
     }
 }
