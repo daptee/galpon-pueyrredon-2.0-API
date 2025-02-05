@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AudithController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\PawnHourPriceController;
 use App\Http\Controllers\PlaceCollectionTypeController;
@@ -21,6 +22,7 @@ Route::group([
     'prefix' => 'auth'
 ], function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('resetPassword');
     Route::post('/change-password', [AuthController::class, 'changePassword'])->name('changePassword');
 });
 
@@ -115,4 +117,13 @@ Route::group([
     Route::get('/', [PawnHourPriceController::class, 'index'])->middleware('admin');
     Route::post('/', [PawnHourPriceController::class, 'store'])->middleware('admin');
     Route::put('/{id}', [PawnHourPriceController::class, 'update'])->middleware('admin');
+});
+
+// Audith
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'audith'
+], function () {
+    Route::get('/', [AudithController::class, 'index'])->middleware('admin');
 });

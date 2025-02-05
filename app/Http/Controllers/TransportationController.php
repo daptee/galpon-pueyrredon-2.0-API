@@ -90,7 +90,7 @@ class TransportationController extends Controller
         }
     }
 
-    // PUT - Editar un transporte
+    // PUT - actualizar un transporte
     public function update(Request $request, $id)
     {
         try {
