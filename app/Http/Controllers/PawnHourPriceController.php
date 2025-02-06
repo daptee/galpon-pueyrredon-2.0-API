@@ -19,9 +19,17 @@ class PawnHourPriceController extends Controller
 
             $pawnHourPrices->load(['status']);
 
-            return ApiResponse::create('Precios de hora de peón obtenidos correctamente', 200, $pawnHourPrices);
+            return ApiResponse::create('Precios de hora de peón obtenidos correctamente', 200, $pawnHourPrices, [
+                'request' => $request,
+                'module' => 'pawn hour prices',
+                'endpoint' => 'Obtener todos los precios de hora de peón',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los precios', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al obtener los precios', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'pawn hour prices',
+                'endpoint' => 'Obtener todos los precios de hora de peón',
+            ]);
         }
     }
 
@@ -35,7 +43,11 @@ class PawnHourPriceController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'pawn hour prices',
+                    'endpoint' => 'Crear precio de hora de peón',
+                ]);
             }
 
             $pawnHourPrice = PawnHourPrice::create([
@@ -45,9 +57,17 @@ class PawnHourPriceController extends Controller
 
             $pawnHourPrice->load(['status']);
 
-            return ApiResponse::create('Precio de hora de peón creado correctamente', 201, $pawnHourPrice);
+            return ApiResponse::create('Precio de hora de peón creado correctamente', 201, $pawnHourPrice, [
+                'request' => $request,
+                'module' => 'pawn hour prices',
+                'endpoint' => 'Crear precio de hora de peón',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el precio', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear el precio', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'pawn hour prices',
+                'endpoint' => 'Crear precio de hora de peón',
+            ]);
         }
     }
 
@@ -58,7 +78,11 @@ class PawnHourPriceController extends Controller
             $pawnHourPrice = PawnHourPrice::find($id);
 
             if (!$pawnHourPrice) {
-                return ApiResponse::create('Precio no encontrado', 404, ['error' => 'Precio no encontrado']);
+                return ApiResponse::create('Precio no encontrado', 404, ['error' => 'Precio no encontrado'], [
+                    'request' => $request,
+                    'module' => 'pawn hour prices',
+                    'endpoint' => 'Actualizar precio de hora de peón',
+                ]);
             }
 
             $validator = Validator::make($request->all(), [
@@ -67,16 +91,28 @@ class PawnHourPriceController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'pawn hour prices',
+                    'endpoint' => 'Actualizar precio de hora de peón',
+                ]);
             }
 
             $pawnHourPrice->update($request->only(['price', 'status']));
 
             $pawnHourPrice->load(['status']);
 
-            return ApiResponse::create('Precio de hora de peón actualizado correctamente', 200, $pawnHourPrice);
+            return ApiResponse::create('Precio de hora de peón actualizado correctamente', 200, $pawnHourPrice, [
+                'request' => $request,
+                'module' => 'pawn hour prices',
+                'endpoint' => 'Actualizar precio de hora de peón',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el precio', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar el precio', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'pawn hour prices',
+                'endpoint' => 'Actualizar precio de hora de peón',
+            ]);
         }
     }
 }

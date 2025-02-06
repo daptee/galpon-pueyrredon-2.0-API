@@ -35,14 +35,22 @@ class TransportationController extends Controller
                 'last_page' => $transportations->lastPage(),
             ];
 
-            return ApiResponse::paginate('Transportes obtenidos correctamente', 200, $data, $meta_data);
+            return ApiResponse::paginate('Transportes obtenidos correctamente', 200, $data, $meta_data, [
+                    'request' => $request,
+                    'module' => 'transportations',
+                    'endpoint' => 'Obtener transportes',
+                ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener transportes', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al obtener transportes', 500, ['error' => $e->getMessage()], [
+                    'request' => $request,
+                    'module' => 'transportations',
+                    'endpoint' => 'Obtener transportes',
+                ]);
         }
     }
 
     // GET BY ID - Obtener un transporte por ID
-    public function show($id)
+    public function show($id, Request $request)
     {
         Log::info("Obteniendo información del transporte con ID: $id");
 
@@ -50,14 +58,26 @@ class TransportationController extends Controller
             $transportation = Transportation::find($id);
 
             if (!$transportation) {
-                return ApiResponse::create('Transporte no encontrado', 404, []);
+                return ApiResponse::create('Transporte no encontrado', 404, [], [
+                    'request' => $request,
+                    'module' => 'transportations',
+                    'endpoint' => 'Obtener un transporte',
+                ]);
             }
 
             $transportation->load(['status']);
 
-            return ApiResponse::create('Transporte obtenido correctamente', 200, $transportation);
+            return ApiResponse::create('Transporte obtenido correctamente', 200, $transportation, [
+                    'request' => $request,
+                    'module' => 'transportations',
+                    'endpoint' => 'Obtener un transporte',
+                ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener el transporte', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al obtener el transporte', 500, ['error' => $e->getMessage()], [
+                    'request' => $request,
+                    'module' => 'transportations',
+                    'endpoint' => 'Obtener un transporte',
+                ]);
         }
     }
 
@@ -77,16 +97,28 @@ class TransportationController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'transportations',
+                    'endpoint' => 'Crear un transporte',
+                ]);
             }
 
             $transportation = Transportation::create($request->all() + ['status' => $request->status ?? 1]);
 
             $transportation->load(['status']);
 
-            return ApiResponse::create('Transporte creado correctamente', 201, $transportation);
+            return ApiResponse::create('Transporte creado correctamente', 201, $transportation, [
+                'request' => $request,
+                'module' => 'transportations',
+                'endpoint' => 'Crear un transporte',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el transporte', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear el transporte', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'transportations',
+                'endpoint' => 'Crear un transporte',
+            ]);
         }
     }
 
@@ -97,7 +129,11 @@ class TransportationController extends Controller
             $transportation = Transportation::find($id);
 
             if (!$transportation) {
-                return ApiResponse::create('Transporte no encontrado', 404, []);
+                return ApiResponse::create('Transporte no encontrado', 404, [], [
+                    'request' => $request,
+                    'module' => 'transportations',
+                    'endpoint' => 'Actualizar un transporte',
+                ]);
             }
 
             $validator = Validator::make($request->all(), [
@@ -112,16 +148,28 @@ class TransportationController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'transportations',
+                    'endpoint' => 'Actualizar un transporte',
+                ]);
             }
 
             $transportation->update($request->all());
 
             $transportation->load(['status']);
 
-            return ApiResponse::create('Transporte actualizado correctamente', 200, $transportation);
+            return ApiResponse::create('Transporte actualizado correctamente', 200, $transportation, [
+                    'request' => $request,
+                    'module' => 'transportations',
+                    'endpoint' => 'Actualizar un transporte',
+                ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el transporte', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar el transporte', 500, ['error' => $e->getMessage()], [
+                    'request' => $request,
+                    'module' => 'transportations',
+                    'endpoint' => 'Actualizar un transporte',
+                ]);
         }
     }
 }

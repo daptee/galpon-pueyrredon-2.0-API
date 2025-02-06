@@ -37,15 +37,23 @@ class PlaceController extends Controller
                 'last_page' => $places->lastPage(),
             ];
 
-            return ApiResponse::paginate('Lugares obtenidos correctamente', 200, $data, $meta_data);
+            return ApiResponse::paginate('Lugares obtenidos correctamente', 200, $data, $meta_data, [
+                'request' => $request,
+                'module' => 'place',
+                'endpoint' => 'Obtener lugares',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los lugares', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al obtener los lugares', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'place',
+                'endpoint' => 'Obtener lugares',
+            ]);
         }
     }
 
 
     // GET BY ID - Obtener un lugar específico por ID con sus relaciones
-    public function show($id)
+    public function show($id, Request $request)
     {
         Log::info("Obteniendo información del lugar con ID: $id");
 
@@ -59,12 +67,24 @@ class PlaceController extends Controller
             ])->find($id);
 
             if (!$place) {
-                return ApiResponse::create('Lugar no encontrado', 404, []);
+                return ApiResponse::create('Lugar no encontrado', 404, [], [
+                    'request' => $request,
+                    'module' => 'place',
+                    'endpoint' => 'Obtener un lugar',
+                ]);
             }
 
-            return ApiResponse::create('Lugar obtenido correctamente', 200, $place);
+            return ApiResponse::create('Lugar obtenido correctamente', 200, $place, [
+                'request' => $request,
+                'module' => 'place',
+                'endpoint' => 'Obtener un lugar',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener el lugar', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al obtener el lugar', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'place',
+                'endpoint' => 'Obtener un luga',
+            ]);
         }
     }
 
@@ -90,7 +110,11 @@ class PlaceController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'place',
+                    'endpoint' => 'Crear un lugar',
+                ]);
             }
 
             $place = Place::create([
@@ -125,9 +149,17 @@ class PlaceController extends Controller
                 'placeCollectionType'
             ]);
 
-            return ApiResponse::create('Lugar creado correctamente', 201, $place);
+            return ApiResponse::create('Lugar creado correctamente', 201, $place, [
+                    'request' => $request,
+                    'module' => 'place',
+                    'endpoint' => 'Crear un lugar',
+                ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el lugar', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear el lugar', 500, ['error' => $e->getMessage()], [
+                    'request' => $request,
+                    'module' => 'place',
+                    'endpoint' => 'Crear un lugar',
+                ]);
         }
     }
 
@@ -138,7 +170,11 @@ class PlaceController extends Controller
             $place = Place::find($id);
 
             if (!$place) {
-                return ApiResponse::create('Lugar no encontrado', 404, []);
+                return ApiResponse::create('Lugar no encontrado', 404, [], [
+                    'request' => $request,
+                    'module' => 'place',
+                    'endpoint' => 'Actualizar un lugar',
+                ]);
             }
 
             $validator = Validator::make($request->all(), [
@@ -159,7 +195,11 @@ class PlaceController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'place',
+                    'endpoint' => 'Actualizar un lugar',
+                ]);
             }
 
             $place->update($request->only([
@@ -203,9 +243,17 @@ class PlaceController extends Controller
                 'placeCollectionType'
             ]);
 
-            return ApiResponse::create('Lugar actualizado correctamente', 200, $place);
+            return ApiResponse::create('Lugar actualizado correctamente', 200, $place, [
+                    'request' => $request,
+                    'module' => 'place',
+                    'endpoint' => 'Actualizar un lugar',
+                ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el lugar', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar el lugar', 500, ['error' => $e->getMessage()], [
+                    'request' => $request,
+                    'module' => 'place',
+                    'endpoint' => 'Actualizar un lugar',
+                ]);
         }
     }
 }

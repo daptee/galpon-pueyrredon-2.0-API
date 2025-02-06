@@ -34,13 +34,13 @@ class ClientController extends Controller
             return ApiResponse::paginate('Clientes traidos correctamente', 201, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'client',
-                'endpoint' => 'Traer todos los clientes',
+                'endpoint' => 'Obtener todos los clientes',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer los clientes', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::create('Error al obtener los clientes', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
                 'module' => 'client',
-                'endpoint' => 'Traer todos los clientes',
+                'endpoint' => 'Obtener todos los clientes',
             ]);
         }
     }
@@ -56,20 +56,20 @@ class ClientController extends Controller
                 return ApiResponse::create('Cliente no encontrado', 404, ['error' => 'Client not found'], [
                     'request' => $request,
                     'module' => 'client',
-                    'endpoint' => 'Traer un cliente',
+                    'endpoint' => 'Obtener un cliente',
                 ]);
             }
 
             return ApiResponse::create('Cliente traido correctamente', 200, $client, [
                 'request' => $request,
                 'module' => 'client',
-                'endpoint' => 'Traer un cliente',
+                'endpoint' => 'Obtener un cliente',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer el cliente', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::create('Error al obtener el cliente', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
                 'module' => 'client',
-                'endpoint' => 'Traer un cliente',
+                'endpoint' => 'Obtener un cliente',
             ]);
         }
     }
@@ -271,13 +271,13 @@ class ClientController extends Controller
             return ApiResponse::create('Tipos de clientes traidos correctamente', 200, $clientsTypes, [
                 'request' => $request,
                 'module' => 'client',
-                'endpoint' => 'Traer tipos de clientes',
+                'endpoint' => 'Obtener tipos de clientes',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer los tipos de cliente', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::create('Error al obtener los tipos de cliente', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
                 'module' => 'client',
-                'endpoint' => 'Traer tipos de clientes',
+                'endpoint' => 'Obtener tipos de clientes',
             ]);
         }
     }
@@ -387,7 +387,7 @@ class ClientController extends Controller
                 'endpoint' => 'Trear clases de clientes',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer las clases de los clientes', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::create('Error al obtener las clases de los clientes', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Trear clases de clientes',

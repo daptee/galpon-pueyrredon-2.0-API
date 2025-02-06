@@ -25,9 +25,17 @@ class TollController extends Controller
 
             $tolls->load(['status']);
 
-            return ApiResponse::create('Peajes traídos correctamente', 200, $tolls);
+            return ApiResponse::create('Peajes traídos correctamente', 200, $tolls, [
+                    'request' => $request,
+                    'module' => 'toll',
+                    'endpoint' => 'Obtener los peajes',
+                ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los peajes', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al obtener los peajes', 500, ['error' => $e->getMessage()], [
+                    'request' => $request,
+                    'module' => 'toll',
+                    'endpoint' => 'Obtener los peajes',
+                ]);
         }
     }
 
@@ -42,7 +50,11 @@ class TollController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'toll',
+                    'endpoint' => 'Crear un peaje',
+                ]);
             }
 
             $toll = Toll::create([
@@ -53,9 +65,17 @@ class TollController extends Controller
 
             $toll->load(['status']);
 
-            return ApiResponse::create('Peaje creado correctamente', 201, $toll);
+            return ApiResponse::create('Peaje creado correctamente', 201, $toll, [
+                'request' => $request,
+                'module' => 'toll',
+                'endpoint' => 'Crear un peaje',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el peaje', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear el peaje', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'toll',
+                'endpoint' => 'Crear un peaje',
+            ]);
         }
     }
 
@@ -66,7 +86,11 @@ class TollController extends Controller
             $toll = Toll::find($id);
 
             if (!$toll) {
-                return ApiResponse::create('Peaje no encontrado', 404, ['error' => 'Peaje no encontrado']);
+                return ApiResponse::create('Peaje no encontrado', 404, ['error' => 'Peaje no encontrado'], [
+                    'request' => $request,
+                    'module' => 'toll',
+                    'endpoint' => 'Actualizar un peaje',
+                ]);
             }
 
             $validator = Validator::make($request->all(), [
@@ -76,16 +100,28 @@ class TollController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'toll',
+                    'endpoint' => 'Actualizar un peaje',
+                ]);
             }
 
             $toll->update($request->only(['name', 'cost', 'status']));
 
             $toll->load(['status']);
 
-            return ApiResponse::create('Peaje actualizado correctamente', 200, $toll);
+            return ApiResponse::create('Peaje actualizado correctamente', 200, $toll, [
+                    'request' => $request,
+                    'module' => 'toll',
+                    'endpoint' => 'Actualizar un peaje',
+                ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el peaje', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar el peaje', 500, ['error' => $e->getMessage()], [
+                    'request' => $request,
+                    'module' => 'toll',
+                    'endpoint' => 'Actualizar un peaje',
+                ]);
         }
     }
 }
