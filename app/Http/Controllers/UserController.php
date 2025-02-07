@@ -21,11 +21,26 @@ class UserController extends Controller
             $page = $request->has('page');
             $perPage = $request->get('per_page', 10); // Default: 10 resultados por página
 
-            // Obtener los usuarios
+            // Construir la consulta base
+            $query = User::with(['userType.status', 'client.status', 'theme', 'status']);
+
+            // Aplicar filtros si se envían
+            if ($request->has('user_type')) {
+                $query->where('id_user_type', $request->input('user_type'));
+            }
+            if ($request->has('id_client')) {
+                $query->where('id_client', $request->input('id_client'));
+            }
+            if ($request->has('is_internal')) {
+                $query->where('is_internal', filter_var($request->input('is_internal'), FILTER_VALIDATE_BOOLEAN));
+            }
+            if ($request->has('status')) {
+                $query->where('status', $request->input('status'));
+            }
+
+            // Verificar si la solicitud es paginada
             if ($page) {
-                // Realizar paginación si se envían los parámetros
-                $users = User::with(['userType.status', 'client.status', 'theme', 'status'])
-                    ->paginate($perPage);
+                $users = $query->paginate($perPage);
 
                 // Construir datos de respuesta para paginación
                 $data = $users->items();
@@ -42,10 +57,8 @@ class UserController extends Controller
                     'endpoint' => 'Obtener usuarios',
                 ]);
             } else {
-                // Devolver todos los resultados si no se envían los parámetros
-                $users = User::with(['userType.status', 'client.status', 'theme', 'status'])
-                    ->get()
-                    ->makeHidden(['password']);
+                // Obtener todos los usuarios sin paginación
+                $users = $query->get()->makeHidden(['password']);
 
                 return ApiResponse::paginate('Usuarios traídos correctamente', 200, $users, null, [
                     'request' => $request,
