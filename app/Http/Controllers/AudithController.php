@@ -35,8 +35,8 @@ class AudithController extends Controller
                 $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.module'))) LIKE ?", ['%' . strtolower($request->module) . '%']);
             }
             
-            if ($request->has('action')) { // "action" es "endpoint"
-                $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.endpoint'))) LIKE ?", ['%' . strtolower($request->action) . '%']);
+            if ($request->has('title')) { 
+                $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.title'))) LIKE ?", ['%' . strtolower($request->title) . '%']);
             }
             
             if ($request->has('status')) {

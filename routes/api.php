@@ -2,12 +2,15 @@
 
 use App\Http\Controllers\AudithController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\LocalityController;
 use App\Http\Controllers\PawnHourPriceController;
 use App\Http\Controllers\PlaceCollectionTypeController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlaceTypeController;
+use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\TollController;
 use App\Http\Controllers\TransportationController;
+use App\Http\Controllers\UserTypeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -26,17 +29,26 @@ Route::group([
     Route::post('/change-password', [AuthController::class, 'changePassword'])->name('changePassword');
 });
 
+//USER
 Route::group([
     'middleware' => 'api',
     'prefix' => 'user'
 ], function () {
     Route::get('/', [UserController::class, 'index'])->middleware('admin');
-    Route::get('/type', [UserController::class, 'getAllUserType'])->middleware('admin');
-    Route::post('/type', [UserController::class, 'storeUserType'])->middleware('admin');
-    Route::put('/type/{id}', [UserController::class, 'updateUserType'])->middleware('admin');
     Route::get('/{id}', [UserController::class, 'show'])->middleware('admin');
-    Route::post('/', [UserController::class, 'store']);
+    Route::post('/', [UserController::class, 'store'])->middleware('admin');
+    Route::put('/own', [UserController::class, 'updateOwn'])->middleware('admin');
     Route::put('/{id}', [UserController::class, 'update'])->middleware('admin');
+});
+
+//USER TYPE
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'user-type'
+], function () {
+    Route::get('/', [UserTypeController::class, 'index'])->middleware('admin');
+    Route::post('/', [UserTypeController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [UserTypeController::class, 'update'])->middleware('admin');
 });
 
 //CLIENT
@@ -126,4 +138,23 @@ Route::group([
     'prefix' => 'audith'
 ], function () {
     Route::get('/', [AudithController::class, 'index'])->middleware('admin');
+});
+
+// Province
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'province'
+], function () {
+    Route::get('/', [ProvinceController::class, 'index'])->middleware('admin');
+    Route::get('/{id}', [ProvinceController::class, 'show'])->middleware('admin');
+});
+
+// Locality
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'locality'
+], function () {
+    Route::get('/{id}', [LocalityController::class, 'show'])->middleware('admin');
 });

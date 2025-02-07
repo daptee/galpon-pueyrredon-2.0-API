@@ -119,7 +119,7 @@ class AuthController extends Controller
         }
     }
 
-    public function setPassword(Request $request)
+    public function changePassword(Request $request)
     {
         try {
             // Validar la entrada
@@ -133,24 +133,28 @@ class AuthController extends Controller
 
             // Verificar si la contraseña actual coincide
             if (!Hash::check($request->current_password, $user->password)) {
-                return response()->json([
-                    'message' => 'La contraseña actual es incorrecta',
-                ], 400);
+
+                return ApiResponse::create('La contraseña actual es incorrecta', 500, [], [
+                    'request' => $request,
+                    'module' => 'auth',
+                    'endpoint' => 'changePassword',
+                ]);
             }
 
-            // Asignar la nueva contraseña (se encripta automáticamente en el modelo)
-            $user->password = $request->new_password;
+            $user->password = Hash::make($request->new_password);
             $user->save();
 
-            return response()->json([
-                'message' => 'Contraseña actualizada con éxito',
-            ], 200);
-
+            return ApiResponse::create('Contraseña actualizada con éxito', 201, $user->email, [
+                'request' => $request,
+                'module' => 'auth',
+                'endpoint' => 'changePassword',
+            ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error al actualizar la contraseña',
-                'error' => $e->getMessage(),
-            ], 500);
+            return ApiResponse::create('Error al actualizar la contraseña', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'auth',
+                'endpoint' => 'changePassword',
+            ]);
         }
     }
 

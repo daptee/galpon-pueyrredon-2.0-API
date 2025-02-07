@@ -26,9 +26,17 @@ class PlaceTypeController extends Controller
 
             $placesTypes->load(['status']);
 
-            return ApiResponse::create('Tipos de lugares traídos correctamente', 200, $placesTypes);
+            return ApiResponse::create('Tipos de lugares traídos correctamente', 200, $placesTypes, [
+                    'request' => $request,
+                    'module' => 'place type',
+                    'endpoint' => 'Trear tipos de lugares',
+                ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el tipo de lugar', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear el tipo de lugar', 500, ['error' => $e->getMessage()], [
+                    'request' => $request,
+                    'module' => 'place type',
+                    'endpoint' => 'Trear tipos de lugares',
+                ]);
         }
     }
 
@@ -42,7 +50,11 @@ class PlaceTypeController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'place type',
+                    'endpoint' => 'Crear tipos de lugares',
+                ]);
             }
 
             $placeType = PlaceType::create([
@@ -52,9 +64,17 @@ class PlaceTypeController extends Controller
 
             $placeType->load(['status']);
 
-            return ApiResponse::create('Tipo de lugar creado correctamente', 201, $placeType);
+            return ApiResponse::create('Tipo de lugar creado correctamente', 201, $placeType, [
+                    'request' => $request,
+                    'module' => 'place type',
+                    'endpoint' => 'Crear tipos de lugares',
+                ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el tipo de lugar',  500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear el tipo de lugar',  500, ['error' => $e->getMessage()], [
+                    'request' => $request,
+                    'module' => 'place type',
+                    'endpoint' => 'Crear tipos de lugares',
+                ]);
         }
     }
 
@@ -65,7 +85,11 @@ class PlaceTypeController extends Controller
             $placeType = PlaceType::find($id);
 
             if (!$placeType) {
-                return ApiResponse::create('Tipo de lugar no encontrado', 404, ['error' => 'Tipo de lugar no encontrado']);
+                return ApiResponse::create('Tipo de lugar no encontrado', 404, ['error' => 'Tipo de lugar no encontrado'], [
+                    'request' => $request,
+                    'module' => 'place type',
+                    'endpoint' => 'Actualizar tipos de lugares',
+                ]);
             }
 
             $validator = Validator::make($request->all(), [
@@ -74,16 +98,28 @@ class PlaceTypeController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'place type',
+                    'endpoint' => 'Actualizar tipos de lugares',
+                ]);
             }
 
             $placeType->update($request->only(['name', 'status']));
 
             $placeType->load(['status']);
 
-            return ApiResponse::create('Tipo de lugar actualizado correctamente', 201, $placeType);
+            return ApiResponse::create('Tipo de lugar actualizado correctamente', 201, $placeType, [
+                    'request' => $request,
+                    'module' => 'place type',
+                    'endpoint' => 'Actualizar tipos de lugares',
+                ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el tipo de lugar',  500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar el tipo de lugar',  500, ['error' => $e->getMessage()], [
+                    'request' => $request,
+                    'module' => 'place type',
+                    'endpoint' => 'Actualizar tipos de lugares',
+                ]);
         }
     }
 }

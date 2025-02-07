@@ -36,33 +36,57 @@ class UserController extends Controller
                     'last_page' => $users->lastPage(),
                 ];
 
-                return ApiResponse::paginate('Usuarios traídos correctamente', 200, $data, $meta_data);
+                return ApiResponse::paginate('Usuarios traídos correctamente', 200, $data, $meta_data, [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Obtener usuarios',
+                ]);
             } else {
                 // Devolver todos los resultados si no se envían los parámetros
                 $users = User::with(['userType.status', 'client.status', 'theme', 'status'])
                     ->get()
                     ->makeHidden(['password']);
 
-                return ApiResponse::paginate('Usuarios traídos correctamente', 200, $users, null);
+                return ApiResponse::paginate('Usuarios traídos correctamente', 200, $users, null, [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Obtener usuarios',
+                ]);
             }
         } catch (Exception $e) {
-            return ApiResponse::create('Error al traer los usuarios', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al obtener los usuarios', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Obtener usuarios',
+            ]);
         }
     }
 
     // GET BY ID - Retornar toda la información de un usuario según su id
-    public function show($id)
+    public function show($id, Request $request)
     {
         try {
             $user = User::with(['userType.status', 'client.status', 'theme', 'status'])->find($id);
 
             if (!$user) {
-                return ApiResponse::create('Usuario no encontrado', 500);
+                return ApiResponse::create('Usuario no encontrado', 500, [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Obtener un usuario',
+                ]);
             }
 
-            return ApiResponse::create('Usuario traido correctamente', 201, $user);
+            return ApiResponse::create('Usuario traido correctamente', 201, $user, [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Obtener un usuario',
+            ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al traer un usuario', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al obtener un usuario', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Obtener un usuario',
+            ]);
         }
     }
 
@@ -84,7 +108,11 @@ class UserController extends Controller
 
             // Verifica si la validación falla
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validacion', 422, $validator->errors());
+                return ApiResponse::create('Error de validacion', 422, $validator->errors(), [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Crear un usuario',
+                ]);
             }
 
             $data = $validator->validated();
@@ -106,9 +134,17 @@ class UserController extends Controller
             $user = User::create($data);
 
             $user->load('userType.status', 'client.status', 'theme', 'status');
-            return ApiResponse::create('Usuario creado correctamente', 200, $user);
+            return ApiResponse::create('Usuario creado correctamente', 200, $user, [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Crear un usuario',
+            ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al crear un usuario', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear un usuario', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Crear un usuario',
+            ]);
         }
     }
 
@@ -120,7 +156,11 @@ class UserController extends Controller
             $user = User::find($id);
 
             if (!$user) {
-                return ApiResponse::create('Usuario no encontrado', 404, []);
+                return ApiResponse::create('Usuario no encontrado', 404, [], [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Actualizar un usuario',
+                ]);
             }
 
             // Realiza la validación de los datos
@@ -138,7 +178,11 @@ class UserController extends Controller
 
             // Verifica si la validación falla
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, $validator->errors());
+                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Actualizar un usuario',
+                ]);
             }
 
             $data = $validator->validated();
@@ -157,86 +201,78 @@ class UserController extends Controller
 
             $user->load('userType.status', 'client.status', 'theme', 'status');
 
-            return ApiResponse::create('Usuario actualizado correctamente', 200, $user);
+            return ApiResponse::create('Usuario actualizado correctamente', 200, $user, [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Actualizar un usuario',
+            ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al actualizar el usuario', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar el usuario', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Actualizar un usuario',
+            ]);
         }
     }
 
-    public function getAllUserType(Request $request)
+    public function updateOwn(Request $request)
     {
         try {
-            $status = $request->query('status'); // Parámetro opcional
+            $user = auth()->user();
 
-            $query = UserType::with('status'); // Aplica la relación con antelación
-
-            if ($status) {
-                $query->where('status', $status);
+            if (!$user) {
+                return ApiResponse::create('Usuario no encontrado', 404, [], [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Actualizar usuario propio',
+                ]);
             }
 
-            $userTypes = $query->get(); // Ejecuta la consulta y obtiene los resultados
-
-            return ApiResponse::create('Tipo de usuarios traidos correctamente', 200, $userTypes);
-        } catch (Exception $e) {
-            return ApiResponse::create('Error al traer tipos de usuarios', 500, ['error' => $e->getMessage()]);
-        }
-    }
-
-
-    public function storeUserType(Request $request)
-    {
-        try {
+            // Validación de los datos
             $validator = Validator::make($request->all(), [
-                'name' => 'required|string|unique:user_types,name|max:255',
-                'permissions' => 'nullable',
-                'status' => 'nullable|in:1,2,3',
+                'user' => 'sometimes|string|unique:users,user,' . $user->id . '|max:255',
+                'email' => 'sometimes|email|unique:users,email,' . $user->id . '|max:255',
+                'password' => 'sometimes|string|min:8|confirmed', // Agregamos 'confirmed' para validar repetición
+                'name' => 'sometimes|string|max:255',
+                'lastname' => 'sometimes|string|max:255',
+                'theme' => 'sometimes|integer'
             ]);
 
             if ($validator->fails()) {
-                return response()->json(['error' => $validator->errors()], 422);
+                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Actualizar usuario propio',
+                ]);
             }
 
-            $userType = UserType::create([
-                'name' => $request->name,
-                'permissions' => $request->permissions ?? '{}',
-                'status' => $request->status ?? 1,
-            ]);
+            $data = $validator->validated();
 
-            $userType->load('status');
-
-            return ApiResponse::create('Tipo de usuario creado correctamente', 201, $userType);
-        } catch (Exception $e) {
-            return ApiResponse::create('Error al crear un tipo de usuario', 500, ['error' => $e->getMessage()]);
-        }
-    }
-
-    // PUT: Actualizar un tipo de usuario
-    public function updateUserType(Request $request, $id)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'name' => 'required|string|unique:user_types,name|max:255',
-                'permissions' => 'nullable',
-                'status' => 'nullable|in:1,2,3',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['error' => $validator->errors()], 422);
+            // Si el usuario envía una nueva contraseña, la hasheamos antes de actualizarla
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
             }
 
-            $userType = UserType::findOrFail($id);
+            // Mantener el valor actual del tema si no se envía uno nuevo
+            if (!isset($data['theme'])) {
+                $data['theme'] = $user->theme;
+            }
 
-            $userType->update([
-                'name' => $request->name,
-                'permissions' => $request->permissions ?? $userType->permissions,
-                'status' => $request->status ?? $userType->status,
+            $user->update($data);
+
+            $user->load('userType.status', 'client.status', 'theme', 'status');
+
+            return ApiResponse::create('Usuario actualizado correctamente', 200, $user, [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Actualizar usuario propio',
             ]);
-
-            $userType->load('status');
-
-            return ApiResponse::create('Tipo de usuario actualizado correctamente', 201, $userType);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al actualizar un tipo de usuario', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar el usuario', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Actualizar usuario propio',
+            ]);
         }
     }
 }

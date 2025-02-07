@@ -13,6 +13,6 @@ class Province extends Model
 
     public function localities()
     {
-        return $this->hasMany(Locality::class);
+        return $this->hasMany(Locality::class, 'id_province');
     }
 }

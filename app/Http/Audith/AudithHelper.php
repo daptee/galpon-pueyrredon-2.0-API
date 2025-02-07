@@ -26,7 +26,7 @@ class AudithHelper
             // Construir la estructura de auditoría
             $auditData = [
                 'module' => $audith['module'],
-                'endpoint' => $audith['endpoint'],
+                'title' => $audith['endpoint'],
                 'response' => $response, // Excluir contraseñas
                 'request' => json_encode([
                     'status' => $status,

@@ -10,6 +10,6 @@
     <p>Tu nueva contraseña es: <strong>{{ $password }}</strong></p>
     <p>Por seguridad, te recomendamos cambiarla lo antes posible desde la configuración de tu cuenta.</p>
     <p>Gracias,</p>
-    <p>El equipo de Rossi Equipamientos</p>
+    <p>El equipo de Galpon pueyrredon</p>
 </body>
 </html>
