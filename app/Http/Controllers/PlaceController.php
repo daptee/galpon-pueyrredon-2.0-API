@@ -15,18 +15,37 @@ class PlaceController extends Controller
     public function index(Request $request)
     {
         try {
-            // Obtén la página y el número de resultados por página desde la query string con valores por defecto
+            // Obtén la página y el número de resultados por página con valores por defecto
             $perPage = $request->query('per_page', 10);
             $page = $request->query('page', 1);
 
-            // Obtener lugares con sus relaciones y paginación personalizada
-            $places = Place::with([
-                'placeType',
+            // Construir la consulta base con relaciones
+            $query = Place::with([
+                'placeType.status',
                 'province',
                 'locality',
-                'tolls',
-                'placeCollectionType'
-            ])->paginate($perPage, ['*'], 'page', $page);
+                'tolls.status',
+                'placeCollectionType.status',
+                'placeArea.status',
+                'status'
+            ]);
+
+            // Aplicar filtros opcionales
+            if ($request->has('place_type')) {
+                $query->where('id_place_type', $request->input('place_type'));
+            }
+            if ($request->has('id_province')) {
+                $query->where('id_province', $request->input('id_province'));
+            }
+            if ($request->has('collection_type')) {
+                $query->where('id_place_collection_type', $request->input('collection_type'));
+            }
+            if ($request->has('status')) {
+                $query->where('status', $request->input('status'));
+            }
+
+            // Aplicar paginación con los filtros
+            $places = $query->paginate($perPage, ['*'], 'page', $page);
 
             // Extraer los datos de la paginación
             $data = $places->items();
@@ -51,7 +70,6 @@ class PlaceController extends Controller
         }
     }
 
-
     // GET BY ID - Obtener un lugar específico por ID con sus relaciones
     public function show($id, Request $request)
     {
@@ -59,11 +77,13 @@ class PlaceController extends Controller
 
         try {
             $place = Place::with([
-                'placeType',
+                'placeType.status',
                 'province',
                 'locality',
-                'tolls',
-                'placeCollectionType'
+                'tolls.status',
+                'placeCollectionType.status',
+                'placeArea.status',
+                'status'
             ])->find($id);
 
             if (!$place) {
@@ -98,6 +118,7 @@ class PlaceController extends Controller
                 'id_province' => 'required|exists:provinces,id',
                 'id_locality' => 'required|exists:localities,id',
                 'id_place_collection_type' => 'required|exists:places_collections_types,id',
+                'id_place_area' => 'required|exists:places_area,id',
                 'toll' => 'array',
                 'toll.*' => 'integer|exists:tolls,id',
                 'distance' => 'nullable|numeric|min:0',
@@ -123,6 +144,7 @@ class PlaceController extends Controller
                 'id_province' => $request->id_province,
                 'id_locality' => $request->id_locality,
                 'id_place_collection_type' => $request->id_place_collection_type,
+                'id_place_area' => $request->id_place_area,
                 'distance' => $request->distance,
                 'travel_time' => $request->travel_time,
                 'address' => $request->address,
@@ -142,24 +164,26 @@ class PlaceController extends Controller
             }
 
             $place->load([
-                'placeType',
+                'placeType.status',
                 'province',
                 'locality',
-                'tolls',
-                'placeCollectionType'
+                'tolls.status',
+                'placeCollectionType.status',
+                'placeArea.status',
+                'status'
             ]);
 
             return ApiResponse::create('Lugar creado correctamente', 201, $place, [
-                    'request' => $request,
-                    'module' => 'place',
-                    'endpoint' => 'Crear un lugar',
-                ]);
+                'request' => $request,
+                'module' => 'place',
+                'endpoint' => 'Crear un lugar',
+            ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al crear el lugar', 500, ['error' => $e->getMessage()], [
-                    'request' => $request,
-                    'module' => 'place',
-                    'endpoint' => 'Crear un lugar',
-                ]);
+                'request' => $request,
+                'module' => 'place',
+                'endpoint' => 'Crear un lugar',
+            ]);
         }
     }
 
@@ -183,6 +207,7 @@ class PlaceController extends Controller
                 'id_province' => 'sometimes|required|exists:provinces,id',
                 'id_locality' => 'sometimes|required|exists:localities,id',
                 'id_place_collection_type' => 'sometimes|required|exists:places_collections_types,id',
+                'id_place_area' => 'sometimes|required|exists:places_area,id',
                 'toll' => 'array',
                 'toll.*' => 'integer|exists:tolls,id',
                 'distance' => 'nullable|numeric|min:0',
@@ -208,6 +233,7 @@ class PlaceController extends Controller
                 'id_province',
                 'id_locality',
                 'id_place_collection_type',
+                'id_place_area',
                 'distance',
                 'travel_time',
                 'address',
@@ -236,24 +262,26 @@ class PlaceController extends Controller
             }
 
             $place->load([
-                'placeType',
+                'placeType.status',
                 'province',
                 'locality',
-                'tolls',
-                'placeCollectionType'
+                'tolls.status',
+                'placeCollectionType.status',
+                'placeArea.status',
+                'status'
             ]);
 
             return ApiResponse::create('Lugar actualizado correctamente', 200, $place, [
-                    'request' => $request,
-                    'module' => 'place',
-                    'endpoint' => 'Actualizar un lugar',
-                ]);
+                'request' => $request,
+                'module' => 'place',
+                'endpoint' => 'Actualizar un lugar',
+            ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al actualizar el lugar', 500, ['error' => $e->getMessage()], [
-                    'request' => $request,
-                    'module' => 'place',
-                    'endpoint' => 'Actualizar un lugar',
-                ]);
+                'request' => $request,
+                'module' => 'place',
+                'endpoint' => 'Actualizar un lugar',
+            ]);
         }
     }
 }

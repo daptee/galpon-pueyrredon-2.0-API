@@ -12,7 +12,7 @@ class Place extends Model
     protected $table = 'places';
 
     protected $fillable = [
-        'id_place_type', 'name', 'id_province', 'id_locality', 'id_place_collection_type',
+        'id_place_type', 'name', 'id_province', 'id_locality', 'id_place_collection_type', 'id_place_area',
         'distance', 'travel_time', 'address', 'phone', 'complexity_factor', 'observations', 'status'
     ];
 
@@ -20,7 +20,8 @@ class Place extends Model
         'id_place_type',
         'id_province',
         'id_locality',
-        'id_place_collection_type'
+        'id_place_collection_type',
+        'id_place_area'
     ];
 
     public function placeType()
@@ -43,9 +44,19 @@ class Place extends Model
         return $this->belongsTo(PlaceCollectionType::class, 'id_place_collection_type');
     }
 
+    public function placeArea()
+    {
+        return $this->belongsTo(PlaceArea::class, 'id_place_area');
+    }
+
     public function tolls()
     {
         return $this->belongsToMany(Toll::class, 'places_tolls', 'id_place', 'id_toll')
                     ->withTimestamps(); // Para incluir created_at y updated_at
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(Status::class, 'status');
     }
 }

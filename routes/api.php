@@ -6,6 +6,7 @@ use App\Http\Controllers\LocalityController;
 use App\Http\Controllers\PawnHourPriceController;
 use App\Http\Controllers\PlaceCollectionTypeController;
 use App\Http\Controllers\PlaceController;
+use App\Http\Controllers\PlacesAreaController;
 use App\Http\Controllers\PlaceTypeController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\TollController;
@@ -97,6 +98,15 @@ Route::group([
     Route::get('/', [PlaceCollectionTypeController::class, 'index'])->middleware('admin');
     Route::post('/', [PlaceCollectionTypeController::class, 'store'])->middleware('admin');
     Route::put('/{id}', [PlaceCollectionTypeController::class, 'update'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'places-areas'
+], function () {
+    Route::get('/', [PlacesAreaController::class, 'index'])->middleware('admin');
+    Route::post('/', [PlacesAreaController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PlacesAreaController::class, 'update'])->middleware('admin');
 });
 
 Route::group([

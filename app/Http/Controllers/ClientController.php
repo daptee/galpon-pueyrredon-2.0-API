@@ -15,13 +15,24 @@ class ClientController extends Controller
 
     public function index(Request $request)
     {
-        try {// Obtén la página y el número de resultados por página desde la query string con valores por defecto
+        try {
+            // Obtén la página y el número de resultados por página desde la query string con valores por defecto
             $perPage = $request->query('per_page', 10);
             $page = $request->query('page', 1);
 
-            // Paginación personalizada usando los parámetros
-            $clients = Client::with(['clientType.status', 'clientClass.status', 'contacts', 'status'])
-                ->paginate($perPage, ['*'], 'page', $page);
+            // Construir la consulta base con relaciones
+            $query = Client::with(['clientType.status', 'clientClass.status', 'contacts', 'status']);
+
+            // Aplicar filtros si se envían
+            if ($request->has('client_class')) {
+                $query->where('id_client_class', $request->input('client_class'));
+            }
+            if ($request->has('status')) {
+                $query->where('status', $request->input('status'));
+            }
+
+            // Aplicar paginación con los filtros
+            $clients = $query->paginate($perPage, ['*'], 'page', $page);
 
             $data = $clients->items();
             $meta_data = [
@@ -31,7 +42,7 @@ class ClientController extends Controller
                 'last_page' => $clients->lastPage(),
             ];
 
-            return ApiResponse::paginate('Clientes traidos correctamente', 201, $data, $meta_data, [
+            return ApiResponse::paginate('Clientes traídos correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Obtener todos los clientes',
@@ -44,7 +55,6 @@ class ClientController extends Controller
             ]);
         }
     }
-
 
     // GET BY ID: Obtener información de un cliente por ID
     public function show($id, Request $request)
