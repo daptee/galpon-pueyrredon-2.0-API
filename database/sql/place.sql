@@ -1,6 +1,6 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS places_types, places_collections_types, places, tolls, places_tolls;
+DROP TABLE IF EXISTS places_types, places_collections_types, places, tolls, places_tolls, places_area;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -41,6 +41,7 @@ CREATE TABLE places (
     id_province INT NOT NULL,
     id_locality INT NOT NULL,
     id_place_collection_type INT NOT NULL,
+    id_place_area INT NOT NULL,
     distance DECIMAL(10,2),
     travel_time TIME,
     address VARCHAR(255),
@@ -53,7 +54,8 @@ CREATE TABLE places (
     FOREIGN KEY (id_place_type) REFERENCES places_types(id),
     FOREIGN KEY (id_province) REFERENCES provinces(id),
     FOREIGN KEY (id_locality) REFERENCES localities(id),
-    FOREIGN KEY (id_place_collection_type) REFERENCES places_collections_types(id)
+    FOREIGN KEY (id_place_collection_type) REFERENCES places_collections_types(id),
+    FOREIGN KEY (id_place_area) REFERENCES places_area(id)
 );
 
 -- Tabla tolls
@@ -76,4 +78,13 @@ CREATE TABLE places_tolls (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (id_place) REFERENCES places(id),
     FOREIGN KEY (id_toll) REFERENCES tolls(id)
+);
+
+-- Tabla places_area
+CREATE TABLE places_area (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    status INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
