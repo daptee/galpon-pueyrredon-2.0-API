@@ -27,6 +27,9 @@ class ClientController extends Controller
             if ($request->has('client_class')) {
                 $query->where('id_client_class', $request->input('client_class'));
             }
+            if ($request->has('client_type')) {
+                $query->where('id_client_type', $request->input('client_type'));
+            }
             if ($request->has('status')) {
                 $query->where('status', $request->input('status'));
             }
@@ -97,12 +100,13 @@ class ClientController extends Controller
                 'mail' => 'required|email|unique:clients,mail',
                 'phone' => 'nullable|string|max:15',
                 'address' => 'nullable|string|max:255',
-                'company' => 'nullable|string|max:255',
+                'cuit' => 'nullable|string|max:12',
+                'bonus_percentage' => 'nullable|string|max:255',
                 'status' => 'nullable|in:1,2,3',
                 'contacts' => 'required|array',
                 'contacts.*.name' => 'required|string|max:100',
                 'contacts.*.lastname' => 'required|string|max:100',
-                'contacts.*.mail' => 'required|email|unique:clients_contacts,mail',
+                'contacts.*.mail' => 'required|email',
                 'contacts.*.phone' => 'nullable|string|max:15',
             ]);
 
@@ -130,7 +134,8 @@ class ClientController extends Controller
                 'mail' => $validated['mail'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
-                'company' => $validated['company'] ?? null,
+                'cuit' => $validated['cuit'] ?? null,
+                'bonus_percentage' => $validated['bonus_percentage'] ?? null,
                 'status' => $validated['status'],
             ]);
 
@@ -145,7 +150,12 @@ class ClientController extends Controller
             }
 
             // Cargar relaciones necesarias
-            $client->load(['clientType.status', 'clientClass.status', 'contacts', 'status']);
+            $client = Client::with([
+                'clientType.status',
+                'clientClass.status',
+                'contacts',
+                'status'
+            ])->find($client->id);
 
             // Responder con éxito
             return ApiResponse::create('Cliente creado correctamente', 201, $client, [
@@ -176,13 +186,12 @@ class ClientController extends Controller
                 'mail' => "required|email|unique:clients,mail,{$id}",
                 'phone' => 'nullable|string|max:15',
                 'address' => 'nullable|string|max:255',
-                'company' => 'nullable|string|max:255',
                 'status' => 'nullable|in:1,2,3',
                 'contacts' => 'required|array',
                 'contacts.*.id' => 'nullable|integer|exists:clients_contacts,id',
                 'contacts.*.name' => 'required|string|max:100',
                 'contacts.*.lastname' => 'required|string|max:100',
-                'contacts.*.mail' => 'required|email|unique:clients_contacts,mail',
+                'contacts.*.mail' => 'required|email',
                 'contacts.*.phone' => 'nullable|string|max:15',
             ]);
 
@@ -208,7 +217,6 @@ class ClientController extends Controller
                 'mail' => $validated['mail'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
-                'company' => $validated['company'] ?? null,
                 'status' => $validated['status'] ?? $client->status,
             ]);
 

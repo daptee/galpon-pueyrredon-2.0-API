@@ -114,6 +114,8 @@ class UserController extends Controller
                 'id_user_type' => 'required|exists:user_types,id',
                 'name' => 'required|string|max:255',
                 'lastname' => 'required|string|max:255',
+                'phone' => 'nullable|string|max:15',
+                'is_internal' => 'nullable|in:0,1',
                 // Validación opcional para permissions y theme
                 'permissions' => 'sometimes|json',
                 'theme' => 'sometimes|integer',
@@ -183,6 +185,8 @@ class UserController extends Controller
                 'id_user_type' => 'sometimes|exists:user_types,id',
                 'name' => 'sometimes|string|max:255',
                 'lastname' => 'sometimes|string|max:255',
+                'phone' => 'nullable|string|max:15',
+                'is_internal' => 'nullable|in:0,1',
                 // Validación opcional para permissions y theme
                 'permissions' => 'sometimes|json',
                 'theme' => 'sometimes|integer',

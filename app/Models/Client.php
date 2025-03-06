@@ -10,9 +10,13 @@ class Client extends Model
         'id_client_type',
         'id_client_class',
         'name',
-        'last_name',
+        'lastname',
         'mail',
+        'phone',
+        'address',
         'status',
+        'cuit',
+        'bonus_percentage'
     ];
 
     protected $hidden = [
