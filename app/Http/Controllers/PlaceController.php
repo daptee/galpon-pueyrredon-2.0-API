@@ -40,6 +40,9 @@ class PlaceController extends Controller
             if ($request->has('collection_type')) {
                 $query->where('id_place_collection_type', $request->input('collection_type'));
             }
+            if ($request->has('place_area')) {
+                $query->where('id_place_area', $request->input('place_area'));
+            }
             if ($request->has('status')) {
                 $query->where('status', $request->input('status'));
             }
