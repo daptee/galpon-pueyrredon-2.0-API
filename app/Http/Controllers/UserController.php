@@ -19,7 +19,7 @@ class UserController extends Controller
         try {
             // Verificar si se envían los parámetros `page` o `per_page`
             $page = $request->has('page');
-            $perPage = $request->get('per_page', 10); // Default: 10 resultados por página
+            $perPage = $request->get('per_page', 30); // Default: 10 resultados por página
 
             // Construir la consulta base
             $query = User::with(['userType.status', 'client.status', 'theme', 'status']);
@@ -39,33 +39,22 @@ class UserController extends Controller
             }
 
             // Verificar si la solicitud es paginada
-            if ($page) {
-                $users = $query->paginate($perPage);
+            $users = $query->paginate($perPage);
 
-                // Construir datos de respuesta para paginación
-                $data = $users->items();
-                $meta_data = [
-                    'page' => $users->currentPage(),
-                    'per_page' => $users->perPage(),
-                    'total' => $users->total(),
-                    'last_page' => $users->lastPage(),
-                ];
+            // Construir datos de respuesta para paginación
+            $data = $users->items();
+            $meta_data = [
+                'page' => $users->currentPage(),
+                'per_page' => $users->perPage(),
+                'total' => $users->total(),
+                'last_page' => $users->lastPage(),
+            ];
 
-                return ApiResponse::paginate('Usuarios traídos correctamente', 200, $data, $meta_data, [
-                    'request' => $request,
-                    'module' => 'user',
-                    'endpoint' => 'Obtener usuarios',
-                ]);
-            } else {
-                // Obtener todos los usuarios sin paginación
-                $users = $query->get()->makeHidden(['password']);
-
-                return ApiResponse::paginate('Usuarios traídos correctamente', 200, $users, null, [
-                    'request' => $request,
-                    'module' => 'user',
-                    'endpoint' => 'Obtener usuarios',
-                ]);
-            }
+            return ApiResponse::paginate('Usuarios traídos correctamente', 200, $data, $meta_data, [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Obtener usuarios',
+            ]);
         } catch (Exception $e) {
             return ApiResponse::create('Error al obtener los usuarios', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
@@ -116,14 +105,14 @@ class UserController extends Controller
                 'lastname' => 'required|string|max:255',
                 'phone' => 'nullable|string|max:15',
                 'is_internal' => 'nullable|in:0,1',
-                // Validación opcional para permissions y theme
+                'id_client' => 'required_if:is_internal,0|exists:clients,id', // Validación condicional
                 'permissions' => 'sometimes|json',
                 'theme' => 'sometimes|integer',
             ]);
 
             // Verifica si la validación falla
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validacion', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
                     'request' => $request,
                     'module' => 'user',
                     'endpoint' => 'Crear un usuario',
@@ -145,7 +134,6 @@ class UserController extends Controller
             }
 
             // Crea el usuario
-
             $user = User::create($data);
 
             $user->load('userType.status', 'client.status', 'theme', 'status');
@@ -162,6 +150,7 @@ class UserController extends Controller
             ]);
         }
     }
+
 
     // PUT - actualizar un usuario
     public function update(Request $request, $id)
@@ -187,10 +176,11 @@ class UserController extends Controller
                 'lastname' => 'sometimes|string|max:255',
                 'phone' => 'nullable|string|max:15',
                 'is_internal' => 'nullable|in:0,1',
+                'id_client' => 'required_if:is_internal,0|exists:clients,id',
                 // Validación opcional para permissions y theme
                 'permissions' => 'sometimes|json',
                 'theme' => 'sometimes|integer',
-                'status' => 'sometimes|string|in:activo,inactivo',
+                'status' => 'sometimes|integer|in:1,2,3',
             ]);
 
             // Verifica si la validación falla

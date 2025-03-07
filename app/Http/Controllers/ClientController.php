@@ -186,6 +186,8 @@ class ClientController extends Controller
                 'mail' => "required|email|unique:clients,mail,{$id}",
                 'phone' => 'nullable|string|max:15',
                 'address' => 'nullable|string|max:255',
+                'cuit' => 'nullable|string|max:12',
+                'bonus_percentage' => 'nullable|string|max:255',
                 'status' => 'nullable|in:1,2,3',
                 'contacts' => 'required|array',
                 'contacts.*.id' => 'nullable|integer|exists:clients_contacts,id',
@@ -217,6 +219,8 @@ class ClientController extends Controller
                 'mail' => $validated['mail'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
+                'cuit' => $validated['cuit'] ?? null,
+                'bonus_percentage' => $validated['bonus_percentage'] ?? null,
                 'status' => $validated['status'] ?? $client->status,
             ]);
 
