@@ -8,6 +8,7 @@ use App\Http\Controllers\PlaceCollectionTypeController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlacesAreaController;
 use App\Http\Controllers\PlaceTypeController;
+use App\Http\Controllers\ProductFurnitureController;
 use App\Http\Controllers\ProductLineController;
 use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\ProvinceController;
@@ -191,4 +192,14 @@ Route::group([
     Route::post('/', [ProductTypeController::class, 'store'])->middleware('admin');
     Route::put('/{id}', [ProductTypeController::class, 'update'])->middleware('admin');
     Route::delete('/{id}', [ProductTypeController::class, 'destroy'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'product-furniture'
+], function () {
+    Route::get('/', [ProductFurnitureController::class, 'index'])->middleware('admin');
+    Route::post('/', [ProductFurnitureController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [ProductFurnitureController::class, 'update'])->middleware('admin');
+    Route::delete('/{id}', [ProductFurnitureController::class, 'destroy'])->middleware('admin');
 });
