@@ -4,36 +4,36 @@ namespace App\Http\Controllers;
 
 use App\Http\Responses\ApiResponse;
 use Illuminate\Http\Request;
-use App\Models\ProductFurniture;
+use App\Models\ProductAttribute;
 use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
 use Exception;
 
-class ProductFurnitureController extends Controller
+class ProductAttributeController extends Controller
 {
-    // Obtener todos los muebles de productos (sin paginación)
+    // Obtener todos los atributos de productos (sin paginación)
     public function index(Request $request)
     {
         try {
-            $products = ProductFurniture::all();
+            $products = ProductAttribute::all();
 
             $products->load(['status']);
 
-            return ApiResponse::create('Listado de muebles de productos obtenido correctamente', 200, $products, [
+            return ApiResponse::create('Listado de atributos de productos obtenido correctamente', 200, $products, [
                 'request' => $request,
-                'module' => 'product furniture',
-                'endpoint' => 'Obtener todos los muebles de productos',
+                'module' => 'product attribute',
+                'endpoint' => 'Obtener todos los atributos de productos',
             ]);
         } catch (Exception $e) {
             return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
-                'module' => 'product furniture',
-                'endpoint' => 'Obtener todos los muebles de productos',
+                'module' => 'product attribute',
+                'endpoint' => 'Obtener todos los atributos de productos',
             ]);
         }
     }
 
-    // Crear un nuevo mueble de producto
+    // Crear un nuevo atributo de producto
     public function store(Request $request)
     {
         try {
@@ -45,34 +45,34 @@ class ProductFurnitureController extends Controller
             if ($validator->fails()) {
                 return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()], [
                     'request' => $request,
-                    'module' => 'product furniture',
-                    'endpoint' => 'Crear mueble de producto',
+                    'module' => 'product attribute',
+                    'endpoint' => 'Crear atributo de producto',
                 ]);
             }
             
-            $productFurniture = ProductFurniture::create($request->all());
+            $productAttribute = ProductAttribute::create($request->all());
 
-            $productFurniture->load(['status']);
+            $productAttribute->load(['status']);
 
-            return ApiResponse::create('Mueble de producto creado correctamente', 201, $productFurniture, [
+            return ApiResponse::create('Atributo de producto creado correctamente', 201, $productAttribute, [
                 'request' => $request,
-                'module' => 'product furniture',
-                'endpoint' => 'Crear mueble de producto',
+                'module' => 'product attribute',
+                'endpoint' => 'Crear atributo de producto',
             ]);
         } catch (Exception $e) {
             return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
-                'module' => 'product furniture',
-                'endpoint' => 'Crear mueble de producto',
+                'module' => 'product attribute',
+                'endpoint' => 'Crear atributo de producto',
             ]);
         }
     }
 
-    // Actualizar un mueble de producto existente
+    // Actualizar un atributo de producto existente
     public function update(Request $request, $id)
     {
         try {
-            $productFurniture = ProductFurniture::findOrFail($id);
+            $productAttribute = ProductAttribute::findOrFail($id);
 
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|required|string|max:255',
@@ -82,56 +82,56 @@ class ProductFurnitureController extends Controller
             if ($validator->fails()) {
                 return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()], [
                     'request' => $request,
-                    'module' => 'product furniture',
-                    'endpoint' => 'Actualizar mueble de producto',
+                    'module' => 'product attribute',
+                    'endpoint' => 'Actualizar atributo de producto',
                 ]);
             }
 
-            $productFurniture->update($request->all());
+            $productAttribute->update($request->all());
 
-            $productFurniture->load(['status']);
+            $productAttribute->load(['status']);
 
-            return ApiResponse::create('Mueble de producto actualizado correctamente', 201, $productFurniture, [
+            return ApiResponse::create('Atributo de producto actualizado correctamente', 201, $productAttribute, [
                 'request' => $request,
-                'module' => 'product furniture',
-                'endpoint' => 'Actualizar mueble de producto',
+                'module' => 'product attribute',
+                'endpoint' => 'Actualizar atributo de producto',
             ]);
         } catch (Exception $e) {
             return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
-                'module' => 'product furniture',
-                'endpoint' => 'Actualizar mueble de producto',
+                'module' => 'product attribute',
+                'endpoint' => 'Actualizar atributo de producto',
             ]);
         }
     }
 
-    // Eliminar un mueble de producto (verificando relaciones)
+    // Eliminar un atributo de producto (verificando relaciones)
     public function destroy(Request $request, $id)
     {
         try {
-            $productFurniture = ProductFurniture::findOrFail($id);
+            $productAttribute = ProductAttribute::findOrFail($id);
 
             // Verificar si hay productos asociados
             if (Product::where('id_product_line', $id)->exists()) {
                 return ApiResponse::create('Error de validacion', 422, ['error' => 'No se puede eliminar porque está en uso en productos.'], [
                     'request' => $request,
-                    'module' => 'product furniture',
-                    'endpoint' => 'Eliminar mueble de producto',
+                    'module' => 'product attribute',
+                    'endpoint' => 'Eliminar atributo de producto',
                 ]);
             }
 
-            $productFurniture->delete();
+            $productAttribute->delete();
 
-            return ApiResponse::create('Mueble de producto eliminado correctamente', 200, $productFurniture, [
+            return ApiResponse::create('Atributo de producto eliminado correctamente', 200, $productAttribute, [
                 'request' => $request,
-                'module' => 'product furniture',
-                'endpoint' => 'Eliminar mueble de producto',
+                'module' => 'product attribute',
+                'endpoint' => 'Eliminar atributo de producto',
             ]);
         } catch (Exception $e) {
             return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
-                'module' => 'product furniture',
-                'endpoint' => 'Eliminar mueble de producto',
+                'module' => 'product attribute',
+                'endpoint' => 'Eliminar atributo de producto',
             ]);
         }
     }
