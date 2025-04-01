@@ -9,6 +9,7 @@ use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlacesAreaController;
 use App\Http\Controllers\PlaceTypeController;
 use App\Http\Controllers\ProductAttributeController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductFurnitureController;
 use App\Http\Controllers\ProductLineController;
 use App\Http\Controllers\ProductTypeController;
@@ -213,4 +214,14 @@ Route::group([
     Route::post('/', [ProductAttributeController::class, 'store'])->middleware('admin');
     Route::put('/{id}', [ProductAttributeController::class, 'update'])->middleware('admin');
     Route::delete('/{id}', [ProductAttributeController::class, 'destroy'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'products'
+], function () {
+    Route::get('/', [ProductController::class, 'index']);
+    Route::get('/{id}', [ProductController::class, 'show'])->middleware('admin');
+    Route::post('/', [ProductController::class, 'store'])->middleware('admin');
+    Route::post('/{id}', [ProductController::class, 'update'])->middleware('admin');
 });

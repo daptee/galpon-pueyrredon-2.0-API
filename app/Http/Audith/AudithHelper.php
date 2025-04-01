@@ -21,8 +21,6 @@ class AudithHelper
                 Log::warning("No se pudo autenticar el usuario en la auditoría: " . $e->getMessage());
             }
 
-            Log::info($audith);
-
             // Construir la estructura de auditoría
             $auditData = [
                 'module' => $audith['module'],
@@ -42,8 +40,6 @@ class AudithHelper
             
             // Verifica que el JSON no esté escapado en exceso antes de guardar
             $auditData['request'] = stripslashes($auditData['request']); // Elimina escapes innecesarios                                        
-
-            Log::info(json_encode($auditData));
 
             // Registrar en la base de datos
             Audith::create([
