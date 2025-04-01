@@ -44,7 +44,7 @@ class AuthController extends Controller
             // Generar el token usando el servicio TokenService
             $token = $this->tokenService->generateToken($user);
 
-            $user->load('userType.status', 'client.status', 'theme', 'status');
+            $user->load('userType.status', 'client.status', 'theme', 'status')->makeHidden(['password']);;
 
             return ApiResponse::login('Inicio de sesión exitoso', 201, $user, $token, [
                 'request' => $request,
@@ -104,7 +104,9 @@ class AuthController extends Controller
                     ->subject('Nueva contraseña generada');
             });
 
-            return ApiResponse::create('Se ha enviado una nueva contraseña al correo del usuario', 201, $request->email, [
+            $user->makeHidden(['password']);
+
+            return ApiResponse::create('Se ha enviado una nueva contraseña al correo del usuario', 201, $user, [
                 'request' => $request,
                 'module' => 'auth',
                 'endpoint' => 'resetPassword',
@@ -124,12 +126,15 @@ class AuthController extends Controller
         try {
             // Validar la entrada
             $request->validate([
+                'email' => 'required|email|exists:users,email',
                 'current_password' => 'required|string',
                 'new_password' => 'required|string|min:8|confirmed',
             ]);
 
             // Obtener el usuario autenticado
-            $user = auth()->user();
+            $user = User::where('email', $request->email)->first();
+
+            Log::info($user);
 
             // Verificar si la contraseña actual coincide
             if (!Hash::check($request->current_password, $user->password)) {
@@ -144,7 +149,9 @@ class AuthController extends Controller
             $user->password = Hash::make($request->new_password);
             $user->save();
 
-            return ApiResponse::create('Contraseña actualizada con éxito', 201, $user->email, [
+            $user->makeHidden(['password']);
+
+            return ApiResponse::create('Contraseña actualizada con éxito', 201, $user, [
                 'request' => $request,
                 'module' => 'auth',
                 'endpoint' => 'changePassword',

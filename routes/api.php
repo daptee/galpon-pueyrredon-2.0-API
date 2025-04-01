@@ -8,6 +8,7 @@ use App\Http\Controllers\PlaceCollectionTypeController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlacesAreaController;
 use App\Http\Controllers\PlaceTypeController;
+use App\Http\Controllers\ProductLineController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\TollController;
 use App\Http\Controllers\TransportationController;
@@ -167,4 +168,16 @@ Route::group([
     'prefix' => 'locality'
 ], function () {
     Route::get('/{id}', [LocalityController::class, 'show'])->middleware('admin');
+});
+
+// Product
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'product-line'
+], function () {
+    Route::get('/', [ProductLineController::class, 'index'])->middleware('admin');
+    Route::post('/', [ProductLineController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [ProductLineController::class, 'update'])->middleware('admin');
+    Route::delete('/{id}', [ProductLineController::class, 'destroy'])->middleware('admin');
 });
