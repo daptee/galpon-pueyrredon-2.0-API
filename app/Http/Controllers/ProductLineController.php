@@ -14,6 +14,9 @@ class ProductLineController extends Controller
     public function index(Request $request)
     {
         $products = ProductLine::all();
+
+        $products->load(['status']);
+
         return ApiResponse::create('Listado de lineas de productos obtenido correctamente', 200, $products, [
             'request' => $request,
             'module' => 'product line',
@@ -38,6 +41,8 @@ class ProductLineController extends Controller
         }
         
         $productLine = ProductLine::create($request->all());
+
+        $productLine->load(['status']);
 
         return ApiResponse::create('Linea de productos creada correctamente', 201, $productLine, [
             'request' => $request,
@@ -65,6 +70,8 @@ class ProductLineController extends Controller
         }
 
         $productLine->update($request->all());
+
+        $productLine->load(['status']);
 
         return ApiResponse::create('Linea de productos actualizado correctamente', 201, $productLine, [
             'request' => $request,

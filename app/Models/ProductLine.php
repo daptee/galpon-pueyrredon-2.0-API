@@ -14,4 +14,9 @@ class ProductLine extends Model
     protected $fillable = ['name', 'status'];
 
     public $timestamps = true;
+
+    public function status()
+    {
+        return $this->belongsTo(Status::class, 'status');
+    }
 }
