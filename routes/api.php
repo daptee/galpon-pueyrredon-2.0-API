@@ -8,6 +8,11 @@ use App\Http\Controllers\PlaceCollectionTypeController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlacesAreaController;
 use App\Http\Controllers\PlaceTypeController;
+use App\Http\Controllers\ProductAttributeController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductFurnitureController;
+use App\Http\Controllers\ProductLineController;
+use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\TollController;
 use App\Http\Controllers\TransportationController;
@@ -167,4 +172,56 @@ Route::group([
     'prefix' => 'locality'
 ], function () {
     Route::get('/{id}', [LocalityController::class, 'show'])->middleware('admin');
+});
+
+// Product
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'product-line'
+], function () {
+    Route::get('/', [ProductLineController::class, 'index'])->middleware('admin');
+    Route::post('/', [ProductLineController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [ProductLineController::class, 'update'])->middleware('admin');
+    Route::delete('/{id}', [ProductLineController::class, 'destroy'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'product-type'
+], function () {
+    Route::get('/', [ProductTypeController::class, 'index'])->middleware('admin');
+    Route::post('/', [ProductTypeController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [ProductTypeController::class, 'update'])->middleware('admin');
+    Route::delete('/{id}', [ProductTypeController::class, 'destroy'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'product-furniture'
+], function () {
+    Route::get('/', [ProductFurnitureController::class, 'index'])->middleware('admin');
+    Route::post('/', [ProductFurnitureController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [ProductFurnitureController::class, 'update'])->middleware('admin');
+    Route::delete('/{id}', [ProductFurnitureController::class, 'destroy'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'product-attribute'
+], function () {
+    Route::get('/', [ProductAttributeController::class, 'index'])->middleware('admin');
+    Route::post('/', [ProductAttributeController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [ProductAttributeController::class, 'update'])->middleware('admin');
+    Route::delete('/{id}', [ProductAttributeController::class, 'destroy'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'products'
+], function () {
+    Route::get('/', [ProductController::class, 'index']);
+    Route::get('/{id}', [ProductController::class, 'show'])->middleware('admin');
+    Route::post('/', [ProductController::class, 'store'])->middleware('admin');
+    Route::post('/{id}', [ProductController::class, 'update'])->middleware('admin');
 });

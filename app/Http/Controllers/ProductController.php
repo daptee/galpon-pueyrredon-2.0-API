@@ -1,0 +1,444 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Responses\ApiResponse;
+use App\Models\ProductAttributeValue;
+use App\Models\ProductImage;
+use App\Models\ProductPrice;
+use Illuminate\Http\Request;
+use App\Models\Product;
+use Illuminate\Support\Facades\Validator;
+use Exception;
+use Log;
+
+class ProductController extends Controller
+{
+    // Obtener todos los productos con paginación
+    public function index(Request $request)
+    {
+        try {
+            // Obtener los parámetros de la solicitud
+            $perPage = $request->query('per_page', 30); // Cantidad de productos por página
+            $page = $request->query('page', 1); // Página actual
+            $status = $request->query('status'); // Filtrar por estado, si es necesario
+
+            // Crear la consulta para obtener los productos
+            $query = Product::with([
+                'productLine',
+                'productType',
+                'productFurniture',
+                'productStatus',
+                'mainImage',
+                'prices',
+            ]);
+
+            // Aplicar el filtro de estado si es proporcionado
+            if (!is_null($status)) {
+                $query->where('status', $status);
+            }
+
+            // Paginación de los productos
+            $products = $query->paginate($perPage, ['*'], 'page', $page);
+
+            // Obtener los productos cargados y preparar los metadatos de la paginación
+            $data = $products->items();
+            $meta_data = [
+                'page' => $products->currentPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+                'last_page' => $products->lastPage(),
+            ];
+
+            // Responder con los productos y los metadatos de la paginación
+            return ApiResponse::paginate('Listado de productos obtenido correctamente', 200, $data, $meta_data, [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Obtener todos los productos',
+            ]);
+        } catch (Exception $e) {
+            // En caso de error
+            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Obtener todos los productos',
+            ]);
+        }
+    }
+
+
+    // Obtener un producto por ID con toda su información
+    public function show(Request $request, $id)
+    {
+        try {
+            $product = Product::with([
+                'productLine',
+                'productType',
+                'productFurniture',
+                'productStatus',
+                'productStock',
+                'mainImage',
+                'images',
+                'attributeValues.attribute',
+                'prices'
+            ])->findOrFail($id);
+
+            return ApiResponse::create('Producto obtenido correctamente', 200, $product, [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Obtener producto por ID',
+            ]);
+        } catch (Exception $e) {
+            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Obtener producto por ID',
+            ]);
+        }
+    }
+
+    // Crear un nuevo producto
+    public function store(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'code' => 'required|string|max:50|unique:products,code',
+                'id_product_line' => 'required|integer|exists:product_lines,id',
+                'id_product_type' => 'required|integer|exists:product_types,id',
+                'id_product_furniture' => 'required|integer|exists:product_furnitures,id',
+                'places_cant' => 'nullable|integer|min:0',
+                'volume' => 'nullable|numeric|min:0',
+                'description' => 'nullable|string',
+                'stock' => 'required|integer|min:0',
+                'product_stock' => 'nullable|integer|exists:products,id',
+                'show_catalog' => 'required|boolean',
+                'id_product_status' => 'nullable|integer|exists:product_status,id',
+                'main_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Imagen principal
+                'images.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'values' => 'nullable|array',
+                'values.*.id_product_attribute' => 'required|integer|exists:product_attributes,id',
+                'values.*.value' => 'required|string|max:255',
+                'prices' => 'nullable|array', // Validación para precios
+                'prices.*.price' => 'required|numeric|min:0',
+                'prices.*.valid_date_from' => 'required|date',
+                'prices.*.valid_date_to' => 'required|date|after_or_equal:prices.*.valid_date_from',
+                'prices.*.minimun_quantity' => 'required|integer|min:1',
+                'prices.*.client_bonification' => 'required|boolean',
+            ]);
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'product',
+                    'endpoint' => 'Crear producto',
+                ]);
+            }
+
+            // Crear el producto sin imágenes
+            $product = Product::create($request->except(['main_image', 'images']));
+
+            $imagePath = public_path('storage/product/img/'); // Ruta en public
+
+            // Crear la carpeta si no existe
+            if (!file_exists($imagePath)) {
+                mkdir($imagePath, 0777, true);
+            }
+
+            // Guardar la imagen principal si se subió
+            if ($request->hasFile('main_image')) {
+                $mainImage = $request->file('main_image');
+                $mainImageName = time() . '_main_' . $mainImage->getClientOriginalName();
+                $mainImage->move($imagePath, $mainImageName);
+
+                ProductImage::create([
+                    'id_product' => $product->id,
+                    'image' => '/storage/product/img/' . $mainImageName,
+                    'is_main' => true
+                ]);
+            }
+
+            // Guardar imágenes secundarias si existen
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $extraImage) {
+                    $extraImageName = time() . '_extra_' . $extraImage->getClientOriginalName();
+                    $extraImage->move($imagePath, $extraImageName);
+
+                    ProductImage::create([
+                        'id_product' => $product->id,
+                        'image' => '/storage/product/img/' . $extraImageName,
+                        'is_main' => false
+                    ]);
+                }
+            }
+
+            if ($request->has('values')) {
+                foreach ($request->values as $attribute) {
+                    ProductAttributeValue::create([
+                        'id_product' => $product->id,
+                        'id_product_attribute' => $attribute['id_product_attribute'],
+                        'value' => $attribute['value']
+                    ]);
+                }
+            }
+
+            // Guardar precios si existen
+            if ($request->has('prices')) {
+                foreach ($request->prices as $price) {
+                    ProductPrice::create([
+                        'id_product' => $product->id,
+                        'price' => $price['price'],
+                        'valid_date_from' => $price['valid_date_from'],
+                        'valid_date_to' => $price['valid_date_to'],
+                        'minimun_quantity' => $price['minimun_quantity'],
+                        'client_bonification' => $price['client_bonification'],
+                    ]);
+                }
+            }
+
+
+            // Cargar relaciones
+            $product->load([
+                'productLine',
+                'productType',
+                'productFurniture',
+                'productStatus',
+                'productStock',
+                'mainImage',
+                'images',
+                'attributeValues.attribute',
+                'prices'
+            ]);
+
+            return ApiResponse::create('Producto creado correctamente', 201, $product, [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Crear producto',
+            ]);
+        } catch (Exception $e) {
+            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Crear producto',
+            ]);
+        }
+    }
+
+    // Actualizar un producto existente
+    public function update(Request $request, $id)
+    {
+        try {
+            $product = Product::findOrFail($id);
+
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'code' => 'required|string|max:50|unique:products,code,' . $product->id,
+                'id_product_line' => 'required|integer|exists:product_lines,id',
+                'id_product_type' => 'required|integer|exists:product_types,id',
+                'id_product_furniture' => 'required|integer|exists:product_furnitures,id',
+                'places_cant' => 'nullable|integer|min:0',
+                'volume' => 'nullable|numeric|min:0',
+                'description' => 'nullable|string',
+                'stock' => 'required|integer|min:0',
+                'product_stock' => 'nullable|integer|exists:products,id',
+                'show_catalog' => 'required|boolean',
+                'id_product_status' => 'nullable|integer|exists:product_status,id',
+                'main_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'existing_images.*.id' => 'nullable|integer|exists:products_images,id',
+                'existing_images.*.image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'new_images.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'values' => 'nullable|array',
+                'values.*.id' => 'nullable|integer|exists:product_attribute_values,id',
+                'values.*.id_product_attribute' => 'required|integer|exists:product_attributes,id',
+                'values.*.value' => 'required|string|max:255',
+                'prices' => 'nullable|array',
+                'prices.*.id' => 'nullable|integer|exists:product_prices,id',
+                'prices.*.price' => 'required|numeric|min:0',
+                'prices.*.valid_date_from' => 'required|date',
+                'prices.*.valid_date_to' => 'required|date|after_or_equal:prices.*.valid_date_from',
+                'prices.*.minimun_quantity' => 'required|integer|min:1',
+                'prices.*.client_bonification' => 'required|boolean',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'product',
+                    'endpoint' => 'Actualizar producto',
+                ]);
+            }
+
+            // Actualizar datos generales del producto
+            $product->update($request->except(['main_image', 'images', 'values', 'prices']));
+
+            $imagePath = public_path('storage/product/img/');
+
+            // Actualizar imagen principal
+            if ($request->hasFile('main_image')) {
+                $currentMainImage = ProductImage::where('id_product', $product->id)->where('is_main', true)->first();
+                if ($currentMainImage) {
+                    $oldImagePath = public_path($currentMainImage->image);
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath);
+                    }
+                    $currentMainImage->delete();
+                }
+
+                $mainImage = $request->file('main_image');
+                $mainImageName = time() . '_main_' . $mainImage->getClientOriginalName();
+                $mainImage->move($imagePath, $mainImageName);
+
+                ProductImage::create([
+                    'id_product' => $product->id,
+                    'image' => '/storage/product/img/' . $mainImageName,
+                    'is_main' => true
+                ]);
+            }
+
+            // Agregar o actualizar imágenes existentes
+            if ($request->has('existing_images')) {
+                foreach ($request->existing_images as $index => $existingImage) {
+                    // Guardar el índice en una variable
+                    $imageIndex = $index;
+                    $imageId = $existingImage['id'];  // id de la imagen que deseas editar
+                    $newImageFile = $existingImage['image'];  // nueva imagen a reemplazar
+
+                    Log::info($imageId);
+
+                    // Verificar si el id de la imagen y la nueva imagen están presentes
+                    if ($imageId && $newImageFile) {
+                        // Buscar el registro de la imagen por id
+                        $imageRecord = ProductImage::find($imageId);
+
+                        // Verificar si la imagen existe y no es la principal
+                        if ($imageRecord && !$imageRecord->is_main) {
+                            // Eliminar la imagen anterior
+                            $oldImagePath = public_path($imageRecord->image);
+                            if (file_exists($oldImagePath)) {
+                                unlink($oldImagePath);  // Eliminar la imagen vieja
+                            }
+
+                            // Obtener la nueva imagen del archivo
+                            $newImage = $request->file("existing_images.{$imageIndex}.image");
+
+                            // Asegurarse de que se haya recibido la imagen y que sea válida
+                            if ($newImage && $newImage->isValid()) {
+                                // Generar un nuevo nombre para la imagen
+                                $newImageName = time() . '_updated_' . $newImage->getClientOriginalName();
+
+                                // Mover la imagen al directorio de almacenamiento
+                                $newImage->move(public_path('storage/product/img/'), $newImageName);
+
+                                // Actualizar el registro de la imagen con el nuevo archivo
+                                $imageRecord->update([
+                                    'image' => '/storage/product/img/' . $newImageName
+                                ]);
+                            } else {
+                                Log::error('La imagen no es válida o no se ha recibido correctamente.');
+                            }
+                        } else {
+                            Log::error('No se encontró el registro de la imagen o es la imagen principal.');
+                        }
+                    }
+                }
+            }
+
+            // Eliminar imágenes que no están en la solicitud, pero no eliminar la imagen principal
+            $existingImageIds = collect($request->existing_images)->pluck('id')->toArray();
+            $imagesToDelete = ProductImage::where('id_product', $product->id)
+                ->whereNotIn('id', $existingImageIds)
+                ->where('is_main', false)  // Asegurarse de no eliminar la imagen principal
+                ->get();
+
+            foreach ($imagesToDelete as $image) {
+                @unlink(public_path($image->image));  // Eliminar el archivo de imagen
+                $image->delete();  // Eliminar el registro de la base de datos
+            }
+
+
+
+
+
+            if ($request->hasFile('new_images')) {
+                foreach ($request->file('new_images') as $extraImage) {
+                    $extraImageName = time() . '_extra_' . $extraImage->getClientOriginalName();
+                    $extraImage->move($imagePath, $extraImageName);
+
+                    ProductImage::create([
+                        'id_product' => $product->id,
+                        'image' => '/storage/product/img/' . $extraImageName,
+                        'is_main' => false
+                    ]);
+                }
+            }
+
+            // Manejo de valores de atributos (editar, agregar, eliminar)
+            if ($request->has('values')) {
+                $existingAttributes = ProductAttributeValue::where('id_product', $product->id)->get()->keyBy('id');
+
+                foreach ($request->values as $attribute) {
+                    if (isset($attribute['id']) && $existingAttributes->has($attribute['id'])) {
+                        // Si el atributo existe, actualizar
+                        $existingAttributes[$attribute['id']]->update([
+                            'id_product_attribute' => $attribute['id_product_attribute'],
+                            'value' => $attribute['value']
+                        ]);
+                        $existingAttributes->forget($attribute['id']);
+                    } else {
+                        // Si no existe, agregarlo
+                        ProductAttributeValue::create([
+                            'id_product' => $product->id,
+                            'id_product_attribute' => $attribute['id_product_attribute'],
+                            'value' => $attribute['value']
+                        ]);
+                    }
+                }
+
+                // Eliminar atributos que no se enviaron
+                foreach ($existingAttributes as $remainingAttribute) {
+                    $remainingAttribute->delete();
+                }
+            }
+
+            // Manejo de precios (editar, agregar, eliminar)
+            if ($request->has('prices')) {
+                foreach ($request->prices as $price) {
+                    ProductPrice::create([
+                        'id_product' => $product->id,
+                        'price' => $price['price'],
+                        'valid_date_from' => $price['valid_date_from'],
+                        'valid_date_to' => $price['valid_date_to'],
+                        'minimun_quantity' => $price['minimun_quantity'],
+                        'client_bonification' => $price['client_bonification'],
+                    ]);
+                }
+            }
+
+            // Cargar relaciones
+            $product->load([
+                'productLine',
+                'productType',
+                'productFurniture',
+                'productStatus',
+                'productStock',
+                'mainImage',
+                'images',
+                'attributeValues.attribute',
+                'prices'
+            ]);
+
+            return ApiResponse::create('Producto actualizado correctamente', 200, $product, [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Actualizar producto',
+            ]);
+
+        } catch (Exception $e) {
+            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Actualizar producto',
+            ]);
+        }
+    }
+
+}
