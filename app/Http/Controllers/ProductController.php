@@ -6,6 +6,7 @@ use App\Http\Responses\ApiResponse;
 use App\Models\ProductAttributeValue;
 use App\Models\ProductImage;
 use App\Models\ProductPrice;
+use App\Models\ProductProducts;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
@@ -22,6 +23,9 @@ class ProductController extends Controller
             $perPage = $request->query('per_page', 30); // Cantidad de productos por página
             $page = $request->query('page', 1); // Página actual
             $status = $request->query('status'); // Filtrar por estado, si es necesario
+            $type = $request->query('type'); // Filtrar por estado, si es necesario
+            $line = $request->query('line'); // Filtrar por estado, si es necesario
+            $furniture = $request->query('furniture'); // Filtrar por estado, si es necesario
 
             // Crear la consulta para obtener los productos
             $query = Product::with([
@@ -29,14 +33,25 @@ class ProductController extends Controller
                 'productType',
                 'productFurniture',
                 'productStatus',
-                'mainImage',
-                'prices',
+                'mainImage'
             ]);
 
             // Aplicar el filtro de estado si es proporcionado
             if (!is_null($status)) {
-                $query->where('status', $status);
-            }
+                $query->where('id_product_status', $status);
+            };
+
+            if (!is_null($type)) {
+                $query->where('id_product_type', $type);
+            };
+
+            if (!is_null($line)) {
+                $query->where('id_product_line', $line);
+            };
+
+            if (!is_null($furniture)) {
+                $query->where('id_product_furniture', $furniture);
+            };
 
             // Paginación de los productos
             $products = $query->paginate($perPage, ['*'], 'page', $page);
@@ -77,11 +92,13 @@ class ProductController extends Controller
                 'productFurniture',
                 'productStatus',
                 'productStock',
-                'mainImage',
                 'images',
                 'attributeValues.attribute',
-                'prices'
+                'prices',
+                'comboItems.product',
             ])->findOrFail($id);
+
+            //quitar id relacion
 
             return ApiResponse::create('Producto obtenido correctamente', 200, $product, [
                 'request' => $request,
@@ -125,9 +142,19 @@ class ProductController extends Controller
                 'prices.*.valid_date_to' => 'required|date|after_or_equal:prices.*.valid_date_from',
                 'prices.*.minimun_quantity' => 'required|integer|min:1',
                 'prices.*.client_bonification' => 'required|boolean',
+                'product_combo' => 'nullable|array',
+                'product_combo.*.id_product' => 'required|integer|exists:products,id',
+                'product_combo.*.quantity' => 'required|string|max:255',
             ]);
+
+            $validator->after(function ($validator) use ($request) {
+                if ((int)$request->input('id_product_type') === 2 && !$request->filled('product_combo')) {
+                    $validator->errors()->add('product_combo', 'El campo product_combo es obligatorio cuando el tipo de producto es 2.');
+                }
+            });
+
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
                     'request' => $request,
                     'module' => 'product',
                     'endpoint' => 'Crear producto',
@@ -195,6 +222,16 @@ class ProductController extends Controller
                 }
             }
 
+            if ($request->id_product_type === '2' && $request->has('product_combo')) {
+                Log::info("Holaaaa");
+                foreach ($request->product_combo as $item) {
+                    ProductProducts::create([
+                        'id_parent_product' => $product->id,
+                        'id_product' => $item['id_product'],
+                        'quantity' => $item['quantity'],
+                    ]);
+                }
+            }
 
             // Cargar relaciones
             $product->load([
@@ -203,10 +240,10 @@ class ProductController extends Controller
                 'productFurniture',
                 'productStatus',
                 'productStock',
-                'mainImage',
                 'images',
                 'attributeValues.attribute',
-                'prices'
+                'prices',
+                'comboItems.product',
             ]);
 
             return ApiResponse::create('Producto creado correctamente', 201, $product, [
@@ -257,10 +294,21 @@ class ProductController extends Controller
                 'prices.*.valid_date_to' => 'required|date|after_or_equal:prices.*.valid_date_from',
                 'prices.*.minimun_quantity' => 'required|integer|min:1',
                 'prices.*.client_bonification' => 'required|boolean',
+                'product_combo' => 'nullable|array',
+                'product_combo.*.id' => 'required|integer|exists:product_products,id',
+                'product_combo.*.id_parent_product' => 'required|integer|exists:product,id',
+                'product_combo.*.id_product' => 'required|integer|exists:product,id',
+                'product_combo.*.quantity' => 'required|string|max:255',
             ]);
 
+            $validator->after(function ($validator) use ($request) {
+                if ((int)$request->input('id_product_type') === 2 && !$request->filled('product_combo')) {
+                    $validator->errors()->add('product_combo', 'El campo product_combo es obligatorio cuando el tipo de producto es 2.');
+                }
+            });
+
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
                     'request' => $request,
                     'module' => 'product',
                     'endpoint' => 'Actualizar producto',
@@ -413,6 +461,34 @@ class ProductController extends Controller
                 }
             }
 
+            if ($request->id_product_type === '2' && $request->has('product_combo')) {
+                $existingCombos = ProductProducts::where('id_parent_product', $product->id)->get()->keyBy('id');
+            
+                foreach ($request->product_combo as $comboItem) {
+                    if (isset($comboItem['id']) && $existingCombos->has($comboItem['id'])) {
+                        // Editar existente
+                        $existingCombos[$comboItem['id']]->update([
+                            'id_product' => $comboItem['id_product'],
+                            'quantity' => $comboItem['quantity'],
+                        ]);
+                        // Eliminarlo de la colección para saber cuáles quedaron sin usar
+                        $existingCombos->forget($comboItem['id']);
+                    } else {
+                        // Crear nuevo
+                        ProductProducts::create([
+                            'id_parent_product' => $product->id,
+                            'id_product' => $comboItem['id_product'],
+                            'quantity' => $comboItem['quantity'],
+                        ]);
+                    }
+                }
+            
+                // Eliminar los combos que ya no están en la request
+                foreach ($existingCombos as $remainingCombo) {
+                    $remainingCombo->delete();
+                }
+            }            
+
             // Cargar relaciones
             $product->load([
                 'productLine',
@@ -423,7 +499,8 @@ class ProductController extends Controller
                 'mainImage',
                 'images',
                 'attributeValues.attribute',
-                'prices'
+                'prices',
+                'comboItems.product',
             ]);
 
             return ApiResponse::create('Producto actualizado correctamente', 200, $product, [

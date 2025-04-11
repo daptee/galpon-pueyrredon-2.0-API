@@ -14,6 +14,9 @@ CREATE TABLE product_types (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+UPDATE `galpon_pueyrredon`.`product_types` SET `name` = 'Normal' WHERE (`id` = '1');
+UPDATE `galpon_pueyrredon`.`product_types` SET `name` = 'Combo' WHERE (`id` = '2');
+
 CREATE TABLE product_furnitures (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,

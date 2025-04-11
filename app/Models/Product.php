@@ -76,7 +76,7 @@ class Product extends Model
     // Relación con todas las imágenes del producto
     public function images()
     {
-        return $this->hasMany(ProductImage::class, 'id_product')->where('is_main', false);
+        return $this->hasMany(ProductImage::class, 'id_product');
         ;
     }
 
@@ -96,5 +96,10 @@ class Product extends Model
     public function relatedProducts()
     {
         return $this->belongsToMany(Product::class, 'product_related', 'product_id', 'related_product_id');
+    }
+
+    public function comboItems()
+    {
+        return $this->hasMany(ProductProducts::class, 'id_parent_product');
     }
 }

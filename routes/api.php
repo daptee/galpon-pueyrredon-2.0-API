@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AudithController;
+use App\Http\Controllers\CacheController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\LocalityController;
 use App\Http\Controllers\PawnHourPriceController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductFurnitureController;
 use App\Http\Controllers\ProductLineController;
+use App\Http\Controllers\ProductProductsController;
 use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\TollController;
@@ -21,6 +23,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+
+Route::get('/clear-cache', [CacheController::class, 'clearCache'])->name('clearCache');
 
 Route::get('/', function () {
     return 'welcome';
