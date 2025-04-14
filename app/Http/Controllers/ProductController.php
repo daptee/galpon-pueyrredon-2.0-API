@@ -39,19 +39,23 @@ class ProductController extends Controller
             // Aplicar el filtro de estado si es proporcionado
             if (!is_null($status)) {
                 $query->where('id_product_status', $status);
-            };
+            }
+            ;
 
             if (!is_null($type)) {
                 $query->where('id_product_type', $type);
-            };
+            }
+            ;
 
             if (!is_null($line)) {
                 $query->where('id_product_line', $line);
-            };
+            }
+            ;
 
             if (!is_null($furniture)) {
                 $query->where('id_product_furniture', $furniture);
-            };
+            }
+            ;
 
             // Paginación de los productos
             $products = $query->paginate($perPage, ['*'], 'page', $page);
@@ -148,7 +152,7 @@ class ProductController extends Controller
             ]);
 
             $validator->after(function ($validator) use ($request) {
-                if ((int)$request->input('id_product_type') === 2 && !$request->filled('product_combo')) {
+                if ((int) $request->input('id_product_type') === 2 && !$request->filled('product_combo')) {
                     $validator->errors()->add('product_combo', 'El campo product_combo es obligatorio cuando el tipo de producto es 2.');
                 }
             });
@@ -281,7 +285,24 @@ class ProductController extends Controller
                 'id_product_status' => 'nullable|integer|exists:product_status,id',
                 'main_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                 'existing_images.*.id' => 'nullable|integer|exists:products_images,id',
-                'existing_images.*.image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'existing_images.*.image' => [
+                    'nullable',
+                    function ($attribute, $value, $fail) {
+                        // Si es archivo, debe ser imagen válida
+                        if (is_file($value)) {
+                            if (!in_array($value->getClientOriginalExtension(), ['jpeg', 'jpg', 'png'])) {
+                                return $fail('El archivo debe ser una imagen jpeg, jpg o png.');
+                            }
+                            if ($value->getSize() > 2048 * 1024) {
+                                return $fail('El archivo no debe superar los 2MB.');
+                            }
+                        }
+                        // Si es string, debe ser una ruta que empiece con "/storage/"
+                        elseif (is_string($value) && !str_starts_with($value, '/storage/')) {
+                            return $fail('La cadena de imagen debe ser una ruta válida del almacenamiento.');
+                        }
+                    }
+                ],
                 'new_images.*' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
                 'values' => 'nullable|array',
                 'values.*.id' => 'nullable|integer|exists:product_attribute_values,id',
@@ -302,7 +323,7 @@ class ProductController extends Controller
             ]);
 
             $validator->after(function ($validator) use ($request) {
-                if ((int)$request->input('id_product_type') === 2 && !$request->filled('product_combo')) {
+                if ((int) $request->input('id_product_type') === 2 && !$request->filled('product_combo')) {
                     $validator->errors()->add('product_combo', 'El campo product_combo es obligatorio cuando el tipo de producto es 2.');
                 }
             });
@@ -354,6 +375,9 @@ class ProductController extends Controller
 
                     // Verificar si el id de la imagen y la nueva imagen están presentes
                     if ($imageId && $newImageFile) {
+                        if (is_string($newImageFile) && str_starts_with($newImageFile, '/storage/')) {
+                            continue;
+                        }
                         // Buscar el registro de la imagen por id
                         $imageRecord = ProductImage::find($imageId);
 
@@ -463,7 +487,7 @@ class ProductController extends Controller
 
             if ($request->id_product_type === '2' && $request->has('product_combo')) {
                 $existingCombos = ProductProducts::where('id_parent_product', $product->id)->get()->keyBy('id');
-            
+
                 foreach ($request->product_combo as $comboItem) {
                     if (isset($comboItem['id']) && $existingCombos->has($comboItem['id'])) {
                         // Editar existente
@@ -482,12 +506,12 @@ class ProductController extends Controller
                         ]);
                     }
                 }
-            
+
                 // Eliminar los combos que ya no están en la request
                 foreach ($existingCombos as $remainingCombo) {
                     $remainingCombo->delete();
                 }
-            }            
+            }
 
             // Cargar relaciones
             $product->load([
