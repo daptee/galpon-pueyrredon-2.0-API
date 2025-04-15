@@ -316,7 +316,7 @@ class ProductController extends Controller
                 'prices.*.minimun_quantity' => 'required|integer|min:1',
                 'prices.*.client_bonification' => 'required|boolean',
                 'product_combo' => 'nullable|array',
-                'product_combo.*.id' => 'required|integer|exists:product_products,id',
+                'product_combo.*.id' => 'nullable|integer|exists:product_products,id',
                 'product_combo.*.id_parent_product' => 'required|integer|exists:products,id',
                 'product_combo.*.id_product' => 'required|integer|exists:products,id',
                 'product_combo.*.quantity' => 'required|string|max:255',
