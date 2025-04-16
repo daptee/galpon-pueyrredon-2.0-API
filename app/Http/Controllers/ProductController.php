@@ -336,6 +336,11 @@ class ProductController extends Controller
                 ]);
             }
 
+            if (is_null($request->input('product_stock'))) {
+                $product->product_stock = null;
+                $product->save();
+            }
+
             // Actualizar datos generales del producto
             $product->update($request->except(['main_image', 'images', 'values', 'prices']));
 
@@ -425,10 +430,6 @@ class ProductController extends Controller
                 @unlink(public_path($image->image));  // Eliminar el archivo de imagen
                 $image->delete();  // Eliminar el registro de la base de datos
             }
-
-
-
-
 
             if ($request->hasFile('new_images')) {
                 foreach ($request->file('new_images') as $extraImage) {
