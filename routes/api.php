@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\AudithController;
+use App\Http\Controllers\BudgetAudithController;
+use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\BudgetStatusController;
 use App\Http\Controllers\CacheController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\LocalityController;
@@ -228,4 +231,33 @@ Route::group([
     Route::get('/{id}', [ProductController::class, 'show'])->middleware('admin');
     Route::post('/', [ProductController::class, 'store'])->middleware('admin');
     Route::post('/{id}', [ProductController::class, 'update'])->middleware('admin');
+});
+
+// Budget
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'budget-status'
+], function () {
+    Route::get('/', [BudgetStatusController::class, 'index']);
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'budgets'
+], function () {
+    Route::get('/', [BudgetController::class, 'index'])->middleware('admin');
+    Route::get('/{id}', [BudgetController::class, 'show'])->middleware('admin');
+    Route::get('/pdf/{id}', [BudgetController::class, 'generatePdf'])->middleware('admin');
+    Route::post('/', [BudgetController::class, 'store'])->middleware('admin');
+    Route::post('/resend/{id}', [BudgetController::class, 'resendEmail'])->middleware('admin');
+    Route::put('/observations/{id}', [BudgetController::class, 'updateObservations'])->middleware('admin');
+    Route::put('/status/{id}', [BudgetController::class, 'updateStatus'])->middleware('admin');
+    Route::put('/contact/{id}', [BudgetController::class, 'updateContact'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'budgets-audith'
+], function () {
+    Route::get('/{id}', [BudgetAudithController::class, 'index'])->middleware('admin');
 });
