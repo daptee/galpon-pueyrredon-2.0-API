@@ -39,7 +39,7 @@ class PawnHourPriceController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'price' => 'required|numeric|min:0',
-                'status' => 'nullable|boolean',
+                'status' => 'nullable|in:1,2,3',
             ]);
 
             if ($validator->fails()) {
@@ -87,7 +87,7 @@ class PawnHourPriceController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'price' => 'sometimes|required|numeric|min:0',
-                'status' => 'sometimes|boolean',
+                'status' => 'nullable|in:1,2,3',
             ]);
 
             if ($validator->fails()) {
