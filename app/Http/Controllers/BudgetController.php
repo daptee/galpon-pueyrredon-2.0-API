@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Budget;
 use App\Models\BudgetProducts;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -98,7 +99,7 @@ class BudgetController extends Controller
                 'total_price_products' => 'required|numeric',
                 'client_bonification' => 'required|numeric',
                 'client_bonification_edited' => 'required|numeric',
-                'total_bonification' => 'required|numeric',
+                'total_bonification' => 'required|string',
                 'transportation_cost' => 'required|numeric',
                 'transportation_cost_edited' => 'required|numeric',
                 'subtotal' => 'required|numeric',
@@ -151,6 +152,20 @@ class BudgetController extends Controller
                 'client',
                 'budgetProducts.product'
             ]);
+
+            $pdf = Pdf::loadView('pdf.budget', compact('budget'));
+
+            if (!file_exists(public_path("storage/budgets/"))) {
+                mkdir(public_path("storage/budgets/"), 0777, true);
+            }
+
+            if (file_exists(public_path('fonts/Lato-Regular.ttf'))) {
+                \Log::warning('Fuente encontrada: fonts/Lato-Regular.ttf');
+            } else {
+                \Log::warning('Fuente no encontrada: fonts/Lato-Regular.ttf');
+            }
+
+            $pdf->save(public_path("storage/budgets/budget-{$budget->id}.pdf"));
 
             // generar PDF y enviar email
 
@@ -259,13 +274,41 @@ class BudgetController extends Controller
     public function generatePdf($id)
     {
         try {
-            // TODO: lógica para generar PDF
+            // Buscar el presupuesto con sus relaciones necesarias
+            $budget = Budget::with([
+                'budgetStatus',
+                'place',
+                'transportation',
+                'client',
+                'budgetProducts.product'
+            ])->findOrFail($id);
 
-            return ApiResponse::create('PDF generado correctamente', 200, ['pdf_path' => 'ruta/del/pdf.pdf'], []);
+            // Cargar la vista del PDF
+            $pdf = Pdf::loadView('pdf.budget', compact('budget'));
+
+            // Asegurar la carpeta de destino
+            if (!file_exists(public_path("storage/budgets/"))) {
+                mkdir(public_path("storage/budgets/"), 0777, true);
+            }
+
+            // Guardar el PDF
+            $pdf->save(public_path("storage/budgets/budget-{$budget->id}.pdf"));
+
+            return ApiResponse::create('PDF regenerado correctamente', 200, [
+                'pdf_path' => "storage/budgets/budget-{$budget->id}.pdf"
+            ], [
+                'module' => 'budget',
+                'endpoint' => 'Regenerar PDF',
+            ]);
+
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al generar el PDF', 500, ['error' => $e->getMessage()], []);
+            return ApiResponse::create('Error al regenerar el PDF', 500, ['error' => $e->getMessage()], [
+                'module' => 'budget',
+                'endpoint' => 'Regenerar PDF',
+            ]);
         }
     }
+
 
     public function resendEmail($id)
     {
