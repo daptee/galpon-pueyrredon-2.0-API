@@ -23,6 +23,11 @@ class UserTypeController extends Controller
                 $query->where('status', $status);
             }
 
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where('name', 'like', '%' . $search . '%');
+            }
+
             $userTypes = $query->get(); // Ejecuta la consulta y obtiene los resultados
 
             return ApiResponse::create('Tipo de usuarios traidos correctamente', 200, $userTypes, [

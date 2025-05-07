@@ -19,6 +19,11 @@ class PlacesAreaController extends Controller
                 $query->where('status', $request->status);
             }
 
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where('name', 'like', '%' . $search . '%');
+            }
+
             $placesAreas = $query->get();
 
             $placesAreas->load(['status']);

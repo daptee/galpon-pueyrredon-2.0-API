@@ -38,11 +38,23 @@ class UserController extends Controller
                 $query->where('status', $request->input('status'));
             }
 
+            // Filtro de búsqueda por nombre o email
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('email', 'like', '%' . $search . '%');
+                });
+            }
+
             // Verificar si la solicitud es paginada
             $users = $query->paginate($perPage);
 
-            // Construir datos de respuesta para paginación
-            $data = $users->items();
+            // Ocultar la contraseña
+            $data = collect($users->items())->map(function ($user) {
+                return $user->makeHidden(['password']);
+            });
+
             $meta_data = [
                 'page' => $users->currentPage(),
                 'per_page' => $users->perPage(),
@@ -69,6 +81,8 @@ class UserController extends Controller
     {
         try {
             $user = User::with(['userType.status', 'client.status', 'theme', 'status'])->find($id);
+
+            $user->makeHidden(['password']);
 
             if (!$user) {
                 return ApiResponse::create('Usuario no encontrado', 500, [
