@@ -47,6 +47,11 @@ class PlaceController extends Controller
                 $query->where('status', $request->input('status'));
             }
 
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where('name', 'like', '%' . $search . '%');
+            }
+            
             // Aplicar paginación con los filtros
             $places = $query->paginate($perPage, ['*'], 'page', $page);
 

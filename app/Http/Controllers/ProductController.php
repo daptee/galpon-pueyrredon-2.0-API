@@ -19,15 +19,17 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         try {
-            // Obtener los parámetros de la solicitud
-            $perPage = $request->query('per_page', 30); // Cantidad de productos por página
-            $page = $request->query('page', 1); // Página actual
-            $status = $request->query('status'); // Filtrar por estado, si es necesario
-            $type = $request->query('type'); // Filtrar por estado, si es necesario
-            $line = $request->query('line'); // Filtrar por estado, si es necesario
-            $furniture = $request->query('furniture'); // Filtrar por estado, si es necesario
+            $perPage = $request->query('per_page', 30);
+            $page = $request->query('page', 1);
+            $status = $request->query('status');
+            $type = $request->query('type');
+            $line = $request->query('line');
+            $furniture = $request->query('furniture');
 
-            // Crear la consulta para obtener los productos
+            // Nuevos parámetros de ordenamiento
+            $sortBy = $request->query('sort_by');
+            $sortOrder = $request->query('sort_order', 'asc'); // asc o desc
+
             $query = Product::with([
                 'productLine',
                 'productType',
@@ -36,31 +38,39 @@ class ProductController extends Controller
                 'mainImage'
             ]);
 
-            // Aplicar el filtro de estado si es proporcionado
             if (!is_null($status)) {
                 $query->where('id_product_status', $status);
             }
-            ;
 
             if (!is_null($type)) {
                 $query->where('id_product_type', $type);
             }
-            ;
 
             if (!is_null($line)) {
                 $query->where('id_product_line', $line);
             }
-            ;
 
             if (!is_null($furniture)) {
                 $query->where('id_product_furniture', $furniture);
             }
-            ;
 
-            // Paginación de los productos
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('description', 'like', '%' . $search . '%');
+                });
+            }
+
+            // Aplicar orden si se proporciona sort_by
+            $allowedSortFields = ['name', 'price', 'volume', 'stock', 'places_cant', 'created_at', 'updated_at']; // lista segura de columnas
+            if ($sortBy && in_array($sortBy, $allowedSortFields)) {
+                $query->orderBy($sortBy, $sortOrder === 'desc' ? 'desc' : 'asc');
+            }
+
+
             $products = $query->paginate($perPage, ['*'], 'page', $page);
 
-            // Obtener los productos cargados y preparar los metadatos de la paginación
             $data = $products->items();
             $meta_data = [
                 'page' => $products->currentPage(),
@@ -69,14 +79,12 @@ class ProductController extends Controller
                 'last_page' => $products->lastPage(),
             ];
 
-            // Responder con los productos y los metadatos de la paginación
             return ApiResponse::paginate('Listado de productos obtenido correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Obtener todos los productos',
             ]);
         } catch (Exception $e) {
-            // En caso de error
             return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
                 'module' => 'product',

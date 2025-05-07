@@ -37,6 +37,11 @@ class BudgetController extends Controller
                 $query->whereDate('date_event', '>=', $request->input('start_date'));
             }
 
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where('id', 'like', '%' . $search . '%');
+            }
+
             $budgets = $query->paginate($perPage, ['*'], 'page', $page);
 
             $data = $budgets->items();

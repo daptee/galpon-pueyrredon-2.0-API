@@ -34,6 +34,11 @@ class ClientController extends Controller
                 $query->where('status', $request->input('status'));
             }
 
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where('name', 'like', '%' . $search . '%');
+            }
+
             // Aplicar paginación con los filtros
             $clients = $query->paginate($perPage, ['*'], 'page', $page);
 
@@ -282,13 +287,18 @@ class ClientController extends Controller
         try {
             // Filtrar por estado si se proporciona el parámetro `status`
             $status = $request->query('status');
-            $clientsTypesQuery = ClientsType::with('status');
+            $query = ClientsType::with('status');
 
             if ($status) {
-                $clientsTypesQuery->where('status', $status);
+                $query->where('status', $status);
             }
 
-            $clientsTypes = $clientsTypesQuery->get();
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where('name', 'like', '%' . $search . '%');
+            }
+
+            $clientsTypes = $query->get();
 
             return ApiResponse::create('Tipos de clientes traidos correctamente', 200, $clientsTypes, [
                 'request' => $request,
@@ -395,13 +405,18 @@ class ClientController extends Controller
         try {
             // Filtrar por estado si se proporciona el parámetro `status`
             $status = $request->query('status');
-            $clientsClassesQuery = ClientsClasses::with('status');
+            $query = ClientsClasses::with('status');
 
             if ($status) {
-                $clientsClassesQuery->where('status', $status);
+                $query->where('status', $status);
             }
 
-            $clientsClasses = $clientsClassesQuery->get();
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where('name', 'like', '%' . $search . '%');
+            }
+
+            $clientsClasses = $query->get();
 
             return ApiResponse::create('Clases de clientes traidas correctamente', 200, $clientsClasses, [
                 'request' => $request,
