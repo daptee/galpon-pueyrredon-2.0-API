@@ -89,7 +89,7 @@ class UserTypeController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'name' => 'nullable|string|unique:user_types,name|max:255',
+                'name' => 'nullable|string|max:255|unique:user_types,name,' . $id . ',id',
                 'permissions' => 'nullable',
                 'status' => 'nullable|in:1,2,3',
             ]);
