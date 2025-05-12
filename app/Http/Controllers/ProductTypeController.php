@@ -76,7 +76,7 @@ class ProductTypeController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|required|string|max:255',
-                'status' => 'sometimes|in:1,2,3',
+                'status' => 'nullable|in:1,2,3',
             ]);
 
             if ($validator->fails()) {
