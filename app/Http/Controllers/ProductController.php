@@ -481,16 +481,40 @@ class ProductController extends Controller
             }
 
             // Manejo de precios (editar, agregar, eliminar)
+            // Manejo de precios (editar, agregar, eliminar)
             if ($request->has('prices')) {
+                $existingPrices = ProductPrice::where('id_product', $product->id)->get()->keyBy('id');
+                $sentPriceIds = [];
+
                 foreach ($request->prices as $price) {
-                    ProductPrice::create([
-                        'id_product' => $product->id,
-                        'price' => $price['price'],
-                        'valid_date_from' => $price['valid_date_from'],
-                        'valid_date_to' => $price['valid_date_to'],
-                        'minimun_quantity' => $price['minimun_quantity'],
-                        'client_bonification' => $price['client_bonification'],
-                    ]);
+                    if (isset($price['id']) && $existingPrices->has($price['id'])) {
+                        // Editar precio existente
+                        $existingPrices[$price['id']]->update([
+                            'price' => $price['price'],
+                            'valid_date_from' => $price['valid_date_from'],
+                            'valid_date_to' => $price['valid_date_to'],
+                            'minimun_quantity' => $price['minimun_quantity'],
+                            'client_bonification' => $price['client_bonification'],
+                        ]);
+                        $sentPriceIds[] = $price['id'];
+                        $existingPrices->forget($price['id']);
+                    } else {
+                        // Crear nuevo precio
+                        $newPrice = ProductPrice::create([
+                            'id_product' => $product->id,
+                            'price' => $price['price'],
+                            'valid_date_from' => $price['valid_date_from'],
+                            'valid_date_to' => $price['valid_date_to'],
+                            'minimun_quantity' => $price['minimun_quantity'],
+                            'client_bonification' => $price['client_bonification'],
+                        ]);
+                        $sentPriceIds[] = $newPrice->id;
+                    }
+                }
+
+                // Eliminar precios que no se enviaron
+                foreach ($existingPrices as $remainingPrice) {
+                    $remainingPrice->delete();
                 }
             }
 
