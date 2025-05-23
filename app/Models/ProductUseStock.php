@@ -2,19 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class BudgetProducts extends Model
+class ProductUseStock extends Model
 {
-    protected $table = 'budget_products';
+    use HasFactory;
+
+    protected $table = 'products_use_stock';
 
     protected $fillable = [
         'id_budget',
         'id_product',
-        'quantity',
-        'price',
-        'has_stock',
-        'has_price',
+        'id_product_stock',
+        'date_from',
+        'date_to',
+        'quantity'
     ];
 
     public $timestamps = true;
