@@ -250,14 +250,15 @@ class BudgetController extends Controller
                         ProductUseStock::create([
                             'id_budget' => $budget->id,
                             'id_product' => $item->id_product,
-                            'id_product_stock' => $item->product->id_product_stock == null ? $item->id_product : $item->product->id_product_stock,
+                            'id_product_stock' => $item->product->product_stock == null ? $item->id_product : $item->product->product_stock,
                             'date_from' => $budget->date_event,
                             //sumar los dias al evento
                             'date_to' => \Carbon\Carbon::parse($budget->date_event)->addDays($budget->days),
                             'quantity' => $item->quantity
                         ]);
                     }
-                };
+                }
+                ;
             }
 
             return ApiResponse::create('Estado actualizado correctamente', 201, $budget, []);
@@ -282,58 +283,60 @@ class BudgetController extends Controller
             }
 
             // Lógica para verificar el stock
-            // esto se hace antes de crear el presupuesto, para evitar problemas de stock
-            $product = Product::with(['productStock'])
-                ->where('id', $request->id_product)
-                ->first();
+            $product = Product::with(['productStock'])->where('id', $request->id_product)->first();
             if (!$product) {
                 return ApiResponse::create('Producto no encontrado', 404, ['error' => 'Producto no encontrado en el presupuesto'], []);
             }
 
             $stock = 0;
-            $productUseStock = 0;
+            $quantity = $request->quantity;
+            $days = $request->days;
+            $dateFrom = \Carbon\Carbon::parse($request->date_from);
+            $dateTo = $dateFrom->copy()->addDays($days);
+            $availableStockPerDay = [];
+
             if (!$product->productStock) {
                 $stock = $product->stock;
-                $quantity = $request->quantity;
-                $days = $request->days;
-                $dateFrom = \Carbon\Carbon::parse($request->date_from);
-                $dateTo = \Carbon\Carbon::parse($request->date_from)->addDays($days);
-                $productUseStock = ProductUseStock::where('id_product', $request->id_product)
-                    ->where('date_from', '<=', $dateTo)
-                    ->where('date_to', '>=', $dateFrom)
-                    ->sum('quantity');
+                for ($i = 0; $i < $days; $i++) {
+                    $date = $dateFrom->copy()->addDays($i)->toDateString();
+                    $used = ProductUseStock::where('id_product', $product->id)
+                        ->where('date_from', '<=', $date)
+                        ->where('date_to', '>=', $date)
+                        ->sum('quantity');
+                    $availableStockPerDay[$date] = $stock - $used;
+                }
             } else {
                 $stock = $product->productStock->stock;
-                $quantity = $request->quantity;
-                $days = $request->days;
-                $dateFrom = \Carbon\Carbon::parse($request->date_from);
-                $dateTo = \Carbon\Carbon::parse($request->date_from)->addDays($days);
-                $productUseStock = ProductUseStock::where('id_product_stock', $product->productStock->stock)
-                    ->where('date_from', '<=', $dateTo)
-                    ->where('date_to', '>=', $dateFrom)
-                    ->sum('quantity');
-            };
+                for ($i = 0; $i < $days; $i++) {
+                    $date = $dateFrom->copy()->addDays($i)->toDateString();
+                    $used = ProductUseStock::where('id_product_stock', $product->productStock->id)
+                        ->where('date_from', '<=', $date)
+                        ->where('date_to', '>=', $date)
+                        ->sum('quantity');
+                    $availableStockPerDay[$date] = $stock - $used;
+                }
+            }
 
-            
-            $availableStock = $stock - $productUseStock;
-            // Verificar si el stock es suficiente
-            if ($availableStock < $quantity) {
+            // Validar si en algún día no hay suficiente stock
+            $hasInsufficientStock = collect($availableStockPerDay)->some(fn($available) => $available < $quantity);
+
+            if ($hasInsufficientStock) {
                 return ApiResponse::create('Stock insuficiente', 200, [
                     'error' => 'Stock insuficiente',
                     'stock' => false,
                     'product' => $product,
-                    'available_stock' => $availableStock,
+                    'available_stock' => $availableStockPerDay,
                     'requested_quantity' => $quantity
                 ], []);
-            } 
-            // Si el stock es suficiente, se puede continuar
+            }
 
             return ApiResponse::create('Stock verificado correctamente', 200, [
                 'stock' => true,
                 'product' => $product,
-                'available_stock' => $availableStock,
+                'available_stock' => $availableStockPerDay,
                 'requested_quantity' => $quantity,
             ], []);
+
         } catch (\Exception $e) {
             return ApiResponse::create('Error al verificar el stock', 500, ['error' => $e->getMessage()], []);
         }
