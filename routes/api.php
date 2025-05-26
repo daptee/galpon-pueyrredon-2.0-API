@@ -3,11 +3,14 @@
 use App\Http\Controllers\AudithController;
 use App\Http\Controllers\BudgetAudithController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\BudgetDeliveryDataController;
 use App\Http\Controllers\BudgetStatusController;
 use App\Http\Controllers\CacheController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\EventTypeController;
 use App\Http\Controllers\LocalityController;
 use App\Http\Controllers\PawnHourPriceController;
+use App\Http\Controllers\PaymentStatusController;
 use App\Http\Controllers\PlaceCollectionTypeController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlacesAreaController;
@@ -262,4 +265,34 @@ Route::group([
     'prefix' => 'budgets-audith'
 ], function () {
     Route::get('/{id}', [BudgetAudithController::class, 'index'])->middleware('admin');
+});
+
+// Event
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'event-type'
+], function () {
+    Route::get('/', [EventTypeController::class, 'index']);
+    Route::post('/', [EventTypeController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [EventTypeController::class, 'update'])->middleware('admin');
+});
+
+// Budget Delivery Data
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'budget-delivery-data'
+], function () {
+    Route::post('/', [BudgetDeliveryDataController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [BudgetDeliveryDataController::class, 'update'])->middleware('admin');
+});
+
+// Payment
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'payment-type'
+], function () {
+    Route::get('/', [PaymentStatusController::class, 'index']);
+    Route::post('/', [PaymentStatusController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PaymentStatusController::class, 'update'])->middleware('admin');
 });
