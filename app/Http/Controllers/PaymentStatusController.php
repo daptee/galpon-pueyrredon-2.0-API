@@ -3,119 +3,92 @@
 namespace App\Http\Controllers;
 
 use App\Http\Responses\ApiResponse;
-use App\Models\PaymentType;
 use Illuminate\Http\Request;
+use App\Models\PaymentStatus;
 use Validator;
-use Log;
 
 class PaymentStatusController extends Controller
 {
+    // GET ALL - Obtener todos los estados de pago (con buscador por name)
     public function index(Request $request)
     {
         try {
-            $query = PaymentType::query();
+            $query = PaymentStatus::query();
 
             if ($request->has('search')) {
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $paymentTypes = $query->get();
-            $paymentTypes->load('status');
+            $statuses = $query->get();
 
-            return ApiResponse::create('Tipos de pago traídos correctamente', 200, $paymentTypes, [
+            $statuses->load('status');
+
+            return ApiResponse::create('Estados de pago obtenidos correctamente', 200, $statuses, [
                 'request' => $request,
-                'module' => 'payment type',
-                'endpoint' => 'Traer tipos de pago',
+                'module' => 'payment status',
+                'endpoint' => 'Obtener estados de pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer los tipos de pago', 500, ['error' => $e->getMessage()], [
-                'request' => $request,
-                'module' => 'payment type',
-                'endpoint' => 'Traer tipos de pago',
-            ]);
+            return ApiResponse::create('Error al obtener los estados de pago', 500, ['error' => $e->getMessage()]);
         }
     }
 
+    // POST - Crear nuevo estado de pago
     public function store(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255|unique:payment_types,name',
-                'status' => 'nullable|in:1,2,3',
+                'name' => 'required|string|max:255|unique:payment_status,name',
+                'status' => 'nullable|in:1,2,3', // Opcional, si se maneja el estado
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
-                    'request' => $request,
-                    'module' => 'payment type',
-                    'endpoint' => 'Crear tipo de pago',
-                ]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
             }
 
-            $paymentType = PaymentType::create([
+            $status = PaymentStatus::create([
                 'name' => $request->name,
-                'status' => $request->status ?? 1,
+                'status' => $request->status ?? 1, // Asignar estado por defecto si no se proporciona
             ]);
 
-            $paymentType->load('status');
+            $status->load('status');
 
-            return ApiResponse::create('Tipo de pago creado correctamente', 201, $paymentType, [
-                'request' => $request,
-                'module' => 'payment type',
-                'endpoint' => 'Crear tipo de pago',
-            ]);
+            return ApiResponse::create('Estado de pago creado correctamente', 201, $status);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el tipo de pago', 500, ['error' => $e->getMessage()], [
-                'request' => $request,
-                'module' => 'payment type',
-                'endpoint' => 'Crear tipo de pago',
-            ]);
+            return ApiResponse::create('Error al crear estado de pago', 500, ['error' => $e->getMessage()]);
         }
     }
 
+    // PUT - Editar estado de pago
     public function update(Request $request, $id)
     {
         try {
-            $paymentType = PaymentType::find($id);
+            $status = PaymentStatus::find($id);
 
-            if (!$paymentType) {
-                return ApiResponse::create('Tipo de pago no encontrado', 404, ['error' => 'Tipo de pago no encontrado'], [
-                    'request' => $request,
-                    'module' => 'payment type',
-                    'endpoint' => 'Actualizar tipo de pago',
-                ]);
+            if (!$status) {
+                return ApiResponse::create('Estado de pago no encontrado', 404);
             }
 
             $validator = Validator::make($request->all(), [
-                'name' => 'sometimes|required|string|max:255|unique:payment_types,name,' . $id,
-                'status' => 'sometimes|in:1,2,3',
+                'name' => 'required|string|max:255|unique:payment_status,name,' . $id,
+                'status' => 'nullable|in:1,2,3', // Opcional, si se maneja el estado
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
-                    'request' => $request,
-                    'module' => 'payment type',
-                    'endpoint' => 'Actualizar tipo de pago',
-                ]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
             }
 
-            $paymentType->update($request->only(['name', 'status']));
+            $status->update([
+                'name' => $request->name,
+                'status' => $request->status ?? $status->status, // Mantener el estado actual si no se proporciona uno nuevo
+            ]);
 
-            $paymentType->load('status');
-            
-            return ApiResponse::create('Tipo de pago actualizado correctamente', 200, $paymentType, [
-                'request' => $request,
-                'module' => 'payment type',
-                'endpoint' => 'Actualizar tipo de pago',
-            ]);
+            $status->load('status');
+
+            return ApiResponse::create('Estado de pago actualizado correctamente', 200, $status);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el tipo de pago', 500, ['error' => $e->getMessage()], [
-                'request' => $request,
-                'module' => 'payment type',
-                'endpoint' => 'Actualizar tipo de pago',
-            ]);
+            return ApiResponse::create('Error al actualizar estado de pago', 500, ['error' => $e->getMessage()]);
         }
     }
-
 }

@@ -10,7 +10,10 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\EventTypeController;
 use App\Http\Controllers\LocalityController;
 use App\Http\Controllers\PawnHourPriceController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\PaymentStatusController;
+use App\Http\Controllers\PaymentTypeController;
 use App\Http\Controllers\PlaceCollectionTypeController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlacesAreaController;
@@ -292,7 +295,34 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'payment-type'
 ], function () {
+    Route::get('/', [PaymentTypeController::class, 'index']);
+    Route::post('/', [PaymentTypeController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PaymentTypeController::class, 'update'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'payment-method'
+], function () {
+    Route::get('/', [PaymentMethodController::class, 'index']);
+    Route::post('/', [PaymentMethodController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PaymentMethodController::class, 'update'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'payment-status'
+], function () {
     Route::get('/', [PaymentStatusController::class, 'index']);
     Route::post('/', [PaymentStatusController::class, 'store'])->middleware('admin');
     Route::put('/{id}', [PaymentStatusController::class, 'update'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'payment'
+], function () {
+    Route::get('/', [PaymentController::class, 'index'])->middleware('admin');
+    Route::post('/', [PaymentController::class, 'store'])->middleware('admin');
+    Route::put('/update-status/{id}', [PaymentController::class, 'updateStatus'])->middleware('admin');
 });
