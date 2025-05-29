@@ -62,6 +62,10 @@ CREATE TABLE budget_products (
     FOREIGN KEY (id_product) REFERENCES products(id) ON DELETE CASCADE
 );
 
+// añadir has_price a budget_products
+ALTER TABLE budget_products
+ADD has_price BOOLEAN DEFAULT TRUE;
+
 CREATE TABLE products_use_stock (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_budget INT NOT NULL,

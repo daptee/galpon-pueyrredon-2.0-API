@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Budget;
 use App\Models\BudgetProducts;
+use App\Models\Product;
+use App\Models\ProductUseStock;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Log;
 
 class BudgetController extends Controller
 {
@@ -120,6 +123,7 @@ class BudgetController extends Controller
                 'product.*.quantity' => 'required|integer|min:1',
                 'product.*.price' => 'required|numeric',
                 'product.*.has_stock' => 'required|boolean',
+                'product.*.has_price' => 'required|boolean',
             ]);
 
             if ($validator->fails()) {
@@ -145,6 +149,7 @@ class BudgetController extends Controller
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
                     'has_stock' => $item['has_stock'],
+                    'has_price' => $item['has_price'],
                 ]);
             }
 
@@ -235,12 +240,150 @@ class BudgetController extends Controller
             $budget->save();
 
             $budget->load([
-                'budgetStatus'
+                'budgetStatus',
+                'budgetProducts.product'
             ]);
+
+            if ($request->id_budget_status == 3) {
+                foreach ($budget->budgetProducts as $item) {
+                    if ($item->has_stock) {
+                        ProductUseStock::create([
+                            'id_budget' => $budget->id,
+                            'id_product' => $item->id_product,
+                            'id_product_stock' => $item->product->product_stock == null ? $item->id_product : $item->product->product_stock,
+                            'date_from' => $budget->date_event,
+                            //sumar los dias al evento
+                            'date_to' => \Carbon\Carbon::parse($budget->date_event)->addDays($budget->days),
+                            'quantity' => $item->quantity
+                        ]);
+                    }
+                }
+                ;
+            }
 
             return ApiResponse::create('Estado actualizado correctamente', 201, $budget, []);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al actualizar el estado', 500, ['error' => $e->getMessage()], []);
+        }
+    }
+
+    // Se necesita hacer un endpoint que reciba id_product, cantidad, fecha y cantidad de dias. Verificar en una tabla de control de stock usado, si ese producto, para alguno de los dias y la cantidad, NO tiene stock. En tal caso retornar indicando.
+    public function checkStock(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'id_product' => 'required|integer|exists:products,id',
+                'quantity' => 'required|integer|min:1',
+                'date_from' => 'required|date',
+                'days' => 'required|integer|min:1'
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], []);
+            }
+
+            // Lógica para verificar el stock
+            $product = Product::with(['productStock'])->where('id', $request->id_product)->first();
+            if (!$product) {
+                return ApiResponse::create('Producto no encontrado', 404, ['error' => 'Producto no encontrado en el presupuesto'], []);
+            }
+
+            $stock = 0;
+            $quantity = $request->quantity;
+            $days = $request->days;
+            $dateFrom = \Carbon\Carbon::parse($request->date_from);
+            $dateTo = $dateFrom->copy()->addDays($days);
+            $availableStockPerDay = [];
+
+            if (!$product->productStock) {
+                $stock = $product->stock;
+                for ($i = 0; $i < $days; $i++) {
+                    $date = $dateFrom->copy()->addDays($i)->toDateString();
+                    $used = ProductUseStock::where('id_product', $product->id)
+                        ->where('date_from', '<=', $date)
+                        ->where('date_to', '>=', $date)
+                        ->sum('quantity');
+                    $availableStockPerDay[$date] = $stock - $used;
+                }
+            } else {
+                $stock = $product->productStock->stock;
+                for ($i = 0; $i < $days; $i++) {
+                    $date = $dateFrom->copy()->addDays($i)->toDateString();
+                    $used = ProductUseStock::where('id_product_stock', $product->productStock->id)
+                        ->where('date_from', '<=', $date)
+                        ->where('date_to', '>=', $date)
+                        ->sum('quantity');
+                    $availableStockPerDay[$date] = $stock - $used;
+                }
+            }
+
+            // Validar si en algún día no hay suficiente stock
+            $hasInsufficientStock = collect($availableStockPerDay)->some(fn($available) => $available < $quantity);
+
+            if ($hasInsufficientStock) {
+                return ApiResponse::create('Stock insuficiente', 200, [
+                    'error' => 'Stock insuficiente',
+                    'stock' => false,
+                    'product' => $product,
+                    'available_stock' => $availableStockPerDay,
+                    'requested_quantity' => $quantity
+                ], []);
+            }
+
+            return ApiResponse::create('Stock verificado correctamente', 200, [
+                'stock' => true,
+                'product' => $product,
+                'available_stock' => $availableStockPerDay,
+                'requested_quantity' => $quantity,
+            ], []);
+
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al verificar el stock', 500, ['error' => $e->getMessage()], []);
+        }
+    }
+
+    // Se necesita hacer un endpoint que reciba id_product y fecha. Verificar en la tabla de historial de precios de productos, si ese producto tiene un precio cargado para ese dia.
+    public function checkPrice(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'id_product' => 'required|integer|exists:products,id',
+                'date' => 'required|date'
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], []);
+            }
+
+            // Lógica para verificar el precio
+            $product = Product::with(['prices'])
+                ->where('id', $request->id_product)
+                ->first();
+            if (!$product) {
+                return ApiResponse::create('Producto no encontrado', 404, ['error' => 'Producto no encontrado en el presupuesto'], []);
+            }
+            $price = $product->prices()
+                ->where('valid_date_from', '<=', $request->date)
+                ->where('valid_date_to', '>=', $request->date)
+                ->first();
+
+            if (!$price) {
+                return ApiResponse::create('Precio no disponible', 200, [
+                    'error' => 'Precio no disponible',
+                    'has_price' => false,
+                    'product' => $product,
+                    'price' => $price
+                ], []);
+            }
+
+            return ApiResponse::create('Precio verificado correctamente', 200, [
+                'error' => 'Precio disponible',
+                'has_price' => true,
+                'product' => $product,
+                'price' => $price
+            ], []);
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al verificar el precio', 500, ['error' => $e->getMessage()], []);
         }
     }
 

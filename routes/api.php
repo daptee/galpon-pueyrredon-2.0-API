@@ -253,6 +253,8 @@ Route::group([
     Route::put('/observations/{id}', [BudgetController::class, 'updateObservations'])->middleware('admin');
     Route::put('/status/{id}', [BudgetController::class, 'updateStatus'])->middleware('admin');
     Route::put('/contact/{id}', [BudgetController::class, 'updateContact'])->middleware('admin');
+    Route::post('/check-stock', [BudgetController::class, 'checkStock'])->middleware('admin');
+    Route::post('/check-price', [BudgetController::class, 'checkPrice'])->middleware('admin');
 });
 
 Route::group([
