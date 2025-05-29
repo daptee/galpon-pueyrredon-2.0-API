@@ -7,6 +7,7 @@ use App\Http\Controllers\BudgetDeliveryDataController;
 use App\Http\Controllers\BudgetStatusController;
 use App\Http\Controllers\CacheController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventTypeController;
 use App\Http\Controllers\LocalityController;
 use App\Http\Controllers\PawnHourPriceController;
@@ -274,6 +275,15 @@ Route::group([
 
 Route::group([
     'middleware' => 'api',
+    'prefix' => 'event'
+], function () {
+    Route::get('/', [EventController::class, 'index'])->middleware('admin');
+    Route::get('/{id}', [EventController::class, 'show'])->middleware('admin');
+});
+
+// Event Type
+Route::group([
+    'middleware' => 'api',
     'prefix' => 'event-type'
 ], function () {
     Route::get('/', [EventTypeController::class, 'index']);
@@ -326,3 +336,4 @@ Route::group([
     Route::post('/', [PaymentController::class, 'store'])->middleware('admin');
     Route::put('/update-status/{id}', [PaymentController::class, 'updateStatus'])->middleware('admin');
 });
+

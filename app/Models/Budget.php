@@ -63,4 +63,14 @@ class Budget extends Model
     {
         return $this->hasMany(BudgetProducts::class, 'id_budget');
     }
+
+    public function budgetDeliveryData()
+    {
+        return $this->hasOne(BudgetDeliveryData::class, 'id_budget');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'id_budget');
+    }
 }
