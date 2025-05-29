@@ -32,6 +32,7 @@ CREATE TABLE budgets (
     version_number INT,
     id_budget_status INT,
     products_has_prices BOOLEAN,
+    products_has_stock BOOLEAN,
     observations TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

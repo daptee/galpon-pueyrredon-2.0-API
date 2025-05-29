@@ -115,6 +115,7 @@ class BudgetController extends Controller
                 'total' => 'required|numeric',
                 'version_number' => 'required|integer',
                 'id_budget_status' => 'required|exists:budget_status,id',
+                'products_has_stock' => 'required|boolean',
                 'products_has_prices' => 'required|boolean',
                 'id_budget' => 'nullable|integer|exists:budgets,id',
                 'observations' => 'nullable|string',

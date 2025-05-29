@@ -28,6 +28,7 @@ class Budget extends Model
         'total',
         'version_number',
         'id_budget_status',
+        'products_has_stock',
         'products_has_prices',
         'observations'
     ];
