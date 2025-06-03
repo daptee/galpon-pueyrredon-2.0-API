@@ -4,6 +4,7 @@ use App\Http\Controllers\AudithController;
 use App\Http\Controllers\BudgetAudithController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\BudgetStatusController;
+use App\Http\Controllers\BulkPriceUpdateController;
 use App\Http\Controllers\CacheController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\LocalityController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductFurnitureController;
 use App\Http\Controllers\ProductLineController;
+use App\Http\Controllers\ProductPriceController;
 use App\Http\Controllers\ProductProductsController;
 use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\ProvinceController;
@@ -262,4 +264,23 @@ Route::group([
     'prefix' => 'budgets-audith'
 ], function () {
     Route::get('/{id}', [BudgetAudithController::class, 'index'])->middleware('admin');
+});
+
+// bulk-price-updates
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'bulk-price-updates'
+], function () {
+    Route::post('/', [BulkPriceUpdateController::class, 'store'])->middleware('admin');
+    Route::delete('/{id}', [BulkPriceUpdateController::class, 'destroy'])->middleware('admin');
+});
+
+// product-prices
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'product-prices'
+], function () {
+    Route::get('/by-date', [ProductPriceController::class, 'getPricesByDate'])->middleware('admin');
+    Route::get('/export-prices-by-date', [ProductPriceController::class, 'exportPricesByDate'])->middleware('admin');
 });

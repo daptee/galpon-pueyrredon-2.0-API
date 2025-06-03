@@ -18,6 +18,7 @@ class ProductPrice extends Model
         'valid_date_to',
         'minimun_quantity',
         'client_bonification',
+        'id_bulk_update',
     ];
 
     protected $casts = [
