@@ -239,7 +239,7 @@ class BudgetController extends Controller
                 'id_budget' => $budget->id,
                 'action' => 'update_observations',
                 'new_budget_status' => $budget->id_budget_status,
-                'observations' => $request->observations,
+                'observations' => $budget->observations,
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
@@ -298,7 +298,10 @@ class BudgetController extends Controller
                 'id_budget' => $budget->id,
                 'action' => 'update_status',
                 'new_budget_status' => $budget->id_budget_status,
-                'observations' => $budget->observations ?? null,
+                'observations' => json_encode([
+                    'id_budget_status' => $budget->id_budget_status,
+                    'status_name' => $budget->budgetStatus->name
+                ]),
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
@@ -456,7 +459,10 @@ class BudgetController extends Controller
                 'id_budget' => $budget->id,
                 'action' => 'update_contact',
                 'new_budget_status' => $budget->id_budget_status,
-                'observations' => $request->observations ?? null,
+                'observations' => json_encode([
+                    'client_mail' => $budget->client_mail,
+                    'client_phone' => $budget->client_phone
+                ]),
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
@@ -490,6 +496,18 @@ class BudgetController extends Controller
 
             // Guardar el PDF
             $pdf->save(public_path("storage/budgets/budget-{$budget->id}.pdf"));
+
+            // agregar auditoría
+
+            BudgetAudith::create([
+                'id_budget' => $budget->id,
+                'action' => 'generate_pdf',
+                'new_budget_status' => $budget->id_budget_status,
+                'observations' => 'PDF generado correctamente',
+                'user' => auth()->user()->id,
+                'date' => now()->toDateString(),
+                'time' => now()->toTimeString()
+            ]);
 
             return ApiResponse::create('PDF regenerado correctamente', 200, [
                 'pdf_path' => "storage/budgets/budget-{$budget->id}.pdf"
@@ -535,6 +553,17 @@ class BudgetController extends Controller
             foreach ($request->mails as $email) {
                 \Mail::to($email)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
             }
+
+            // agregar auditoría
+            BudgetAudith::create([
+                'id_budget' => $budget->id,
+                'action' => 'send_mails',
+                'new_budget_status' => $budget->id_budget_status,
+                'observations' => json_encode($request->mails),
+                'user' => auth()->user()->id,
+                'date' => now()->toDateString(),
+                'time' => now()->toTimeString()
+            ]);
 
             return ApiResponse::create('Mails enviados correctamente', 200, [
                 'message' => 'Mails enviados correctamente',
