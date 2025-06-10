@@ -262,6 +262,7 @@ Route::group([
     Route::put('/contact/{id}', [BudgetController::class, 'updateContact'])->middleware('admin');
     Route::post('/check-stock', [BudgetController::class, 'checkStock'])->middleware('admin');
     Route::post('/check-price', [BudgetController::class, 'checkPrice'])->middleware('admin');
+    Route::post('/sendMails/{id}', [BudgetController::class, 'sendMails'])->middleware('admin');
 });
 
 Route::group([

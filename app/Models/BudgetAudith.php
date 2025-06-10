@@ -24,4 +24,15 @@ class BudgetAudith extends Model
     {
         return $this->belongsTo(Budget::class, 'id_budget');
     }
+
+    public function parent()
+    {
+        return $this->belongsTo(Budget::class, 'id_budget');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Budget::class, 'id_budget');
+    }
+
 }
