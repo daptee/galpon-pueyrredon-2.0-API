@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Budget;
+use App\Models\BudgetAudith;
 use App\Models\BudgetProducts;
 use App\Models\Product;
 use App\Models\ProductUseStock;
@@ -21,9 +22,11 @@ class BudgetController extends Controller
             $perPage = $request->query('per_page', 10);
             $page = $request->query('page', 1);
 
-            $query = Budget::with(['client', 'place', 'budgetStatus']);
+            // Query solo para presupuestos padres (id_budget == null)
+            $query = Budget::with(['client', 'place', 'budgetStatus', 'budgets'])
+                ->whereNull('id_budget');
 
-            // Filtros dinámicos
+            // Filtros
             if ($request->has('place')) {
                 $query->where('id_place', $request->input('place'));
             }
@@ -33,11 +36,15 @@ class BudgetController extends Controller
             if ($request->has('client')) {
                 $query->where('id_client', $request->input('client'));
             }
+
+            // Filtro por defecto de fecha
+            $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
+            $endDate = now()->toDateString();
+
+            $query->whereBetween('date_event', [$startDate, $endDate]);
+
             if ($request->has('event_date')) {
                 $query->whereDate('date_event', $request->input('event_date'));
-            }
-            if ($request->has('start_date')) {
-                $query->whereDate('date_event', '>=', $request->input('start_date'));
             }
 
             if ($request->has('search')) {
@@ -45,6 +52,7 @@ class BudgetController extends Controller
                 $query->where('id', 'like', '%' . $search . '%');
             }
 
+            // Paginar solo padres con sus hijos anidados
             $budgets = $query->paginate($perPage, ['*'], 'page', $page);
 
             $data = $budgets->items();
@@ -58,13 +66,13 @@ class BudgetController extends Controller
             return ApiResponse::paginate('Presupuestos obtenidos correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'budget',
-                'endpoint' => 'Obtener todos los presupuestos',
+                'endpoint' => 'Obtener todos los presupuestos agrupados',
             ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al obtener los presupuestos', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
                 'module' => 'budget',
-                'endpoint' => 'Obtener todos los presupuestos',
+                'endpoint' => 'Obtener todos los presupuestos agrupados',
             ]);
         }
     }
@@ -178,7 +186,20 @@ class BudgetController extends Controller
 
             $pdf->save(public_path("storage/budgets/budget-{$budget->id}.pdf"));
 
-            // generar PDF y enviar email
+            $pdfPath = public_path("storage/budgets/budget-{$budget->id}.pdf");
+
+            \Mail::to($budget->client_mail)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+
+            // agregar auditoría
+            BudgetAudith::create([
+                'id_budget' => $budget->id,
+                'action' => 'create',
+                'new_budget_status' => $budget->id_budget_status,
+                'observations' => $data['observations'] ?? null,
+                'user' => auth()->user()->id,
+                'date' => now()->toDateString(),
+                'time' => now()->toTimeString()
+            ]);
 
             return ApiResponse::create('Presupuesto creado correctamente', 201, $budget, [
                 'request' => $request,
@@ -193,7 +214,6 @@ class BudgetController extends Controller
             ]);
         }
     }
-
     public function updateObservations(Request $request, $id)
     {
         try {
@@ -213,6 +233,17 @@ class BudgetController extends Controller
 
             $budget->observations = $request->observations;
             $budget->save();
+
+            // agregar auditoría
+            BudgetAudith::create([
+                'id_budget' => $budget->id,
+                'action' => 'update_observations',
+                'new_budget_status' => $budget->id_budget_status,
+                'observations' => $request->observations,
+                'user' => auth()->user()->id,
+                'date' => now()->toDateString(),
+                'time' => now()->toTimeString()
+            ]);
 
             return ApiResponse::create('Observaciones actualizadas correctamente', 201, $budget, []);
         } catch (\Exception $e) {
@@ -262,13 +293,22 @@ class BudgetController extends Controller
                 ;
             }
 
+            // agregar auditoría
+            BudgetAudith::create([
+                'id_budget' => $budget->id,
+                'action' => 'update_status',
+                'new_budget_status' => $budget->id_budget_status,
+                'observations' => $budget->observations ?? null,
+                'user' => auth()->user()->id,
+                'date' => now()->toDateString(),
+                'time' => now()->toTimeString()
+            ]);
+
             return ApiResponse::create('Estado actualizado correctamente', 201, $budget, []);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al actualizar el estado', 500, ['error' => $e->getMessage()], []);
         }
     }
-
-    // Se necesita hacer un endpoint que reciba id_product, cantidad, fecha y cantidad de dias. Verificar en una tabla de control de stock usado, si ese producto, para alguno de los dias y la cantidad, NO tiene stock. En tal caso retornar indicando.
     public function checkStock(Request $request)
     {
         try {
@@ -342,8 +382,6 @@ class BudgetController extends Controller
             return ApiResponse::create('Error al verificar el stock', 500, ['error' => $e->getMessage()], []);
         }
     }
-
-    // Se necesita hacer un endpoint que reciba id_product y fecha. Verificar en la tabla de historial de precios de productos, si ese producto tiene un precio cargado para ese dia.
     public function checkPrice(Request $request)
     {
         try {
@@ -387,7 +425,6 @@ class BudgetController extends Controller
             return ApiResponse::create('Error al verificar el precio', 500, ['error' => $e->getMessage()], []);
         }
     }
-
     public function updateContact(Request $request, $id)
     {
         try {
@@ -412,6 +449,17 @@ class BudgetController extends Controller
 
             $budget->load([
                 'client'
+            ]);
+
+            // agregar auditoría
+            BudgetAudith::create([
+                'id_budget' => $budget->id,
+                'action' => 'update_contact',
+                'new_budget_status' => $budget->id_budget_status,
+                'observations' => $request->observations ?? null,
+                'user' => auth()->user()->id,
+                'date' => now()->toDateString(),
+                'time' => now()->toTimeString()
             ]);
 
             return ApiResponse::create('Contacto actualizado correctamente', 201, $budget, []);
@@ -458,15 +506,50 @@ class BudgetController extends Controller
         }
     }
 
-
-    public function resendEmail($id)
+    public function sendMails(Request $request, $id)
     {
         try {
-            // TODO: lógica para reenviar email
 
-            return ApiResponse::create('Email reenviado correctamente', 200, [], []);
+            $validator = Validator::make($request->all(), [
+                'mails' => 'required|array|min:1',
+                'mails.*' => 'required|email',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], []);
+            }
+
+            $budget = Budget::with(['client'])->findOrFail($id);
+
+            if (!$budget) {
+                return ApiResponse::create('Presupuesto no encontrado', 404, ['error' => 'Presupuesto no encontrado'], []);
+            }
+
+            $pdfPath = public_path("storage/budgets/budget-{$budget->id}.pdf");
+
+            if (!file_exists($pdfPath)) {
+                return ApiResponse::create('PDF no encontrado', 404, ['error' => 'PDF no encontrado'], []);
+            }
+
+            // Enviar el email a cada dirección proporcionada
+            foreach ($request->mails as $email) {
+                \Mail::to($email)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+            }
+
+            return ApiResponse::create('Mails enviados correctamente', 200, [
+                'message' => 'Mails enviados correctamente',
+                'budget_id' => $budget->id,
+                'mails' => $request->mails
+            ], [
+                'module' => 'budget',
+                'endpoint' => 'Enviar mails',
+            ]);
+
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al reenviar el email', 500, ['error' => $e->getMessage()], []);
+            return ApiResponse::create('Error al enviar los mails', 500, ['error' => $e->getMessage()], [
+                'module' => 'budget',
+                'endpoint' => 'Enviar mails',
+            ]);
         }
     }
 

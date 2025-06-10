@@ -74,4 +74,20 @@ class Budget extends Model
     {
         return $this->hasMany(Payment::class, 'id_budget');
     }
+
+    public function parent()
+    {
+        return $this->belongsTo(Budget::class, 'id_budget');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Budget::class, 'id_budget');
+    }
+
+    public function budgets()
+    {
+        return $this->children()->with(['client', 'place', 'budgetStatus', 'budgets']);
+    }
+
 }
