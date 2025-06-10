@@ -3,12 +3,19 @@
 use App\Http\Controllers\AudithController;
 use App\Http\Controllers\BudgetAudithController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\BudgetDeliveryDataController;
 use App\Http\Controllers\BudgetStatusController;
 use App\Http\Controllers\BulkPriceUpdateController;
 use App\Http\Controllers\CacheController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventTypeController;
 use App\Http\Controllers\LocalityController;
 use App\Http\Controllers\PawnHourPriceController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\PaymentStatusController;
+use App\Http\Controllers\PaymentTypeController;
 use App\Http\Controllers\PlaceCollectionTypeController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlacesAreaController;
@@ -267,7 +274,6 @@ Route::group([
 });
 
 // bulk-price-updates
-
 Route::group([
     'middleware' => 'api',
     'prefix' => 'bulk-price-updates'
@@ -283,4 +289,69 @@ Route::group([
 ], function () {
     Route::get('/by-date', [ProductPriceController::class, 'getPricesByDate'])->middleware('admin');
     Route::get('/export-prices-by-date', [ProductPriceController::class, 'exportPricesByDate'])->middleware('admin');
+});
+
+// Event
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'event'
+], function () {
+    Route::get('/', [EventController::class, 'index'])->middleware('admin');
+    Route::get('/{id}', [EventController::class, 'show'])->middleware('admin');
+});
+
+// Event Type
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'event-type'
+], function () {
+    Route::get('/', [EventTypeController::class, 'index']);
+    Route::post('/', [EventTypeController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [EventTypeController::class, 'update'])->middleware('admin');
+});
+
+// Budget Delivery Data
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'budget-delivery-data'
+], function () {
+    Route::post('/', [BudgetDeliveryDataController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [BudgetDeliveryDataController::class, 'update'])->middleware('admin');
+});
+
+// Payment
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'payment-type'
+], function () {
+    Route::get('/', [PaymentTypeController::class, 'index']);
+    Route::post('/', [PaymentTypeController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PaymentTypeController::class, 'update'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'payment-method'
+], function () {
+    Route::get('/', [PaymentMethodController::class, 'index']);
+    Route::post('/', [PaymentMethodController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PaymentMethodController::class, 'update'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'payment-status'
+], function () {
+    Route::get('/', [PaymentStatusController::class, 'index']);
+    Route::post('/', [PaymentStatusController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [PaymentStatusController::class, 'update'])->middleware('admin');
+});
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'payment'
+], function () {
+    Route::get('/', [PaymentController::class, 'index'])->middleware('admin');
+    Route::post('/', [PaymentController::class, 'store'])->middleware('admin');
+    Route::put('/update-status/{id}', [PaymentController::class, 'updateStatus'])->middleware('admin');
 });
