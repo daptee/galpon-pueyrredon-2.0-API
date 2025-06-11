@@ -220,14 +220,15 @@ class BudgetController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'observations' => 'required|string'
+                'observations' => 'nullable|string|max:255',
             ]);
 
             if ($validator->fails()) {
                 return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], []);
             }
 
-            $budget->observations = $request->observations;
+            // si no se envían observaciones, se pone en null
+            $budget->observations = $request->observations ?? null;
             $budget->save();
 
             // agregar auditoría
