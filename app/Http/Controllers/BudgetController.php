@@ -36,15 +36,11 @@ class BudgetController extends Controller
             if ($request->has('client')) {
                 $query->where('id_client', $request->input('client'));
             }
-
-            // Filtro por defecto de fecha
-            $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
-            $endDate = now()->toDateString();
-
-            $query->whereBetween('date_event', [$startDate, $endDate]);
-
             if ($request->has('event_date')) {
                 $query->whereDate('date_event', $request->input('event_date'));
+            }
+            if ($request->has('start_date')) {
+                $query->whereDate('date_event', '>=', $request->input('start_date'));
             }
 
             if ($request->has('search')) {
