@@ -142,6 +142,32 @@ class BudgetController extends Controller
             $data = $request->all();
 
             if (!empty($data['id_budget'])) {
+                $parentBudget = Budget::find($data['id_budget']);
+                if (!$parentBudget) {
+                    return ApiResponse::create('Presupuesto padre no encontrado', 404, ['error' => 'Presupuesto padre no encontrado'], [
+                        'request' => $request,
+                        'module' => 'budget',
+                        'endpoint' => 'Crear presupuesto',
+                    ]);
+                }
+                $parentBudget->id_budget_status = 5;
+                $parentBudget->save();
+
+                BudgetAudith::create([
+                    'id_budget' => $parentBudget->id,
+                    'action' => 'update_status',
+                    'new_budget_status' => $parentBudget->id_budget_status,
+                    'observations' => json_encode([
+                        'id_budget_status' => $parentBudget->id_budget_status,
+                        'status_name' => $parentBudget->budgetStatus->name
+                    ]),
+                    'user' => auth()->user()->id,
+                    'date' => now()->toDateString(),
+                    'time' => now()->toTimeString()
+                ]);
+
+                $data['id_budget_status'] = 3;
+
                 $data['id_budget_parent'] = $data['id_budget'];
             }
 

@@ -30,6 +30,10 @@ class BudgetAudithController extends Controller
                 ->orderByRaw("FIELD(id_budget, " . $allIds->implode(',') . ")")
                 ->get();
 
+            $audiths->load(['user' => function ($query) {
+                $query->select('id', 'user', 'name', 'lastname', 'email'); // asegurate de incluir 'id' si hay relación
+            }]);
+
             return ApiResponse::create('Auditoría del presupuesto obtenida correctamente', 200, $audiths, []);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al obtener la auditoría del presupuesto', 500, ['error' => $e->getMessage()], []);

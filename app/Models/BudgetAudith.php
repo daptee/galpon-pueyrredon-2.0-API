@@ -25,6 +25,11 @@ class BudgetAudith extends Model
         return $this->belongsTo(Budget::class, 'id_budget');
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user');
+    }
+
     public function parent()
     {
         return $this->belongsTo(Budget::class, 'id_budget');
