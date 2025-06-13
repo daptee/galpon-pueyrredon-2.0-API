@@ -22,47 +22,68 @@ class BudgetController extends Controller
             $perPage = $request->query('per_page', 10);
             $page = $request->query('page', 1);
 
-            // Query solo para presupuestos padres (id_budget == null)
-            $query = Budget::with(['client', 'place', 'budgetStatus', 'budgets'])
-                ->whereNull('id_budget');
+            // 1. Obtener todos los presupuestos con relaciones
+            $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->get();
 
-            // Filtros
-            if ($request->has('place')) {
-                $query->where('id_place', $request->input('place'));
-            }
-            if ($request->has('status')) {
-                $query->where('id_budget_status', $request->input('status'));
-            }
-            if ($request->has('client')) {
-                $query->where('id_client', $request->input('client'));
-            }
-            if ($request->has('event_date')) {
-                $query->whereDate('date_event', $request->input('event_date'));
-            }
-            if ($request->has('start_date')) {
-                $query->whereDate('date_event', '>=', $request->input('start_date'));
+            // 2. Aplicar filtros manualmente
+            $filtered = $allBudgets->filter(function ($budget) use ($request) {
+                if ($request->has('place') && $budget->id_place != $request->input('place'))
+                    return false;
+                if ($request->has('status') && $budget->id_budget_status != $request->input('status'))
+                    return false;
+                if ($request->has('client') && $budget->id_client != $request->input('client'))
+                    return false;
+                if ($request->has('event_date') && $budget->date_event != $request->input('event_date'))
+                    return false;
+                if ($request->has('start_date') && $budget->date_event < $request->input('start_date'))
+                    return false;
+                if ($request->has('search')) {
+                    $search = $request->input('search');
+                    if (!str_contains((string) $budget->id, $search))
+                        return false;
+                }
+                return true;
+            });
+
+            // 3. Transformar a array para manipular sin duplicar referencias
+            $filteredArray = json_decode(json_encode($filtered), true);
+
+            // 4. Indexar por ID
+            $byId = [];
+            foreach ($filteredArray as $budget) {
+                $budget['budgets'] = []; // inicializar hijos
+                $byId[$budget['id']] = $budget;
             }
 
-            if ($request->has('search')) {
-                $search = $request->input('search');
-                $query->where('id', 'like', '%' . $search . '%');
+            // 5. Construir árbol
+            $tree = [];
+            foreach ($byId as $budget) {
+                if ($budget['id_budget'] && isset($byId[$budget['id_budget']])) {
+                    $byId[$budget['id_budget']]['budgets'][] = &$byId[$budget['id']];
+                } else {
+                    $tree[] = &$byId[$budget['id']];
+                }
             }
 
-            // Paginar solo padres con sus hijos anidados
-            $budgets = $query->paginate($perPage, ['*'], 'page', $page);
+            // 6. Paginación de nodos raíz
+            $total = count($tree);
+            $paged = array_slice($tree, ($page - 1) * $perPage, $perPage);
 
-            $data = $budgets->items();
             $meta_data = [
-                'page' => $budgets->currentPage(),
-                'per_page' => $budgets->perPage(),
-                'total' => $budgets->total(),
-                'last_page' => $budgets->lastPage(),
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => ceil($total / $perPage),
             ];
 
-            return ApiResponse::paginate('Presupuestos obtenidos correctamente', 200, $data, $meta_data, [
+            return ApiResponse::paginate('Presupuestos obtenidos correctamente', 200, $paged, $meta_data, [
                 'request' => $request,
                 'module' => 'budget',
                 'endpoint' => 'Obtener todos los presupuestos agrupados',
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al obtener presupuestos', 500, [
+                'error' => $e->getMessage()
             ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al obtener los presupuestos', 500, ['error' => $e->getMessage()], [
@@ -71,6 +92,7 @@ class BudgetController extends Controller
                 'endpoint' => 'Obtener todos los presupuestos agrupados',
             ]);
         }
+
     }
 
     public function show($id)
@@ -158,9 +180,9 @@ class BudgetController extends Controller
                     'action' => 'update_status',
                     'new_budget_status' => $parentBudget->id_budget_status,
                     'observations' => json_encode([
-                        'id_budget_status' => $parentBudget->id_budget_status,
-                        'status_name' => $parentBudget->budgetStatus->name
-                    ]),
+                                'id_budget_status' => $parentBudget->id_budget_status,
+                                'status_name' => $parentBudget->budgetStatus->name
+                            ]),
                     'user' => auth()->user()->id,
                     'date' => now()->toDateString(),
                     'time' => now()->toTimeString()
@@ -322,9 +344,9 @@ class BudgetController extends Controller
                 'action' => 'update_status',
                 'new_budget_status' => $budget->id_budget_status,
                 'observations' => json_encode([
-                    'id_budget_status' => $budget->id_budget_status,
-                    'status_name' => $budget->budgetStatus->name
-                ]),
+                            'id_budget_status' => $budget->id_budget_status,
+                            'status_name' => $budget->budgetStatus->name
+                        ]),
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
@@ -483,9 +505,9 @@ class BudgetController extends Controller
                 'action' => 'update_contact',
                 'new_budget_status' => $budget->id_budget_status,
                 'observations' => json_encode([
-                    'client_mail' => $budget->client_mail,
-                    'client_phone' => $budget->client_phone
-                ]),
+                            'client_mail' => $budget->client_mail,
+                            'client_phone' => $budget->client_phone
+                        ]),
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
