@@ -44,6 +44,9 @@ CREATE TABLE clients (
     FOREIGN KEY (id_client_class) REFERENCES clients_classes(id) ON DELETE CASCADE
 );
 
+// agregar company a clients
+ALTER TABLE clients ADD COLUMN company VARCHAR(100) DEFAULT NULL;
+
 -- Crear tabla "clients_contacts"
 CREATE TABLE clients_contacts (
     id INT AUTO_INCREMENT PRIMARY KEY,

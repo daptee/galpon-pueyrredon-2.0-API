@@ -20,13 +20,13 @@ class BudgetsExport implements FromCollection, WithHeadings, WithColumnWidths
     {
         return collect($this->budgets)->map(function ($budget) {
             return [
-                $budget['client']['name'] . ' ' . $budget['client']['lastname'],
+                $budget['client']['company'] ?? $budget['client']['name'] . ' ' . $budget['client']['lastname'],
                 $budget['place']['name'],
                 $budget['date_event'],
                 $budget['days'],
+                $budget['quoted_days'],
                 $budget['total_price_products'],
                 $budget['total'],
-                $budget['quoted_days'],
                 $budget['transportation_cost_edited'] ?? $budget['transportation_cost'],
                 $this->getTotalPagado($budget['payments']),
                 $budget['iva'],
@@ -44,9 +44,9 @@ class BudgetsExport implements FromCollection, WithHeadings, WithColumnWidths
             'Lugar',
             'Fecha',
             'Cantidad de Jornadas',
+            'Jornadas cobradas',
             'Monto mobiliario ($)',
             'Total ($)',
-            'Jornadas cobradas',
             'Monto traslado ($)',
             'Monto cobrado ($)',
             'Impuesto ($)',
@@ -64,7 +64,7 @@ class BudgetsExport implements FromCollection, WithHeadings, WithColumnWidths
             'C' => 15,
             'D' => 20,
             'E' => 18,
-            'F' => 15,
+            'F' => 18,
             'G' => 18,
             'H' => 18,
             'I' => 18,
@@ -78,7 +78,6 @@ class BudgetsExport implements FromCollection, WithHeadings, WithColumnWidths
     private function getTotalPagado($payments)
     {
 
-        Log::info('Calculating total paid for payments: ', ['payments' => $payments]);
         if (!$payments || $payments->isEmpty()) return 0;
 
         return collect($payments)->sum(function ($payment) {

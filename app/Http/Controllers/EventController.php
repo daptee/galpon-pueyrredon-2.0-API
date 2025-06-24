@@ -138,7 +138,7 @@ class EventController extends Controller
             file_put_contents($filePath, $writer);
             // Por simplicidad, retornamos los datos en formato JSON
             return ApiResponse::create('Archivo exportado correctamente', 200, [
-                'file_url' => 'public/storage/events/' . $fileName
+                'file_url' => 'storage/events/' . $fileName
             ], [
                 'request' => $request,
                 'module' => 'event',
