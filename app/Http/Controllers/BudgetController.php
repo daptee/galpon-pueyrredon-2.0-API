@@ -104,7 +104,8 @@ class BudgetController extends Controller
                 'place',
                 'transportation',
                 'client',
-                'budgetProducts.product'
+                'budgetProducts.product',
+                'budgetDeliveryData'
             ])->find($id);
 
             if (!$budget) {
@@ -145,6 +146,7 @@ class BudgetController extends Controller
                 'products_has_prices' => 'required|boolean',
                 'id_budget' => 'nullable|integer|exists:budgets,id',
                 'observations' => 'nullable|string',
+                'volume' => 'nullable|numeric',
                 'product' => 'required|array|min:1',
                 'product.*.id_product' => 'required|integer|exists:products,id',
                 'product.*.quantity' => 'required|integer|min:1',
@@ -556,6 +558,66 @@ class BudgetController extends Controller
 
             return ApiResponse::create('PDF regenerado correctamente', 200, [
                 'pdf_path' => "storage/budgets/budget-{$budget->id}.pdf"
+            ], [
+                'module' => 'budget',
+                'endpoint' => 'Regenerar PDF',
+            ]);
+
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al regenerar el PDF', 500, ['error' => $e->getMessage()], [
+                'module' => 'budget',
+                'endpoint' => 'Regenerar PDF',
+            ]);
+        }
+    }
+
+    public function generatePdfDeliveryInformation($id)
+    {
+        try {
+            // Buscar el presupuesto con sus relaciones necesarias
+            $budget = Budget::with([
+                'budgetStatus',
+                'place',
+                'transportation',
+                'client',
+                'budgetProducts.product',
+                'budgetDeliveryData'
+            ])->findOrFail($id);
+
+            // Si el evento NO tiene cargado los datos de entrega, retornar un error en la peticion de que no hay datos de entrega cargados.
+
+            if (!$budget->budgetDeliveryData) {
+                return ApiResponse::create('Datos de entrega no encontrados', 404, ['error' => 'No hay datos de entrega cargados para este presupuesto'], [
+                    'module' => 'budget',
+                    'endpoint' => 'Generar PDF de información de entrega',
+                ]);
+            }
+
+            // Cargar la vista del PDF
+            $pdf = Pdf::loadView('pdf.deliveryInformation', compact('budget'));
+
+            // Asegurar la carpeta de destino
+            if (!file_exists(public_path("storage/delivery_information/"))) {
+                mkdir(public_path("storage/delivery_information/"), 0777, true);
+            }
+
+            // Guardar el PDF
+            $pdf->save(public_path("storage/delivery_information/budget-{$budget->id}.pdf"));
+
+            // agregar auditoría
+
+            BudgetAudith::create([
+                'id_budget' => $budget->id,
+                'action' => 'generate_pdf',
+                'new_budget_status' => $budget->id_budget_status,
+                'observations' => 'PDF generado correctamente',
+                'user' => auth()->user()->id,
+                'date' => now()->toDateString(),
+                'time' => now()->toTimeString()
+            ]);
+
+            return ApiResponse::create('PDF regenerado correctamente', 200, [
+                'pdf_path' => "storage/delivery_information/budget-{$budget->id}.pdf"
             ], [
                 'module' => 'budget',
                 'endpoint' => 'Regenerar PDF',

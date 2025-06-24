@@ -30,7 +30,8 @@ class Budget extends Model
         'id_budget_status',
         'products_has_stock',
         'products_has_prices',
-        'observations'
+        'observations',
+        'volume',
     ];
 
     public $timestamps = true;
@@ -67,7 +68,7 @@ class Budget extends Model
 
     public function budgetDeliveryData()
     {
-        return $this->hasOne(BudgetDeliveryData::class, 'id_budget');
+        return $this->hasOne(BudgetDeliveryData::class, 'id_budget')->latest('id');
     }
 
     public function payments()
