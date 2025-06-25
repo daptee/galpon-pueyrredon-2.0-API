@@ -231,12 +231,12 @@
     </table>
 
     <div class="budget">
-        <p style="margin: 8px 0;">Detalles adicionales de entrega::&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <p style="margin: 8px 0;">Detalles adicionales de entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <strong>
                 {{ $budget->budgetDeliveryData->additional_delivery_details }}
             </strong> 
         </p>
-        <p style="margin: 8px 0;">Detalles adicionales de pedido: :&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <p style="margin: 8px 0;">Detalles adicionales de pedido:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <strong>
                 {{ $budget->budgetDeliveryData->additional_order_details }}
             </strong>

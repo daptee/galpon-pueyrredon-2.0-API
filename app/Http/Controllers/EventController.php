@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\BudgetsExport;
 use App\Http\Responses\ApiResponse;
 use App\Models\Budget;
 use App\Models\Payment;
 use Illuminate\Http\Request;
-use Validator;
-use Log;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Excel as ExcelFormat;
 
 class EventController extends Controller
 {
@@ -101,6 +102,52 @@ class EventController extends Controller
             return ApiResponse::create('Error al obtener el evento', 500, ['error' => $e->getMessage()], [
                 'module' => 'event',
                 'endpoint' => 'Obtener evento por ID',
+            ]);
+        }
+    }
+
+    //Hacer endpoint dentro de eventos para recibir una fecha desde y una fecha hasta y generar un excel. Se deja un ejemplo del excel a generar
+
+    public function exportEvents(Request $request)
+    {
+        try {
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date');
+
+            if (!$startDate || !$endDate) {
+                return response()->json(['error' => 'Debe proporcionar una fecha de inicio y una fecha de fin'], 400);
+            }
+
+            $budgets = Budget::with(['place', 'client', 'budgetStatus', 'budgetDeliveryData', 'payments'])
+                ->where('id_budget_status', 3) // O ID del estado aprobado
+                ->whereBetween('date_event', [$startDate, $endDate])
+                ->get();
+
+            // Aquí se generaría el archivo Excel con los datos obtenidos
+            $fileName = 'events_' . now()->format('Ymd_His') . '.xlsx';
+            $directory = public_path('storage/events');
+
+            // Crear el directorio si no existe
+            if (!file_exists(public_path('storage/events'))) {
+                mkdir(public_path('storage/events'), 0755, true);
+            };
+
+            $filePath = $directory . '/' . $fileName;
+
+            $writer = Excel::raw(new BudgetsExport($budgets), ExcelFormat::XLSX);
+            file_put_contents($filePath, $writer);
+            // Por simplicidad, retornamos los datos en formato JSON
+            return ApiResponse::create('Archivo exportado correctamente', 200, [
+                'file_url' => 'storage/events/' . $fileName
+            ], [
+                'request' => $request,
+                'module' => 'event',
+                'endpoint' => 'Exportar eventos por fecha',
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al exportar eventos', 500, ['error' => $e->getMessage()], [
+                'module' => 'event',
+                'endpoint' => 'Exportar eventos por fecha',
             ]);
         }
     }

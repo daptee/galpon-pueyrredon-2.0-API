@@ -299,6 +299,7 @@ Route::group([
     'prefix' => 'event'
 ], function () {
     Route::get('/', [EventController::class, 'index'])->middleware('admin');
+    Route::get('/export-events-by-date', [EventController::class, 'exportEvents'])->middleware('admin');
     Route::get('/{id}', [EventController::class, 'show'])->middleware('admin');
 });
 
