@@ -32,21 +32,21 @@ class PaymentController extends Controller
 
             // === Filtros dinámicos ===
 
-            // Filtro por lugar (relacionado al evento)
-            if ($request->has('place')) {
-                $place = $request->input('place');
-                $query->whereHas('budget.place', function ($q) use ($place) {
-                    $q->where('name', 'like', '%' . $place . '%');
-                });
-            }
+            // Filtro por lugar (relacionado al presupuesto)
+if ($request->has('place')) {
+    $placeId = $request->input('place');
+    $query->whereHas('budget.place', function ($q) use ($placeId) {
+        $q->where('id', $placeId);
+    });
+}
 
-            // Filtro por cliente (relacionado al evento)
-            if ($request->has('client')) {
-                $client = $request->input('client');
-                $query->whereHas('budget.client', function ($q) use ($client) {
-                    $q->where('name', 'like', '%' . $client . '%');
-                });
-            }
+// Filtro por cliente (relacionado al presupuesto)
+if ($request->has('client')) {
+    $clientId = $request->input('client');
+    $query->whereHas('budget.client', function ($q) use ($clientId) {
+        $q->where('id', $clientId);
+    });
+}
 
             // Filtro por fecha de pago (rango)
             if ($request->has('payment_date_start') && $request->has('payment_date_end')) {
