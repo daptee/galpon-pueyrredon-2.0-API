@@ -117,7 +117,7 @@ if ($request->has('client')) {
             $payment = Payment::create([
                 'id_budget' => $request->id_budget,
                 'id_user' => auth()->id(),
-                'payment_datetime' => now(),
+                'payment_datetime' => $request->payment_datatime,
                 'id_payment_type' => $request->id_payment_type,
                 'id_payment_method' => $request->id_payment_method,
                 'amount' => $request->amount,
