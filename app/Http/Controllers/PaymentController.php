@@ -112,16 +112,7 @@ if ($request->has('client')) {
             if ($validator->fails()) {
                 return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
             }
-                // no puede existir un pago previo para el mismo presupuesto
-            $existingPayment = Payment::where('id_budget', $request->id_budget)
-                ->where('id_payment_status', 1) // Asumiendo que 1 es el estado "Pagado" o "Activo"
-                ->first();
-
-            if ($existingPayment) {
-                return ApiResponse::create('Ya existe un pago registrado para este presupuesto', 409, [
-                    'id_budget' => $request->id_budget,
-                ]);
-            };
+                
 
             $payment = Payment::create([
                 'id_budget' => $request->id_budget,
