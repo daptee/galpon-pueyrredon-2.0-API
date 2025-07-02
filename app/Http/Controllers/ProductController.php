@@ -7,6 +7,7 @@ use App\Models\ProductAttributeValue;
 use App\Models\ProductImage;
 use App\Models\ProductPrice;
 use App\Models\ProductProducts;
+use App\Models\ProductUseStock;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
@@ -571,6 +572,149 @@ class ProductController extends Controller
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Actualizar producto',
+            ]);
+        }
+    }
+
+    public function report7Days(Request $request)
+    {
+        try {
+            $request->validate(['date' => 'required|date']);
+
+            $startDate = \Carbon\Carbon::parse($request->date);
+            $dates = collect(range(0, 6))->map(fn($i) => $startDate->copy()->addDays($i)->toDateString());
+
+            // Obtener los productos usados en products_use_stock
+            $usedProductIds = ProductUseStock::distinct()->pluck('id_product')->toArray();
+
+            // Traer esos productos con stock y uso de stock
+            $products = Product::with(['productStock', 'productUseStock'])
+                ->whereIn('id', $usedProductIds)
+                ->get();
+
+            // Agrupar por product_stock o id propio si no tiene product_stock
+            $groupedByStock = $products->groupBy(function ($product) {
+                return $product->product_stock ?? $product->id;
+            });
+
+            $result = collect();
+
+            foreach ($groupedByStock as $stockId => $group) {
+                // Buscar representante cuyo id sea igual al stockId
+                $representativeProduct = $group->firstWhere('id', $stockId);
+
+                if (!$representativeProduct) {
+                    $representativeProduct = $group->first();
+                }
+
+                $stock = $representativeProduct->productStock->stock ?? $representativeProduct->stock;
+
+                $usedStock = [];
+
+                foreach ($dates as $date) {
+                    $totalUsed = $group->flatMap(fn($p) => $p->productUseStock)
+                        ->filter(fn($use) => $use->date_from <= $date && $use->date_to >= $date)
+                        ->sum('quantity');
+
+                    $usedStock[$date] = $totalUsed;
+                }
+
+                $result->push([
+                    'id' => $representativeProduct->id,
+                    'name' => $representativeProduct->name,
+                    'code' => $representativeProduct->code,
+                    'stock' => $stock,
+                    'used_stock_by_day' => $usedStock,
+                ]);
+            }
+
+            return ApiResponse::create(
+                'Reporte de uso de stock por producto obtenido correctamente',
+                200,
+                $result,
+                [
+                    'request' => $request,
+                    'module' => 'product',
+                    'endpoint' => 'Reporte de uso de stock por producto',
+                ]
+            );
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Reporte de uso de stock por producto',
+            ]);
+        }
+    }
+
+    public function reportMonth(Request $request)
+    {
+        try {
+            $request->validate(['date' => 'required|date']);
+
+            $start = \Carbon\Carbon::parse($request->date)->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+
+            // Obtener los productos usados en products_use_stock
+            $usedProductIds = ProductUseStock::distinct()->pluck('id_product')->toArray();
+
+            // Traer esos productos con stock y uso de stock
+            $products = Product::with(['productStock', 'productUseStock'])
+                ->whereIn('id', $usedProductIds)
+                ->get();
+
+            // Agrupar por product_stock o id propio si no tiene product_stock
+            $groupedByStock = $products->groupBy(function ($product) {
+                return $product->product_stock ?? $product->id;
+            });
+
+            $result = [];
+
+            for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                $currentDate = $date->toDateString();
+
+                $productsForDate = collect();
+
+                foreach ($groupedByStock as $stockId => $group) {
+                    // Buscar representante cuyo id sea igual al stockId
+                    $representativeProduct = $group->firstWhere('id', $stockId);
+
+                    if (!$representativeProduct) {
+                        $representativeProduct = $group->first();
+                    }
+
+                    $stock = $representativeProduct->productStock->stock ?? $representativeProduct->stock;
+
+                    // Sumar stock usado ese día de todos los productos del grupo
+                    $totalUsed = $group->flatMap(fn($p) => $p->productUseStock)
+                        ->filter(fn($use) => $use->date_from <= $currentDate && $use->date_to >= $currentDate)
+                        ->sum('quantity');
+
+                    $productsForDate->push([
+                        'id' => $representativeProduct->id,
+                        'name' => $representativeProduct->name,
+                        'code' => $representativeProduct->code,
+                        'stock' => $stock,
+                        'used_stock' => $totalUsed,
+                    ]);
+                }
+
+                $result[] = [
+                    'date' => $currentDate,
+                    'products' => $productsForDate,
+                ];
+            }
+
+            return ApiResponse::create('Reporte de uso de stock por producto obtenido correctamente', 200, $result, [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Reporte de uso de stock por producto',
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Reporte de uso de stock por producto',
             ]);
         }
     }

@@ -67,6 +67,12 @@ class Product extends Model
         return $this->belongsTo(Product::class, 'product_stock');
     }
 
+
+    public function productUseStock()
+    {
+        return $this->hasMany(ProductUseStock::class, 'id_product');
+    }
+
     // Relación con la imagen principal del producto (suponiendo que tienes una tabla `product_images`)
     public function mainImage()
     {

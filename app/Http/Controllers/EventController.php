@@ -58,7 +58,18 @@ class EventController extends Controller
                     ) < budgets.total');
                 });
             }
-
+            
+            if ($request->has('pending_balance') && $request->input('pending_balance') == 0) {
+                $query->where(function ($q) {
+                    $q->where('total', '=', 0)
+                        ->orWhereRaw('(
+                        SELECT COALESCE(SUM(p.amount), 0) 
+                        FROM payments p 
+                        WHERE p.id_budget = budgets.id 
+                        AND p.id_payment_status = 1
+                    ) >= budgets.total');
+                });
+            } 
 
             $budgets = $query->paginate($perPage, ['*'], 'page', $page);
 
