@@ -18,7 +18,10 @@ class EventController extends Controller
             $perPage = $request->query('per_page', 10);
             $page = $request->query('page', 1);
 
-            $query = Budget::with(['place', 'client', 'budgetStatus', 'budgetDeliveryData', 'payments'])
+            $query = Budget::with(['place', 'client', 'budgetStatus', 'budgetDeliveryData',                 'payments.paymentType',
+                'payments.paymentMethod',
+                'payments.paymentStatus',
+                'payments.user'])
                 ->where('id_budget_status', 3); // o el ID del estado aprobado
 
             // Buscador por ID de presupuesto
