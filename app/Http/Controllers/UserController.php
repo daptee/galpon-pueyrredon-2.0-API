@@ -191,7 +191,8 @@ class UserController extends Controller
                 'phone' => 'nullable|string|max:15',
                 'is_internal' => 'nullable|in:0,1',
                 'id_client' => 'required_if:is_internal,0|exists:clients,id',
-                // Validación opcional para permissions y theme
+                'password' => 'sometimes|string|min:8', 
+                'new_password' => 'sometimes|string|min:8|confirmed',
                 'permissions' => 'sometimes|json',
                 'theme' => 'sometimes|integer',
                 'status' => 'sometimes|integer|in:1,2,3',
@@ -207,6 +208,28 @@ class UserController extends Controller
             }
 
             $data = $validator->validated();
+            // VALIDAMOS QUE LA CONTRASEÑA SEA LA MISMA
+            if (isset($data['password']) && !empty($data['password'])) {
+                if(!Hash::check($data['password'], $user->password)) {
+                    return ApiResponse::create('La contraseña actual es incorrecta', 422, [], [
+                        'request' => $request,
+                        'module' => 'user',
+                        'endpoint' => 'Actualizar un usuario',
+                    ]);
+                }
+
+                // la nueva contraseña no debe ser la misma que la actual
+                if (isset($data['new_password']) && $data['new_password'] === $data['password']) {
+                    return ApiResponse::create('La nueva contraseña no puede ser la misma que la actual', 422, [], [
+                        'request' => $request,
+                        'module' => 'user',
+                        'endpoint' => 'Actualizar un usuario',
+                    ]);
+                }
+
+                // Si se envía una nueva contraseña, la hasheamos antes de actualizarla
+                $data['password'] = Hash::make($data['new_password']);
+            }
 
             // Si no se envía permissions o theme, usa los valores actuales del usuario
             if (!isset($data['permissions'])) {
@@ -221,6 +244,9 @@ class UserController extends Controller
             $user->update($data);
 
             $user->load('userType.status', 'client.status', 'theme', 'status');
+
+            // Oculta la contraseña del usuario antes de devolverlo
+            $user->makeHidden(['password']);
 
             return ApiResponse::create('Usuario actualizado correctamente', 200, $user, [
                 'request' => $request,
