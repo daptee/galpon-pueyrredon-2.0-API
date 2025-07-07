@@ -117,6 +117,8 @@ class BudgetDeliveryDataController extends Controller
                 'widthdrawal_datetime'
             ]));
 
+            $budgetDeliveryData->save();
+
             $budgetDeliveryData->load( 'budget', 'eventType', 'locality.province');
 
             return ApiResponse::create('Datos de entrega actualizados correctamente', 200, $budgetDeliveryData, [

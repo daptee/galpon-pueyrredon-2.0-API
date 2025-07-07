@@ -190,8 +190,6 @@ class BudgetController extends Controller
                     'time' => now()->toTimeString()
                 ]);
 
-                $data['id_budget_status'] = 3;
-
                 $data['id_budget_parent'] = $data['id_budget'];
             }
 
