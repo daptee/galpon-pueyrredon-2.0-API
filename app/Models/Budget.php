@@ -20,6 +20,7 @@ class Budget extends Model
         'total_price_products',
         'client_bonification',
         'client_bonification_edited',
+        'bonification_edited',
         'total_bonification',
         'transportation_cost',
         'transportation_cost_edited',
