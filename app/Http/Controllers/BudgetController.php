@@ -134,6 +134,7 @@ class BudgetController extends Controller
                 'total_price_products' => 'required|numeric',
                 'client_bonification' => 'required|numeric',
                 'client_bonification_edited' => 'required|numeric',
+                'bonification_edited' => 'nullable|numeric',
                 'total_bonification' => 'required|string',
                 'transportation_cost' => 'required|numeric',
                 'transportation_cost_edited' => 'required|numeric',
