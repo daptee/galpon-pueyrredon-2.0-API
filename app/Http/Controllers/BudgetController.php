@@ -153,6 +153,7 @@ class BudgetController extends Controller
                 'product.*.price' => 'required|numeric',
                 'product.*.has_stock' => 'required|boolean',
                 'product.*.has_price' => 'required|boolean',
+                'product.*.client_bonification' => 'required|boolean',
             ]);
 
             if ($validator->fails()) {
@@ -203,6 +204,7 @@ class BudgetController extends Controller
                     'price' => $item['price'],
                     'has_stock' => $item['has_stock'],
                     'has_price' => $item['has_price'],
+                    'client_bonification' => $item['client_bonification'],
                 ]);
             }
 
