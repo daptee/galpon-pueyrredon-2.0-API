@@ -15,6 +15,7 @@ class BudgetProducts extends Model
         'price',
         'has_stock',
         'has_price',
+        'client_bonification'
     ];
 
     public $timestamps = true;
