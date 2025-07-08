@@ -96,6 +96,7 @@ CREATE TABLE budgets_audith (
 
 ALTER TABLE budgets
 ADD volume DECIMAL(10,2) DEFAULT 0;
+ADD bonification_edited DECIMAL(10,2) DEFAULT 0;
 
 ALTER TABLE budget_products
 ADD client_bonification BOOLEAN DEFAULT FALSE;
