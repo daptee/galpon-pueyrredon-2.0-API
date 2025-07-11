@@ -260,6 +260,7 @@ Route::group([
     Route::get('/{id}', [BudgetController::class, 'show'])->middleware('admin');
     Route::get('/pdf/{id}', [BudgetController::class, 'generatePdf'])->middleware('admin');
     Route::post('/', [BudgetController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [BudgetController::class, 'update'])->middleware('admin');
     Route::post('/resend/{id}', [BudgetController::class, 'resendEmail'])->middleware('admin');
     Route::put('/observations/{id}', [BudgetController::class, 'updateObservations'])->middleware('admin');
     Route::put('/status/{id}', [BudgetController::class, 'updateStatus'])->middleware('admin');

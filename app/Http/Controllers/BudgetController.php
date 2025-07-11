@@ -135,7 +135,6 @@ class BudgetController extends Controller
                 'total_price_products' => 'required|numeric',
                 'client_bonification' => 'required|numeric',
                 'client_bonification_edited' => 'required|numeric',
-                'bonification_edited' => 'nullable|numeric',
                 'total_bonification' => 'required|string',
                 'transportation_cost' => 'required|numeric',
                 'transportation_cost_edited' => 'required|numeric',
@@ -155,15 +154,16 @@ class BudgetController extends Controller
                 'product.*.price' => 'required|numeric',
                 'product.*.has_stock' => 'required|boolean',
                 'product.*.has_price' => 'required|boolean',
-                'product.*.client_bonification' => 'required|boolean',
             ]);
 
-            if (empty($request->id_client) && empty($request->client_name)) {
-                $validator->errors()->add('client_name', 'El nombre del cliente es obligatorio si no se selecciona un cliente existente.');
-            }
+            $validator->after(function ($validator) use ($request) {
+                if (empty($request->id_client) && empty($request->client_name)) {
+                    $validator->errors()->add('client_name', 'El nombre del cliente es obligatorio si no se selecciona un cliente existente.');
+                }
+            });
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'budget',
                     'endpoint' => 'Crear presupuesto',
@@ -181,23 +181,24 @@ class BudgetController extends Controller
                         'endpoint' => 'Crear presupuesto',
                     ]);
                 }
-                if($data['id_budget'] !== 1){
+                if ($data['id_budget_status'] !== 1) {
                     $parentBudget->id_budget_status = 5;
                     $parentBudget->save();
+
+                    BudgetAudith::create([
+                        'id_budget' => $parentBudget->id,
+                        'action' => 'update_status',
+                        'new_budget_status' => $parentBudget->id_budget_status,
+                        'observations' => json_encode([
+                            'id_budget_status' => $parentBudget->id_budget_status,
+                            'status_name' => $parentBudget->budgetStatus->name
+                        ]),
+                        'user' => auth()->user()->id,
+                        'date' => now()->toDateString(),
+                        'time' => now()->toTimeString()
+                    ]);
                 }
 
-                BudgetAudith::create([
-                    'id_budget' => $parentBudget->id,
-                    'action' => 'update_status',
-                    'new_budget_status' => $parentBudget->id_budget_status,
-                    'observations' => json_encode([
-                        'id_budget_status' => $parentBudget->id_budget_status,
-                        'status_name' => $parentBudget->budgetStatus->name
-                    ]),
-                    'user' => auth()->user()->id,
-                    'date' => now()->toDateString(),
-                    'time' => now()->toTimeString()
-                ]);
             }
 
             $budget = Budget::create($data);
@@ -210,7 +211,6 @@ class BudgetController extends Controller
                     'price' => $item['price'],
                     'has_stock' => $item['has_stock'],
                     'has_price' => $item['has_price'],
-                    'client_bonification' => $item['client_bonification'],
                 ]);
             }
 
@@ -224,23 +224,25 @@ class BudgetController extends Controller
                 'budgetProducts.product'
             ]);
 
-            $pdf = Pdf::loadView('pdf.budget', compact('budget'));
+            if ($data['id_budget_status'] == 2) {
+                $pdf = Pdf::loadView('pdf.budget', compact('budget'));
 
-            if (!file_exists(public_path("storage/budgets/"))) {
-                mkdir(public_path("storage/budgets/"), 0777, true);
+                if (!file_exists(public_path("storage/budgets/"))) {
+                    mkdir(public_path("storage/budgets/"), 0777, true);
+                }
+
+                if (file_exists(public_path('fonts/Lato-Regular.ttf'))) {
+                    \Log::warning('Fuente encontrada: fonts/Lato-Regular.ttf');
+                } else {
+                    \Log::warning('Fuente no encontrada: fonts/Lato-Regular.ttf');
+                }
+
+                $pdf->save(public_path("storage/budgets/budget-{$budget->id}.pdf"));
+
+                $pdfPath = public_path("storage/budgets/budget-{$budget->id}.pdf");
+
+                \Mail::to($budget->client_mail)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
             }
-
-            if (file_exists(public_path('fonts/Lato-Regular.ttf'))) {
-                \Log::warning('Fuente encontrada: fonts/Lato-Regular.ttf');
-            } else {
-                \Log::warning('Fuente no encontrada: fonts/Lato-Regular.ttf');
-            }
-
-            $pdf->save(public_path("storage/budgets/budget-{$budget->id}.pdf"));
-
-            $pdfPath = public_path("storage/budgets/budget-{$budget->id}.pdf");
-
-            \Mail::to($budget->client_mail)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
 
             // agregar auditoría
             BudgetAudith::create([
@@ -365,6 +367,174 @@ class BudgetController extends Controller
             return ApiResponse::create('Error al actualizar el estado', 500, ['error' => $e->getMessage()], []);
         }
     }
+
+    public function update(Request $request, $id)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'id_client' => 'nullable|integer|exists:clients,id',
+                'client_name' => 'nullable|string|max:255',
+                'client_mail' => 'required|email',
+                'client_phone' => 'required|string',
+                'id_place' => 'required|integer|exists:places,id',
+                'id_transportation' => 'required|integer|exists:transportations,id',
+                'date_event' => 'required|date',
+                'time_event' => 'required|string',
+                'days' => 'required|integer|min:1',
+                'quoted_days' => 'required|integer|min:1',
+                'total_price_products' => 'required|numeric',
+                'client_bonification' => 'required|numeric',
+                'client_bonification_edited' => 'required|numeric',
+                'total_bonification' => 'required|string',
+                'transportation_cost' => 'required|numeric',
+                'transportation_cost_edited' => 'required|numeric',
+                'subtotal' => 'required|numeric',
+                'iva' => 'required|numeric',
+                'total' => 'required|numeric',
+                'version_number' => 'required|integer',
+                'id_budget_status' => 'required|exists:budget_status,id',
+                'products_has_stock' => 'required|boolean',
+                'products_has_prices' => 'required|boolean',
+                'id_budget' => 'nullable|integer|exists:budgets,id',
+                'observations' => 'nullable|string',
+                'volume' => 'nullable|numeric',
+                'product' => 'required|array|min:1',
+                'product.*.id_product' => 'required|integer|exists:products,id',
+                'product.*.quantity' => 'required|integer|min:1',
+                'product.*.price' => 'required|numeric',
+                'product.*.has_stock' => 'required|boolean',
+                'product.*.has_price' => 'required|boolean',
+            ]);
+
+            $validator->after(function ($validator) use ($request) {
+                if (empty($request->id_client) && empty($request->client_name)) {
+                    $validator->errors()->add('client_name', 'El nombre del cliente es obligatorio si no se selecciona un cliente existente.');
+                }
+            });
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
+                    'request' => $request,
+                    'module' => 'budget',
+                    'endpoint' => 'Crear presupuesto',
+                ]);
+            }
+
+            $budget = Budget::find($id);
+            if (!$budget) {
+                return ApiResponse::create('Presupuesto no encontrado', 404, null, [
+                    'request' => $request,
+                    'module' => 'budget',
+                    'endpoint' => 'Editar presupuesto',
+                ]);
+            }
+            // solo se puede editar si es borrador id_status 1
+
+            if ($budget->id_budget_status !== 1) {
+                return ApiResponse::create('Presupuesto no editable', 403, ['error' => 'Solo se pueden editar presupuestos en estado borrador'], [
+                    'request' => $request,
+                    'module' => 'budget',
+                    'endpoint' => 'Editar presupuesto',
+                ]);
+            }
+            ;
+
+            $data = $request->all();
+
+            // Si tiene presupuesto padre, actualizar su estado
+            if (!empty($data['id_budget'])) {
+                $parentBudget = Budget::find($data['id_budget']);
+                if ($parentBudget && $data['id_budget'] !== 1) {
+                    $parentBudget->id_budget_status = 5;
+                    $parentBudget->save();
+
+                    BudgetAudith::create([
+                        'id_budget' => $parentBudget->id,
+                        'action' => 'update_status',
+                        'new_budget_status' => $parentBudget->id_budget_status,
+                        'observations' => json_encode([
+                            'id_budget_status' => $parentBudget->id_budget_status,
+                            'status_name' => $parentBudget->budgetStatus->name
+                        ]),
+                        'user' => auth()->user()->id,
+                        'date' => now()->toDateString(),
+                        'time' => now()->toTimeString()
+                    ]);
+                }
+            }
+
+            // Actualizar presupuesto
+            $budget->update($data);
+
+            // Eliminar productos anteriores
+            BudgetProducts::where('id_budget', $budget->id)->delete();
+
+            // Crear los nuevos productos
+            foreach ($data['product'] as $item) {
+                BudgetProducts::create([
+                    'id_budget' => $budget->id,
+                    'id_product' => $item['id_product'],
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                    'has_stock' => $item['has_stock'],
+                    'has_price' => $item['has_price'],
+                ]);
+            }
+
+            // Recargar relaciones
+            $budget->load([
+                'budgetStatus',
+                'place',
+                'transportation',
+                'client',
+                'budgetProducts.product'
+            ]);
+
+            if ($data['id_budget_status'] == 2) {
+                $pdf = Pdf::loadView('pdf.budget', compact('budget'));
+
+                if (!file_exists(public_path("storage/budgets/"))) {
+                    mkdir(public_path("storage/budgets/"), 0777, true);
+                }
+
+                if (file_exists(public_path('fonts/Lato-Regular.ttf'))) {
+                    \Log::warning('Fuente encontrada: fonts/Lato-Regular.ttf');
+                } else {
+                    \Log::warning('Fuente no encontrada: fonts/Lato-Regular.ttf');
+                }
+
+                $pdf->save(public_path("storage/budgets/budget-{$budget->id}.pdf"));
+
+                $pdfPath = public_path("storage/budgets/budget-{$budget->id}.pdf");
+
+                \Mail::to($budget->client_mail)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+            }
+
+            // Auditoría de actualización
+            BudgetAudith::create([
+                'id_budget' => $budget->id,
+                'action' => 'update',
+                'new_budget_status' => $budget->id_budget_status,
+                'observations' => $data['observations'] ?? null,
+                'user' => auth()->user()->id,
+                'date' => now()->toDateString(),
+                'time' => now()->toTimeString()
+            ]);
+
+            return ApiResponse::create('Presupuesto actualizado correctamente', 200, $budget, [
+                'request' => $request,
+                'module' => 'budget',
+                'endpoint' => 'Editar presupuesto',
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al actualizar el presupuesto', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'budget',
+                'endpoint' => 'Editar presupuesto',
+            ]);
+        }
+    }
+
     public function checkStock(Request $request)
     {
         try {
