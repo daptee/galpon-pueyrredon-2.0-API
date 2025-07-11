@@ -122,7 +122,8 @@ class BudgetController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'id_client' => 'required|integer|exists:clients,id',
+                'id_client' => 'nullable|integer|exists:clients,id',
+                'client_name' => 'nullable|string|max:255',
                 'client_mail' => 'required|email',
                 'client_phone' => 'required|string',
                 'id_place' => 'required|integer|exists:places,id',
@@ -157,6 +158,10 @@ class BudgetController extends Controller
                 'product.*.client_bonification' => 'required|boolean',
             ]);
 
+            if (empty($request->id_client) && empty($request->client_name)) {
+                $validator->errors()->add('client_name', 'El nombre del cliente es obligatorio si no se selecciona un cliente existente.');
+            }
+
             if ($validator->fails()) {
                 return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
                     'request' => $request,
@@ -176,23 +181,23 @@ class BudgetController extends Controller
                         'endpoint' => 'Crear presupuesto',
                     ]);
                 }
-                $parentBudget->id_budget_status = 5;
-                $parentBudget->save();
+                if($data['id_budget'] !== 1){
+                    $parentBudget->id_budget_status = 5;
+                    $parentBudget->save();
+                }
 
                 BudgetAudith::create([
                     'id_budget' => $parentBudget->id,
                     'action' => 'update_status',
                     'new_budget_status' => $parentBudget->id_budget_status,
                     'observations' => json_encode([
-                                'id_budget_status' => $parentBudget->id_budget_status,
-                                'status_name' => $parentBudget->budgetStatus->name
-                            ]),
+                        'id_budget_status' => $parentBudget->id_budget_status,
+                        'status_name' => $parentBudget->budgetStatus->name
+                    ]),
                     'user' => auth()->user()->id,
                     'date' => now()->toDateString(),
                     'time' => now()->toTimeString()
                 ]);
-
-                $data['id_budget_parent'] = $data['id_budget'];
             }
 
             $budget = Budget::create($data);
@@ -347,9 +352,9 @@ class BudgetController extends Controller
                 'action' => 'update_status',
                 'new_budget_status' => $budget->id_budget_status,
                 'observations' => json_encode([
-                            'id_budget_status' => $budget->id_budget_status,
-                            'status_name' => $budget->budgetStatus->name
-                        ]),
+                    'id_budget_status' => $budget->id_budget_status,
+                    'status_name' => $budget->budgetStatus->name
+                ]),
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
@@ -508,9 +513,9 @@ class BudgetController extends Controller
                 'action' => 'update_contact',
                 'new_budget_status' => $budget->id_budget_status,
                 'observations' => json_encode([
-                            'client_mail' => $budget->client_mail,
-                            'client_phone' => $budget->client_phone
-                        ]),
+                    'client_mail' => $budget->client_mail,
+                    'client_phone' => $budget->client_phone
+                ]),
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()

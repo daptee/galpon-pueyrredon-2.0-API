@@ -9,6 +9,7 @@ class Budget extends Model
     protected $fillable = [
         'id_budget',
         'id_client',
+        'client_name',
         'client_mail',
         'client_phone',
         'id_place',

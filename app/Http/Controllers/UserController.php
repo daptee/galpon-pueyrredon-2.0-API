@@ -191,7 +191,6 @@ class UserController extends Controller
                 'phone' => 'nullable|string|max:15',
                 'is_internal' => 'nullable|in:0,1',
                 'id_client' => 'required_if:is_internal,0|exists:clients,id',
-                'password' => 'sometimes|string|min:8', 
                 'new_password' => 'sometimes|string|min:8|confirmed',
                 'permissions' => 'sometimes|json',
                 'theme' => 'sometimes|integer',
@@ -208,27 +207,14 @@ class UserController extends Controller
             }
 
             $data = $validator->validated();
-            // VALIDAMOS QUE LA CONTRASEÑA SEA LA MISMA
-            if (isset($data['password']) && !empty($data['password'])) {
-                if(!Hash::check($data['password'], $user->password)) {
-                    return ApiResponse::create('La contraseña actual es incorrecta', 422, [], [
-                        'request' => $request,
-                        'module' => 'user',
-                        'endpoint' => 'Actualizar un usuario',
-                    ]);
-                }
-
-                // la nueva contraseña no debe ser la misma que la actual
-                if (isset($data['new_password']) && $data['new_password'] === $data['password']) {
-                    return ApiResponse::create('La nueva contraseña no puede ser la misma que la actual', 422, [], [
-                        'request' => $request,
-                        'module' => 'user',
-                        'endpoint' => 'Actualizar un usuario',
-                    ]);
-                }
+            if (isset($data['new_password']) && !empty($data['new_password'])) {
 
                 // Si se envía una nueva contraseña, la hasheamos antes de actualizarla
                 $data['password'] = Hash::make($data['new_password']);
+                unset($data['new_password']); // Eliminamos el campo new_password del array de datos
+            } else {
+                // Si no se envía una nueva contraseña, mantenemos la actual
+                unset($data['password']);
             }
 
             // Si no se envía permissions o theme, usa los valores actuales del usuario
@@ -281,6 +267,7 @@ class UserController extends Controller
                 'email' => 'sometimes|email|unique:users,email,' . $user->id . '|max:255',
                 'password' => 'sometimes|string|min:8|confirmed', // Agregamos 'confirmed' para validar repetición
                 'name' => 'sometimes|string|max:255',
+                'phone' => 'nullable|string|max:15',
                 'lastname' => 'sometimes|string|max:255',
                 'theme' => 'sometimes|integer'
             ]);
