@@ -107,7 +107,7 @@
                     <p style="margin: 2px 0;">Lugar: </p>
                 </td>
                 <td style="width: 71%; vertical-align: top;">
-                    <p style="margin: 2px 0;"><strong>{{ $budget->client->name }}</strong></p>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->client->name ?? $budget->client_name }}</strong></p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->place->name }}</strong></p>
                 </td>
                 <td style="width: 14%; text-align: left; vertical-align: top;">
