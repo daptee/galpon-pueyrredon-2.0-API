@@ -135,6 +135,7 @@ class BudgetController extends Controller
                 'total_price_products' => 'required|numeric',
                 'client_bonification' => 'required|numeric',
                 'client_bonification_edited' => 'required|numeric',
+                'bonification_edited' => 'nullable|numeric',
                 'total_bonification' => 'required|string',
                 'transportation_cost' => 'required|numeric',
                 'transportation_cost_edited' => 'required|numeric',
@@ -154,6 +155,7 @@ class BudgetController extends Controller
                 'product.*.price' => 'required|numeric',
                 'product.*.has_stock' => 'required|boolean',
                 'product.*.has_price' => 'required|boolean',
+                'product.*.client_bonification' => 'required|boolean',
             ]);
 
             if (empty($request->id_client) && empty($request->client_name)) {
@@ -208,6 +210,7 @@ class BudgetController extends Controller
                     'price' => $item['price'],
                     'has_stock' => $item['has_stock'],
                     'has_price' => $item['has_price'],
+                    'client_bonification' => $item['client_bonification'],
                 ]);
             }
 
