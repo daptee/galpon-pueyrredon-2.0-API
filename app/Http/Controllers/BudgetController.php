@@ -444,7 +444,7 @@ class BudgetController extends Controller
             // Si tiene presupuesto padre, actualizar su estado
             if (!empty($data['id_budget'])) {
                 $parentBudget = Budget::find($data['id_budget']);
-                if ($parentBudget && $data['id_budget'] !== 1) {
+                if ($parentBudget && $data['id_budget'] == 3) {
                     $parentBudget->id_budget_status = 5;
                     $parentBudget->save();
 
