@@ -12,6 +12,28 @@ use Illuminate\Support\Facades\Validator;
 
 class BulkPriceUpdateController extends Controller
 {
+
+    public function index(Request $request)
+{
+    try {
+        $bulks = BulkPriceUpdate::with(['productPrices.product']) // Relación con los productos si está definida
+            ->orderBy('from_date', 'desc')
+            ->get();
+
+        return ApiResponse::create('Listado de cargas masivas de precios', 200, $bulks, [
+            'request' => $request,
+            'module' => 'bulk price update',
+            'endpoint' => 'Listado de cargas masivas de precios',
+        ]);
+    } catch (\Exception $e) {
+        return ApiResponse::create('Error al obtener las cargas masivas de precios', 500, ['error' => $e->getMessage()], [
+            'request' => $request,
+            'module' => 'bulk price update',
+            'endpoint' => 'Listado de cargas masivas de precios',
+        ]);
+    }
+}
+
     public function store(Request $request)
     {
         $validated = Validator::make($request->all(), [
