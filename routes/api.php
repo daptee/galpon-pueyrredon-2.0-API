@@ -283,6 +283,7 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'bulk-price-updates'
 ], function () {
+    Route::get('/', [BulkPriceUpdateController::class, 'index'])->middleware('admin');
     Route::post('/', [BulkPriceUpdateController::class, 'store'])->middleware('admin');
     Route::delete('/{id}', [BulkPriceUpdateController::class, 'destroy'])->middleware('admin');
 });
