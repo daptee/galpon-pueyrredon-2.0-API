@@ -26,12 +26,25 @@ class ProductController extends Controller
         $type = $request->query('type');
         $line = $request->query('line');
         $furniture = $request->query('furniture');
-
-        // Nuevos parámetros de ordenamiento
-        $sortBy = $request->query('sort_by');
         $sortOrder = $request->query('sort_order', 'asc'); // asc o desc
 
-        // Construcción del query con joins para poder ordenar por nombre de relaciones
+        // Alias de sort_by
+        $sortAlias = [
+            'name' => 'products.name',
+            'price' => 'products.price',
+            'volume' => 'products.volume',
+            'stock' => 'products.stock',
+            'places_cant' => 'products.places_cant',
+            'created_at' => 'products.created_at',
+            'updated_at' => 'products.updated_at',
+            'line' => 'product_lines.name',
+            'type' => 'product_types.name',
+            'furniture' => 'product_furnitures.name',
+        ];
+
+        $sortKey = $sortAlias[$request->query('sort_by')] ?? null;
+
+        // Query con joins para ordenar por nombre de relaciones
         $query = Product::with([
             'productLine',
             'productType',
@@ -42,7 +55,7 @@ class ProductController extends Controller
         ->join('product_lines', 'products.id_product_line', '=', 'product_lines.id')
         ->join('product_types', 'products.id_product_type', '=', 'product_types.id')
         ->join('product_furnitures', 'products.id_product_furniture', '=', 'product_furnitures.id')
-        ->select('products.*'); // aseguramos que el paginado funcione correctamente
+        ->select('products.*');
 
         if (!is_null($status)) {
             $query->where('products.id_product_status', $status);
@@ -68,22 +81,8 @@ class ProductController extends Controller
             });
         }
 
-        // Campos de ordenamiento permitidos
-        $allowedSortFields = [
-            'products.name',
-            'products.price',
-            'products.volume',
-            'products.stock',
-            'products.places_cant',
-            'products.created_at',
-            'products.updated_at',
-            'product_lines.name',
-            'product_types.name',
-            'product_furnitures.name',
-        ];
-
-        if ($sortBy && in_array($sortBy, $allowedSortFields)) {
-            $query->orderBy($sortBy, $sortOrder === 'desc' ? 'desc' : 'asc');
+        if ($sortKey) {
+            $query->orderBy($sortKey, $sortOrder === 'desc' ? 'desc' : 'asc');
         }
 
         $products = $query->paginate($perPage, ['*'], 'page', $page);
@@ -109,7 +108,6 @@ class ProductController extends Controller
         ]);
     }
 }
-
 
     // Obtener un producto por ID con toda su información
     public function show(Request $request, $id)
