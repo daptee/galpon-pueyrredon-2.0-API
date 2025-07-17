@@ -18,81 +18,97 @@ class ProductController extends Controller
 {
     // Obtener todos los productos con paginación
     public function index(Request $request)
-    {
-        try {
-            $perPage = $request->query('per_page', 30);
-            $page = $request->query('page', 1);
-            $status = $request->query('status');
-            $type = $request->query('type');
-            $line = $request->query('line');
-            $furniture = $request->query('furniture');
+{
+    try {
+        $perPage = $request->query('per_page', 30);
+        $page = $request->query('page', 1);
+        $status = $request->query('status');
+        $type = $request->query('type');
+        $line = $request->query('line');
+        $furniture = $request->query('furniture');
 
-            // Nuevos parámetros de ordenamiento
-            $sortBy = $request->query('sort_by');
-            $sortOrder = $request->query('sort_order', 'asc'); // asc o desc
+        // Nuevos parámetros de ordenamiento
+        $sortBy = $request->query('sort_by');
+        $sortOrder = $request->query('sort_order', 'asc'); // asc o desc
 
-            $query = Product::with([
-                'productLine',
-                'productType',
-                'productFurniture',
-                'productStatus',
-                'mainImage'
-            ]);
+        // Construcción del query con joins para poder ordenar por nombre de relaciones
+        $query = Product::with([
+            'productLine',
+            'productType',
+            'productFurniture',
+            'productStatus',
+            'mainImage'
+        ])
+        ->join('product_lines', 'products.id_product_line', '=', 'product_lines.id')
+        ->join('product_types', 'products.id_product_type', '=', 'product_types.id')
+        ->join('product_furnitures', 'products.id_product_furniture', '=', 'product_furnitures.id')
+        ->select('products.*'); // aseguramos que el paginado funcione correctamente
 
-            if (!is_null($status)) {
-                $query->where('id_product_status', $status);
-            }
-
-            if (!is_null($type)) {
-                $query->where('id_product_type', $type);
-            }
-
-            if (!is_null($line)) {
-                $query->where('id_product_line', $line);
-            }
-
-            if (!is_null($furniture)) {
-                $query->where('id_product_furniture', $furniture);
-            }
-
-            if ($request->has('search')) {
-                $search = $request->input('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', '%' . $search . '%')
-                        ->orWhere('description', 'like', '%' . $search . '%');
-                });
-            }
-
-            // Aplicar orden si se proporciona sort_by
-            $allowedSortFields = ['name', 'price', 'volume', 'stock', 'places_cant', 'created_at', 'updated_at']; // lista segura de columnas
-            if ($sortBy && in_array($sortBy, $allowedSortFields)) {
-                $query->orderBy($sortBy, $sortOrder === 'desc' ? 'desc' : 'asc');
-            }
-
-
-            $products = $query->paginate($perPage, ['*'], 'page', $page);
-
-            $data = $products->items();
-            $meta_data = [
-                'page' => $products->currentPage(),
-                'per_page' => $products->perPage(),
-                'total' => $products->total(),
-                'last_page' => $products->lastPage(),
-            ];
-
-            return ApiResponse::paginate('Listado de productos obtenido correctamente', 200, $data, $meta_data, [
-                'request' => $request,
-                'module' => 'product',
-                'endpoint' => 'Obtener todos los productos',
-            ]);
-        } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
-                'request' => $request,
-                'module' => 'product',
-                'endpoint' => 'Obtener todos los productos',
-            ]);
+        if (!is_null($status)) {
+            $query->where('products.id_product_status', $status);
         }
+
+        if (!is_null($type)) {
+            $query->where('products.id_product_type', $type);
+        }
+
+        if (!is_null($line)) {
+            $query->where('products.id_product_line', $line);
+        }
+
+        if (!is_null($furniture)) {
+            $query->where('products.id_product_furniture', $furniture);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('products.name', 'like', '%' . $search . '%')
+                    ->orWhere('products.description', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Campos de ordenamiento permitidos
+        $allowedSortFields = [
+            'products.name',
+            'products.price',
+            'products.volume',
+            'products.stock',
+            'products.places_cant',
+            'products.created_at',
+            'products.updated_at',
+            'product_lines.name',
+            'product_types.name',
+            'product_furnitures.name',
+        ];
+
+        if ($sortBy && in_array($sortBy, $allowedSortFields)) {
+            $query->orderBy($sortBy, $sortOrder === 'desc' ? 'desc' : 'asc');
+        }
+
+        $products = $query->paginate($perPage, ['*'], 'page', $page);
+
+        $data = $products->items();
+        $meta_data = [
+            'page' => $products->currentPage(),
+            'per_page' => $products->perPage(),
+            'total' => $products->total(),
+            'last_page' => $products->lastPage(),
+        ];
+
+        return ApiResponse::paginate('Listado de productos obtenido correctamente', 200, $data, $meta_data, [
+            'request' => $request,
+            'module' => 'product',
+            'endpoint' => 'Obtener todos los productos',
+        ]);
+    } catch (Exception $e) {
+        return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            'request' => $request,
+            'module' => 'product',
+            'endpoint' => 'Obtener todos los productos',
+        ]);
     }
+}
 
 
     // Obtener un producto por ID con toda su información
