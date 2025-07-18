@@ -50,6 +50,10 @@ class ProductController extends Controller
             'productType',
             'productFurniture',
             'productStatus',
+            // debo traer el ultimo precio
+            'prices' => function ($query) {
+                $query->latest('valid_date_from')->take(1);
+            },
             'mainImage'
         ])
         ->join('product_lines', 'products.id_product_line', '=', 'product_lines.id')
