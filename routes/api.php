@@ -285,6 +285,7 @@ Route::group([
 ], function () {
     Route::get('/', [BulkPriceUpdateController::class, 'index'])->middleware('admin');
     Route::post('/', [BulkPriceUpdateController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [BulkPriceUpdateController::class, 'update'])->middleware('admin');
     Route::delete('/{id}', [BulkPriceUpdateController::class, 'destroy'])->middleware('admin');
 });
 
