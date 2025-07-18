@@ -93,6 +93,71 @@ class BulkPriceUpdateController extends Controller
         }
     }
 
+    public function update(Request $request, $id)
+{
+    $validated = Validator::make($request->all(), [
+        'from_date' => 'required|date',
+        'to_date' => 'required|date|after_or_equal:from_date',
+        'percentage' => 'required|numeric',
+        'products' => 'required|array',
+        'products.*.id_product' => 'required|exists:products,id',
+        'products.*.price' => 'required|numeric|min:0',
+        'products.*.client_bonification' => 'sometimes|boolean',
+        'products.*.minimun_quantity' => 'sometimes|integer',
+    ]);
+
+    if ($validated->fails()) {
+        return ApiResponse::create('Validación fallida', 422, $validated->errors(), [
+            'request' => $request,
+            'module' => 'bulk price update',
+            'endpoint' => 'Editar actualización masiva de precios',
+        ]);
+    }
+
+    DB::beginTransaction();
+    try {
+        $bulk = BulkPriceUpdate::findOrFail($id);
+
+        // Actualizar datos de la carga masiva
+        $bulk->update([
+            'from_date' => $request->input('from_date'),
+            'to_date' => $request->input('to_date'),
+            'percentage' => $request->input('percentage'),
+        ]);
+
+        // Eliminar los precios anteriores de esta carga
+        ProductPrice::where('id_bulk_update', $bulk->id)->delete();
+
+        // Crear nuevos precios con los datos enviados
+        foreach ($request->input('products') as $product) {
+            ProductPrice::create([
+                'id_product' => $product['id_product'],
+                'price' => $product['price'],
+                'valid_date_from' => $request->input('from_date'),
+                'valid_date_to' => $request->input('to_date'),
+                'minimun_quantity' => $product['minimun_quantity'] ?? 1,
+                'client_bonification' => $product['client_bonification'] ?? true,
+                'id_bulk_update' => $bulk->id,
+            ]);
+        }
+
+        DB::commit();
+
+        return ApiResponse::create('Actualización masiva de precios editada correctamente', 200, $bulk, [
+            'request' => $request,
+            'module' => 'bulk price update',
+            'endpoint' => 'Editar actualización masiva de precios',
+        ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return ApiResponse::create('Error al editar la carga masiva de precios', 500, ['error' => $e->getMessage()], [
+            'request' => $request,
+            'module' => 'bulk price update',
+            'endpoint' => 'Editar actualización masiva de precios',
+        ]);
+    }
+}
+
     // Por ultimo, hacer una peticion que permita eliminar todos los precios de una carga masiva que se haya hecho. Esto debe eliminar el registro de esa carga masiva del historial y eliminar todos los precios de productos de esa carga de la tabla product_prices
 
     public function destroy($id)
