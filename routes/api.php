@@ -242,6 +242,7 @@ Route::group([
     Route::post('/{id}', [ProductController::class, 'update'])->middleware('admin');
     Route::get('/stock/report', [ProductController::class, 'report7Days'])->middleware('admin');
     Route::get('/stock/calendar', [ProductController::class, 'reportMonth'])->middleware('admin');
+    Route::get('/stock/export', [ProductController::class, 'exportReport7Days'])->middleware('admin');
 });
 
 // Budget

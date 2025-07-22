@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ProductStockReportExport;
+use App\Exports\StockUsageExport;
 use App\Http\Responses\ApiResponse;
 use App\Models\ProductAttributeValue;
 use App\Models\ProductImage;
@@ -11,6 +13,8 @@ use App\Models\ProductUseStock;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Excel as ExcelFormat;
 use Exception;
 use Log;
 
@@ -758,4 +762,73 @@ class ProductController extends Controller
         }
     }
 
+    public function exportReport7Days(Request $request)
+    {
+        try {
+            $date = $request->query('date');
+            if (!$date) {
+                return response()->json(['error' => 'Debe proporcionar una fecha'], 400);
+            }
+
+            $startDate = \Carbon\Carbon::parse($date);
+            $dates = collect(range(0, 6))->map(fn($i) => $startDate->copy()->addDays($i)->toDateString());
+
+            $usedProductIds = ProductUseStock::distinct()->pluck('id_product')->toArray();
+
+            $products = Product::with(['productStock', 'productUseStock'])
+                ->whereIn('id', $usedProductIds)
+                ->get();
+
+            $groupedByStock = $products->groupBy(fn($p) => $p->product_stock ?? $p->id);
+
+            $result = collect();
+
+            foreach ($groupedByStock as $stockId => $group) {
+                $representativeProduct = $group->firstWhere('id', $stockId) ?? $group->first();
+                $stock = $representativeProduct->productStock->stock ?? $representativeProduct->stock;
+
+                $usedStock = [];
+                foreach ($dates as $dateItem) {
+                    $totalUsed = $group->flatMap(fn($p) => $p->productUseStock)
+                        ->filter(fn($use) => $use->date_from <= $dateItem && $use->date_to >= $dateItem)
+                        ->sum('quantity');
+                    $usedStock[$dateItem] = $totalUsed;
+                }
+
+                $result->push([
+                    'id' => $representativeProduct->id,
+                    'name' => $representativeProduct->name,
+                    'code' => $representativeProduct->code,
+                    'stock' => $stock,
+                    'used_stock_by_day' => $usedStock,
+                ]);
+            }
+
+            $fileName = 'stock_usage_' . now()->format('Ymd_His') . '.xlsx';
+            $directory = public_path('storage/reports');
+
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            $filePath = $directory . '/' . $fileName;
+
+            $writer = Excel::raw(new ProductStockReportExport($result, $dates), ExcelFormat::XLSX);
+            file_put_contents($filePath, $writer);
+
+            return ApiResponse::create('Archivo exportado correctamente', 200, [
+                'file_url' => 'storage/reports/' . $fileName,
+            ], [
+                'request' => $request,
+                'module' => 'product stock',
+                'endpoint' => 'Exportar reporte de uso de stock',
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al exportar el reporte de uso de stock', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'product stock',
+                'endpoint' => 'Exportar reporte de uso de stock',
+            ]);
+        }
+    }
 }

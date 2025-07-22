@@ -26,7 +26,11 @@ class ProductPricesExport implements FromCollection, WithHeadings, WithColumnWid
             'A' => 15,  // ID Producto
             'B' => 30,  // Nombre
             'C' => 20,  // Código
-            'D' => 15,  // Precio Vigente
+            'D' => 15,  // volume
+            'E' => 20,  // line
+            'F' => 20,  // type
+            'G' => 20,  // furniture
+            'H' => 15,  // Precio Vigente
         ];
     }
 
@@ -36,6 +40,10 @@ class ProductPricesExport implements FromCollection, WithHeadings, WithColumnWid
             'ID Producto',
             'Nombre',
             'Código',
+            'Volumen',
+            'Linea',
+            'Tipo',
+            'Mueble',
             'Precio Vigente',
         ];
     }
