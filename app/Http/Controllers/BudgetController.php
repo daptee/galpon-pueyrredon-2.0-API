@@ -19,7 +19,7 @@ class BudgetController extends Controller
     public function index(Request $request)
     {
         try {
-            $perPage = $request->query('per_page', 10);
+            $perPage = $request->query('per_page'); // ahora sin valor por defecto
             $page = $request->query('page', 1);
 
             // 1. Obtener todos los presupuestos con relaciones
@@ -45,7 +45,7 @@ class BudgetController extends Controller
                 return true;
             });
 
-            // 3. Transformar a array para manipular sin duplicar referencias
+            // 3. Transformar a array
             $filteredArray = json_decode(json_encode($filtered), true);
 
             // 4. Indexar por ID
@@ -65,25 +65,31 @@ class BudgetController extends Controller
                 }
             }
 
-            // 6. Paginación de nodos raíz
             $total = count($tree);
-            $paged = array_slice($tree, ($page - 1) * $perPage, $perPage);
 
-            $meta_data = [
-                'page' => $page,
-                'per_page' => $perPage,
-                'total' => $total,
-                'last_page' => ceil($total / $perPage),
-            ];
+            // 6. Aplicar paginación si viene per_page
+            if ($perPage) {
+                $paged = array_slice($tree, ($page - 1) * $perPage, $perPage);
+                $meta_data = [
+                    'page' => $page,
+                    'per_page' => (int) $perPage,
+                    'total' => $total,
+                    'last_page' => ceil($total / $perPage),
+                ];
+            } else {
+                $paged = $tree; // sin paginar
+                $meta_data = [
+                    'page' => 1,
+                    'per_page' => $total,
+                    'total' => $total,
+                    'last_page' => 1,
+                ];
+            }
 
             return ApiResponse::paginate('Presupuestos obtenidos correctamente', 200, $paged, $meta_data, [
                 'request' => $request,
                 'module' => 'budget',
                 'endpoint' => 'Obtener todos los presupuestos agrupados',
-            ]);
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener presupuestos', 500, [
-                'error' => $e->getMessage()
             ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al obtener los presupuestos', 500, ['error' => $e->getMessage()], [
@@ -92,8 +98,8 @@ class BudgetController extends Controller
                 'endpoint' => 'Obtener todos los presupuestos agrupados',
             ]);
         }
-
     }
+
 
     public function show($id)
     {

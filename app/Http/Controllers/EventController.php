@@ -15,7 +15,7 @@ class EventController extends Controller
     public function index(Request $request)
     {
         try {
-            $perPage = $request->query('per_page', 10);
+            $perPage = $request->query('per_page');
             $page = $request->query('page', 1);
 
             $query = Budget::with(['place', 'client', 'budgetStatus', 'budgetDeliveryData',                 'payments.paymentType',
@@ -71,15 +71,25 @@ class EventController extends Controller
                 });
             } 
 
-            $budgets = $query->paginate($perPage, ['*'], 'page', $page);
-
-            $data = $budgets->items();
-            $meta_data = [
-                'page' => $budgets->currentPage(),
-                'per_page' => $budgets->perPage(),
-                'total' => $budgets->total(),
-                'last_page' => $budgets->lastPage(),
-            ];
+            if ($perPage) {
+                $budgets = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $budgets->items();
+                $meta_data = [
+                    'page' => $budgets->currentPage(),
+                    'per_page' => $budgets->perPage(),
+                    'total' => $budgets->total(),
+                    'last_page' => $budgets->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros sin paginación
+                $data = $query->get();
+                $meta_data = [
+                    'page' => 1,
+                    'per_page' => $data->count(),
+                    'total' => $data->count(),
+                    'last_page' => 1,
+                ];
+            }
 
             return ApiResponse::paginate('Eventos obtenidos correctamente', 200, $data, $meta_data, [
                 'request' => $request,

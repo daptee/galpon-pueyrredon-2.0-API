@@ -17,7 +17,7 @@ class ClientController extends Controller
     {
         try {
             // Obtén la página y el número de resultados por página desde la query string con valores por defecto
-            $perPage = $request->query('per_page', 10);
+            $perPage = $request->query('per_page');
             $page = $request->query('page', 1);
 
             // Construir la consulta base con relaciones
@@ -40,15 +40,25 @@ class ClientController extends Controller
             }
 
             // Aplicar paginación con los filtros
-            $clients = $query->paginate($perPage, ['*'], 'page', $page);
-
-            $data = $clients->items();
-            $meta_data = [
-                'page' => $clients->currentPage(),
-                'per_page' => $clients->perPage(),
-                'total' => $clients->total(),
-                'last_page' => $clients->lastPage(),
-            ];
+            if ($perPage) {
+                $clients = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $clients->items();
+                $meta_data = [
+                    'page' => $clients->currentPage(),
+                    'per_page' => $clients->perPage(),
+                    'total' => $clients->total(),
+                    'last_page' => $clients->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros sin paginación
+                $data = $query->get();
+                $meta_data = [
+                    'page' => 1,
+                    'per_page' => $data->count(),
+                    'total' => $data->count(),
+                    'last_page' => 1,
+                ];
+            }
 
             return ApiResponse::paginate('Clientes traídos correctamente', 200, $data, $meta_data, [
                 'request' => $request,

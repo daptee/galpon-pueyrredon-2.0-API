@@ -17,23 +17,53 @@ class ProductPriceController extends Controller
     {
         try {
             $date = $request->query('date');
+            $sortOrder = $request->query('sort_order', 'asc');
+
+            // Alias para ordenamiento por relaciones
+            $sortAlias = [
+                'name' => 'products.name',
+                'line' => 'product_lines.name',
+                'type' => 'product_types.name',
+                'furniture' => 'product_furnitures.name',
+            ];
+            $sortKey = $sortAlias[$request->query('sort_by')] ?? null;
+
             if (!$date) {
                 return response()->json(['error' => 'Debe proporcionar una fecha'], 400);
             }
 
-            $products = Product::with([
+            // Armamos el query
+            $query = Product::with([
+                'productLine',
+                'productType',
+                'productFurniture',
                 'prices' => function ($query) use ($date) {
                     $query->whereDate('valid_date_from', '<=', $date)
                         ->whereDate('valid_date_to', '>=', $date);
                 }
-            ])->get();
+            ])
+                ->join('product_lines', 'products.id_product_line', '=', 'product_lines.id')
+                ->join('product_types', 'products.id_product_type', '=', 'product_types.id')
+                ->join('product_furnitures', 'products.id_product_furniture', '=', 'product_furnitures.id')
+                ->select('products.*');
 
-            $result = $products->map(function ($product) use ($date) {
-                $price = $product->prices->first(); // puede haber solo un precio vigente para esa fecha
+            // Si se pidió ordenamiento
+            if ($sortKey) {
+                $query->orderBy($sortKey, $sortOrder === 'desc' ? 'desc' : 'asc');
+            }
+
+            $products = $query->get();
+
+            // Mapear resultados
+            $result = $products->map(function ($product) {
+                $price = $product->prices->first(); // Puede haber solo un precio vigente para esa fecha
                 return [
                     'id_product' => $product->id,
                     'name' => $product->name,
                     'code' => $product->code,
+                    'line' => $product->productLine->name ?? null,
+                    'type' => $product->productType->name ?? null,
+                    'furniture' => $product->productFurniture->name ?? null,
                     'vigente_price' => $price ? $price->price : null,
                 ];
             });
@@ -51,6 +81,7 @@ class ProductPriceController extends Controller
             ]);
         }
     }
+
 
     public function exportPricesByDate(Request $request)
     {
@@ -83,14 +114,15 @@ class ProductPriceController extends Controller
             // Crear el directorio si no existe
             if (!file_exists(public_path('storage/prices'))) {
                 mkdir(public_path('storage/prices'), 0755, true);
-            };
+            }
+            ;
 
             $filePath = $directory . '/' . $fileName;
 
             // Crear y guardar el archivo Excel manualmente en el path deseado
             $writer = Excel::raw(new ProductPricesExport($result), ExcelFormat::XLSX);
             file_put_contents($filePath, $writer);
-            
+
             return ApiResponse::create('Archivo exportado correctamente', 200, [
                 'file_url' => 'storage/prices/' . $fileName,
             ], [
