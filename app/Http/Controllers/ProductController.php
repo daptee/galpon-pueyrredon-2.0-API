@@ -54,7 +54,8 @@ class ProductController extends Controller
             'prices' => function ($query) {
                 $query->latest('valid_date_from')->take(1);
             },
-            'mainImage'
+            'mainImage',
+            'attributeValues.attribute',
         ])
         ->join('product_lines', 'products.id_product_line', '=', 'product_lines.id')
         ->join('product_types', 'products.id_product_type', '=', 'product_types.id')
