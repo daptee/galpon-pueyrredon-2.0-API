@@ -18,6 +18,8 @@ class ProductPriceController extends Controller
         try {
             $date = $request->query('date');
             $sortOrder = $request->query('sort_order', 'asc');
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
             // Alias para ordenamiento por relaciones
             $sortAlias = [
@@ -47,7 +49,6 @@ class ProductPriceController extends Controller
                 ->join('product_furnitures', 'products.id_product_furniture', '=', 'product_furnitures.id')
                 ->select('products.*');
 
-            // Si se pidió ordenamiento
             if ($sortKey) {
                 $query->orderBy($sortKey, $sortOrder === 'desc' ? 'desc' : 'asc');
             }
@@ -55,8 +56,8 @@ class ProductPriceController extends Controller
             $products = $query->get();
 
             // Mapear resultados
-            $result = $products->map(function ($product) {
-                $price = $product->prices->first(); // Puede haber solo un precio vigente para esa fecha
+            $mapped = $products->map(function ($product) {
+                $price = $product->prices->first();
                 return [
                     'id_product' => $product->id,
                     'name' => $product->name,
@@ -68,7 +69,30 @@ class ProductPriceController extends Controller
                 ];
             });
 
-            return ApiResponse::create('Precios obtenidos correctamente', 200, $result, [
+            $total = $mapped->count();
+
+            if ($perPage) {
+                $perPage = (int) $perPage;
+                $page = (int) $page;
+                $paged = $mapped->forPage($page, $perPage)->values();
+
+                $meta_data = [
+                    'page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'last_page' => ceil($total / $perPage),
+                ];
+            } else {
+                $paged = $mapped;
+                $meta_data = [
+                    'page' => 1,
+                    'per_page' => $total,
+                    'total' => $total,
+                    'last_page' => 1,
+                ];
+            }
+
+            return ApiResponse::paginate('Precios obtenidos correctamente', 200, $paged, $meta_data, [
                 'request' => $request,
                 'module' => 'product price',
                 'endpoint' => 'Obtener precios por fecha',
@@ -81,7 +105,6 @@ class ProductPriceController extends Controller
             ]);
         }
     }
-
 
     public function exportPricesByDate(Request $request)
     {
