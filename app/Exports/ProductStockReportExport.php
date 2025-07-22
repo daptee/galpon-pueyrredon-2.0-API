@@ -2,11 +2,15 @@
 
 namespace App\Exports;
 
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
+use App\Exports\CustomValueBinder;
 
-class ProductStockReportExport implements FromCollection, WithHeadings, WithColumnWidths
+class ProductStockReportExport extends CustomValueBinder implements FromCollection, WithHeadings, WithColumnWidths, WithMapping, WithCustomValueBinder
 {
     protected $products;
     protected $dates;
@@ -14,38 +18,42 @@ class ProductStockReportExport implements FromCollection, WithHeadings, WithColu
     public function __construct($products, $dates)
     {
         $this->products = $products;
-        $this->dates = $dates;
+        $this->dates = is_array($dates) ? $dates : $dates->toArray();
     }
 
     public function collection()
     {
-        return collect($this->products)->map(function ($product) {
-            $row = [
-                $product['id'],
-                $product['name'],
-                $product['code'],
-                $product['stock'] ?? '-',
-            ];
+        return collect($this->products);
+    }
 
-            foreach ($this->dates as $date) {
-                $row[] = $product['used_stock_by_day'][$date] ?? 0;
-            }
+    public function map($product): array
+    {
+        $row = [
+            $product['id'],
+            $product['name'],
+            $product['code'],
+            $product['stock'] ?? "-",
+        ];
 
-            return $row;
-        });
+        foreach ($this->dates as $date) {
+            $rawValue = $product['used_stock_by_day'][$date] ?? null;
+            $value = (is_numeric($rawValue) && $rawValue !== null) ? (string) (int) $rawValue : '0';
+            $row[] = $value;
+        }
+
+        return $row;
     }
 
     public function headings(): array
     {
         return array_merge(
             ['ID', 'Nombre', 'Código', 'Stock'],
-            $this->dates->toArray()
+            $this->dates
         );
     }
 
     public function columnWidths(): array
     {
-        // A = ID, B = Nombre, C = Código, D = Stock, E+ = Fechas
         $columns = [
             'A' => 10,
             'B' => 30,
@@ -55,7 +63,7 @@ class ProductStockReportExport implements FromCollection, WithHeadings, WithColu
 
         $start = ord('E');
         foreach (range(0, count($this->dates) - 1) as $i) {
-            $columnLetter = chr($start + $i); // A-Z solamente (hasta 26 fechas)
+            $columnLetter = chr($start + $i);
             $columns[$columnLetter] = 15;
         }
 
