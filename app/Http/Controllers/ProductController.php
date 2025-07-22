@@ -18,101 +18,101 @@ class ProductController extends Controller
 {
     // Obtener todos los productos con paginación
     public function index(Request $request)
-{
-    try {
-        $perPage = $request->query('per_page', 30);
-        $page = $request->query('page', 1);
-        $status = $request->query('status');
-        $type = $request->query('type');
-        $line = $request->query('line');
-        $furniture = $request->query('furniture');
-        $sortOrder = $request->query('sort_order', 'asc'); // asc o desc
+    {
+        try {
+            $perPage = $request->query('per_page', 30);
+            $page = $request->query('page', 1);
+            $status = $request->query('status');
+            $type = $request->query('type');
+            $line = $request->query('line');
+            $furniture = $request->query('furniture');
+            $sortOrder = $request->query('sort_order', 'asc'); // asc o desc
 
-        // Alias de sort_by
-        $sortAlias = [
-            'name' => 'products.name',
-            'price' => 'products.price',
-            'volume' => 'products.volume',
-            'stock' => 'products.stock',
-            'places_cant' => 'products.places_cant',
-            'created_at' => 'products.created_at',
-            'updated_at' => 'products.updated_at',
-            'line' => 'product_lines.name',
-            'type' => 'product_types.name',
-            'furniture' => 'product_furnitures.name',
-        ];
+            // Alias de sort_by
+            $sortAlias = [
+                'name' => 'products.name',
+                'price' => 'products.price',
+                'volume' => 'products.volume',
+                'stock' => 'products.stock',
+                'places_cant' => 'products.places_cant',
+                'created_at' => 'products.created_at',
+                'updated_at' => 'products.updated_at',
+                'line' => 'product_lines.name',
+                'type' => 'product_types.name',
+                'furniture' => 'product_furnitures.name',
+            ];
 
-        $sortKey = $sortAlias[$request->query('sort_by')] ?? null;
+            $sortKey = $sortAlias[$request->query('sort_by')] ?? null;
 
-        // Query con joins para ordenar por nombre de relaciones
-        $query = Product::with([
-            'productLine',
-            'productType',
-            'productFurniture',
-            'productStatus',
-            // debo traer el ultimo precio
-            'prices' => function ($query) {
-                $query->latest('valid_date_from')->take(1);
-            },
-            'mainImage',
-            'attributeValues.attribute',
-        ])
-        ->join('product_lines', 'products.id_product_line', '=', 'product_lines.id')
-        ->join('product_types', 'products.id_product_type', '=', 'product_types.id')
-        ->join('product_furnitures', 'products.id_product_furniture', '=', 'product_furnitures.id')
-        ->select('products.*');
+            // Query con joins para ordenar por nombre de relaciones
+            $query = Product::with([
+                'productLine',
+                'productType',
+                'productFurniture',
+                'productStatus',
+                // debo traer el ultimo precio
+                'prices' => function ($query) {
+                    $query->latest('valid_date_from')->take(1);
+                },
+                'mainImage',
+                'attributeValues.attribute',
+            ])
+                ->join('product_lines', 'products.id_product_line', '=', 'product_lines.id')
+                ->join('product_types', 'products.id_product_type', '=', 'product_types.id')
+                ->join('product_furnitures', 'products.id_product_furniture', '=', 'product_furnitures.id')
+                ->select('products.*');
 
-        if (!is_null($status)) {
-            $query->where('products.id_product_status', $status);
+            if (!is_null($status)) {
+                $query->where('products.id_product_status', $status);
+            }
+
+            if (!is_null($type)) {
+                $query->where('products.id_product_type', $type);
+            }
+
+            if (!is_null($line)) {
+                $query->where('products.id_product_line', $line);
+            }
+
+            if (!is_null($furniture)) {
+                $query->where('products.id_product_furniture', $furniture);
+            }
+
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('products.name', 'like', '%' . $search . '%')
+                        ->orWhere('products.description', 'like', '%' . $search . '%');
+                });
+            }
+
+            if ($sortKey) {
+                $query->orderBy($sortKey, $sortOrder === 'desc' ? 'desc' : 'asc');
+            }
+
+            $products = $query->paginate($perPage, ['*'], 'page', $page);
+
+            $data = $products->items();
+            $meta_data = [
+                'page' => $products->currentPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+                'last_page' => $products->lastPage(),
+            ];
+
+            return ApiResponse::paginate('Listado de productos obtenido correctamente', 200, $data, $meta_data, [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Obtener todos los productos',
+            ]);
+        } catch (Exception $e) {
+            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Obtener todos los productos',
+            ]);
         }
-
-        if (!is_null($type)) {
-            $query->where('products.id_product_type', $type);
-        }
-
-        if (!is_null($line)) {
-            $query->where('products.id_product_line', $line);
-        }
-
-        if (!is_null($furniture)) {
-            $query->where('products.id_product_furniture', $furniture);
-        }
-
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('products.name', 'like', '%' . $search . '%')
-                    ->orWhere('products.description', 'like', '%' . $search . '%');
-            });
-        }
-
-        if ($sortKey) {
-            $query->orderBy($sortKey, $sortOrder === 'desc' ? 'desc' : 'asc');
-        }
-
-        $products = $query->paginate($perPage, ['*'], 'page', $page);
-
-        $data = $products->items();
-        $meta_data = [
-            'page' => $products->currentPage(),
-            'per_page' => $products->perPage(),
-            'total' => $products->total(),
-            'last_page' => $products->lastPage(),
-        ];
-
-        return ApiResponse::paginate('Listado de productos obtenido correctamente', 200, $data, $meta_data, [
-            'request' => $request,
-            'module' => 'product',
-            'endpoint' => 'Obtener todos los productos',
-        ]);
-    } catch (Exception $e) {
-        return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
-            'request' => $request,
-            'module' => 'product',
-            'endpoint' => 'Obtener todos los productos',
-        ]);
     }
-}
 
     // Obtener un producto por ID con toda su información
     public function show(Request $request, $id)
@@ -603,15 +603,16 @@ class ProductController extends Controller
             $startDate = \Carbon\Carbon::parse($request->date);
             $dates = collect(range(0, 6))->map(fn($i) => $startDate->copy()->addDays($i)->toDateString());
 
-            // Obtener los productos usados en products_use_stock
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
+
+            // Obtener productos usados
             $usedProductIds = ProductUseStock::distinct()->pluck('id_product')->toArray();
 
-            // Traer esos productos con stock y uso de stock
             $products = Product::with(['productStock', 'productUseStock'])
                 ->whereIn('id', $usedProductIds)
                 ->get();
 
-            // Agrupar por product_stock o id propio si no tiene product_stock
             $groupedByStock = $products->groupBy(function ($product) {
                 return $product->product_stock ?? $product->id;
             });
@@ -619,12 +620,7 @@ class ProductController extends Controller
             $result = collect();
 
             foreach ($groupedByStock as $stockId => $group) {
-                // Buscar representante cuyo id sea igual al stockId
-                $representativeProduct = $group->firstWhere('id', $stockId);
-
-                if (!$representativeProduct) {
-                    $representativeProduct = $group->first();
-                }
+                $representativeProduct = $group->firstWhere('id', $stockId) ?? $group->first();
 
                 $stock = $representativeProduct->productStock->stock ?? $representativeProduct->stock;
 
@@ -647,10 +643,34 @@ class ProductController extends Controller
                 ]);
             }
 
-            return ApiResponse::create(
+            $total = $result->count();
+
+            if ($perPage) {
+                $perPage = (int) $perPage;
+                $page = (int) $page;
+                $paged = $result->forPage($page, $perPage)->values();
+
+                $meta_data = [
+                    'page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'last_page' => ceil($total / $perPage),
+                ];
+            } else {
+                $paged = $result;
+                $meta_data = [
+                    'page' => 1,
+                    'per_page' => $total,
+                    'total' => $total,
+                    'last_page' => 1,
+                ];
+            }
+
+            return ApiResponse::paginate(
                 'Reporte de uso de stock por producto obtenido correctamente',
                 200,
-                $result,
+                $paged,
+                $meta_data,
                 [
                     'request' => $request,
                     'module' => 'product',
