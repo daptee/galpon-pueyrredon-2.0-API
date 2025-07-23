@@ -348,7 +348,7 @@ class BudgetController extends Controller
                             'id_product_stock' => $item->product->product_stock == null ? $item->id_product : $item->product->product_stock,
                             'date_from' => $budget->date_event,
                             //sumar los dias al evento
-                            'date_to' => \Carbon\Carbon::parse($budget->date_event)->addDays($budget->days),
+                            'date_to' => \Carbon\Carbon::parse($budget->date_event)->addDays($budget->days - 1),
                             'quantity' => $item->quantity
                         ]);
                     }
