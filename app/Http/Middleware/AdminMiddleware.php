@@ -33,7 +33,7 @@ class AdminMiddleware
                 return ApiResponse::create('El usuario no tiene permiso para realizar esta accion.', 403);
             }
         } catch (Exception $e) {
-            return ApiResponse::create('El usuario no tiene permiso para realizar esta accion.', 401, $e->getMessage());
+            return ApiResponse::create('El token fallo', 401, $e->getMessage());
         }
 
         return $next($request);
