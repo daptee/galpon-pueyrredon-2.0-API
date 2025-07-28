@@ -17,9 +17,8 @@ class UserController extends Controller
     public function index(Request $request)
     {
         try {
-            // Verificar si se envían los parámetros `page` o `per_page`
-            $page = $request->has('page');
-            $perPage = $request->get('per_page', 30); // Default: 10 resultados por página
+            $isPaginated = $request->has('page') || $request->has('per_page');
+            $perPage = $request->get('per_page', 30);
 
             // Construir la consulta base
             $query = User::with(['userType.status', 'client.status', 'theme', 'status']);
@@ -47,20 +46,24 @@ class UserController extends Controller
                 });
             }
 
-            // Verificar si la solicitud es paginada
-            $users = $query->paginate($perPage);
-
-            // Ocultar la contraseña
-            $data = collect($users->items())->map(function ($user) {
-                return $user->makeHidden(['password']);
-            });
-
-            $meta_data = [
-                'page' => $users->currentPage(),
-                'per_page' => $users->perPage(),
-                'total' => $users->total(),
-                'last_page' => $users->lastPage(),
-            ];
+            if ($isPaginated) {
+                $users = $query->paginate($perPage);
+                $data = collect($users->items())->map(function ($user) {
+                    return $user->makeHidden(['password']);
+                });
+                $meta_data = [
+                    'page' => $users->currentPage(),
+                    'per_page' => $users->perPage(),
+                    'total' => $users->total(),
+                    'last_page' => $users->lastPage(),
+                ];
+            } else {
+                $users = $query->get();
+                $data = $users->map(function ($user) {
+                    return $user->makeHidden(['password']);
+                });
+                $meta_data = null;
+            }
 
             return ApiResponse::paginate('Usuarios traídos correctamente', 200, $data, $meta_data, [
                 'request' => $request,
@@ -75,6 +78,7 @@ class UserController extends Controller
             ]);
         }
     }
+
 
     // GET BY ID - Retornar toda la información de un usuario según su id
     public function show($id, Request $request)

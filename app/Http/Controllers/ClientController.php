@@ -52,12 +52,7 @@ class ClientController extends Controller
             } else {
                 // Si no se especifica per_page, traer todos los registros sin paginación
                 $data = $query->get();
-                $meta_data = [
-                    'page' => 1,
-                    'per_page' => $data->count(),
-                    'total' => $data->count(),
-                    'last_page' => 1,
-                ];
+                $meta_data = null;
             }
 
             return ApiResponse::paginate('Clientes traídos correctamente', 200, $data, $meta_data, [

@@ -16,7 +16,7 @@ class PlaceController extends Controller
     {
         try {
             // Obtén la página y el número de resultados por página con valores por defecto
-            $perPage = $request->query('per_page', 10);
+            $perPage = $request->query('per_page');
             $page = $request->query('page', 1);
 
             // Construir la consulta base con relaciones
@@ -51,18 +51,23 @@ class PlaceController extends Controller
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
-            
-            // Aplicar paginación con los filtros
-            $places = $query->paginate($perPage, ['*'], 'page', $page);
 
-            // Extraer los datos de la paginación
-            $data = $places->items();
-            $meta_data = [
-                'page' => $places->currentPage(),
-                'per_page' => $places->perPage(),
-                'total' => $places->total(),
-                'last_page' => $places->lastPage(),
-            ];
+            // Aplicar paginación con los filtros
+            if ($perPage) {
+                // Paginado normal
+                $places = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $places->items();
+                $meta_data = [
+                    'page' => $places->currentPage(),
+                    'per_page' => $places->perPage(),
+                    'total' => $places->total(),
+                    'last_page' => $places->lastPage(),
+                ];
+            } else {
+                // Sin paginar, traer todo
+                $data = $query->get();
+                $meta_data = null;
+            }
 
             return ApiResponse::paginate('Lugares obtenidos correctamente', 200, $data, $meta_data, [
                 'request' => $request,

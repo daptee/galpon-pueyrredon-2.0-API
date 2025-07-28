@@ -14,7 +14,7 @@ class TransportationController extends Controller
     public function index(Request $request)
     {
         try {
-            $perPage = $request->query('per_page', 10);
+            $perPage = $request->query('per_page');
             $page = $request->query('page', 1);
             $status = $request->query('status');
 
@@ -27,30 +27,40 @@ class TransportationController extends Controller
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
-            
-            $transportations = $query->paginate($perPage, ['*'], 'page', $page);
 
-            $transportations->load(['status']);
+            if ($perPage) {
+                $transportations = $query->paginate($perPage, ['*'], 'page', $page);
+            } else {
+                $transportations = $query->get();
+            }
 
-            $data = $transportations->items();
-            $meta_data = [
-                'page' => $transportations->currentPage(),
-                'per_page' => $transportations->perPage(),
-                'total' => $transportations->total(),
-                'last_page' => $transportations->lastPage(),
-            ];
+            // Cargar relaciones
+            if ($perPage) {
+                $transportations->load(['status']);
+                $data = $transportations->items();
+                $meta_data = [
+                    'page' => $transportations->currentPage(),
+                    'per_page' => $transportations->perPage(),
+                    'total' => $transportations->total(),
+                    'last_page' => $transportations->lastPage(),
+                ];
+            } else {
+                $transportations->load(['status']);
+                $data = $transportations;
+                $meta_data = null;
+            }
 
             return ApiResponse::paginate('Transportes obtenidos correctamente', 200, $data, $meta_data, [
-                    'request' => $request,
-                    'module' => 'transportations',
-                    'endpoint' => 'Obtener transportes',
-                ]);
+                'request' => $request,
+                'module' => 'transportations',
+                'endpoint' => 'Obtener transportes',
+            ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al obtener transportes', 500, ['error' => $e->getMessage()], [
-                    'request' => $request,
-                    'module' => 'transportations',
-                    'endpoint' => 'Obtener transportes',
-                ]);
+                'request' => $request,
+                'module' => 'transportations',
+                'endpoint' => 'Obtener transportes',
+            ]);
         }
     }
 
@@ -73,16 +83,16 @@ class TransportationController extends Controller
             $transportation->load(['status']);
 
             return ApiResponse::create('Transporte obtenido correctamente', 200, $transportation, [
-                    'request' => $request,
-                    'module' => 'transportations',
-                    'endpoint' => 'Obtener un transporte',
-                ]);
+                'request' => $request,
+                'module' => 'transportations',
+                'endpoint' => 'Obtener un transporte',
+            ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al obtener el transporte', 500, ['error' => $e->getMessage()], [
-                    'request' => $request,
-                    'module' => 'transportations',
-                    'endpoint' => 'Obtener un transporte',
-                ]);
+                'request' => $request,
+                'module' => 'transportations',
+                'endpoint' => 'Obtener un transporte',
+            ]);
         }
     }
 
@@ -165,16 +175,16 @@ class TransportationController extends Controller
             $transportation->load(['status']);
 
             return ApiResponse::create('Transporte actualizado correctamente', 200, $transportation, [
-                    'request' => $request,
-                    'module' => 'transportations',
-                    'endpoint' => 'Actualizar un transporte',
-                ]);
+                'request' => $request,
+                'module' => 'transportations',
+                'endpoint' => 'Actualizar un transporte',
+            ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al actualizar el transporte', 500, ['error' => $e->getMessage()], [
-                    'request' => $request,
-                    'module' => 'transportations',
-                    'endpoint' => 'Actualizar un transporte',
-                ]);
+                'request' => $request,
+                'module' => 'transportations',
+                'endpoint' => 'Actualizar un transporte',
+            ]);
         }
     }
 }

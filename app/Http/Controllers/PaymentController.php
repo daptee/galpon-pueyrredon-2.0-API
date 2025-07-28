@@ -15,7 +15,7 @@ class PaymentController extends Controller
     public function index(Request $request)
     {
         try {
-            $perPage = $request->query('per_page', 10);
+            $perPage = $request->query('per_page');
             $page = $request->query('page', 1);
 
             $query = Payment::with([
@@ -33,20 +33,20 @@ class PaymentController extends Controller
             // === Filtros dinámicos ===
 
             // Filtro por lugar (relacionado al presupuesto)
-if ($request->has('place')) {
-    $placeId = $request->input('place');
-    $query->whereHas('budget.place', function ($q) use ($placeId) {
-        $q->where('id', $placeId);
-    });
-}
+            if ($request->has('place')) {
+                $placeId = $request->input('place');
+                $query->whereHas('budget.place', function ($q) use ($placeId) {
+                    $q->where('id', $placeId);
+                });
+            }
 
-// Filtro por cliente (relacionado al presupuesto)
-if ($request->has('client')) {
-    $clientId = $request->input('client');
-    $query->whereHas('budget.client', function ($q) use ($clientId) {
-        $q->where('id', $clientId);
-    });
-}
+            // Filtro por cliente (relacionado al presupuesto)
+            if ($request->has('client')) {
+                $clientId = $request->input('client');
+                $query->whereHas('budget.client', function ($q) use ($clientId) {
+                    $q->where('id', $clientId);
+                });
+            }
 
             // Filtro por fecha de pago (rango)
             if ($request->has('payment_date_start') && $request->has('payment_date_end')) {
@@ -72,15 +72,19 @@ if ($request->has('client')) {
             }
 
             // Paginado
-            $payments = $query->paginate($perPage, ['*'], 'page', $page);
-
-            $data = $payments->items();
-            $meta_data = [
-                'page' => $payments->currentPage(),
-                'per_page' => $payments->perPage(),
-                'total' => $payments->total(),
-                'last_page' => $payments->lastPage(),
-            ];
+            if ($perPage !== null) {
+                $payments = $query->paginate((int) $perPage, ['*'], 'page', $page);
+                $data = $payments->items();
+                $meta_data = [
+                    'page' => $payments->currentPage(),
+                    'per_page' => $payments->perPage(),
+                    'total' => $payments->total(),
+                    'last_page' => $payments->lastPage(),
+                ];
+            } else {
+                $data = $query->get();
+                $meta_data = null;
+            }
 
             return ApiResponse::paginate('Pagos obtenidos correctamente', 200, $data, $meta_data, [
                 'request' => $request,
@@ -112,7 +116,7 @@ if ($request->has('client')) {
             if ($validator->fails()) {
                 return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
             }
-                
+
 
             $payment = Payment::create([
                 'id_budget' => $request->id_budget,

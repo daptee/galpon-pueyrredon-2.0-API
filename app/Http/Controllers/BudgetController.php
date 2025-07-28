@@ -78,12 +78,7 @@ class BudgetController extends Controller
                 ];
             } else {
                 $paged = $tree; // sin paginar
-                $meta_data = [
-                    'page' => 1,
-                    'per_page' => $total,
-                    'total' => $total,
-                    'last_page' => 1,
-                ];
+                $meta_data = null;
             }
 
             return ApiResponse::paginate('Presupuestos obtenidos correctamente', 200, $paged, $meta_data, [
