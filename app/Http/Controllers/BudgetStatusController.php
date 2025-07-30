@@ -12,7 +12,7 @@ class BudgetStatusController extends Controller
     public function index(Request $request)
     {
         try {
-            $budgetStatus = BudgetStatus::all();
+            $budgetStatus = BudgetStatus::orderBy('name')->get();
     
             return ApiResponse::create('Estado del presupuesto traídos correctamente', 200, $budgetStatus, [
                 'request' => $request,
