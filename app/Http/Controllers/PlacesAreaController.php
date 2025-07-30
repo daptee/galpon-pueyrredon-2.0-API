@@ -24,7 +24,7 @@ class PlacesAreaController extends Controller
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $placesAreas = $query->get();
+            $placesAreas = $query->orderBy('name')->get();
 
             $placesAreas->load(['status']);
 

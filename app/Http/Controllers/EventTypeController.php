@@ -21,7 +21,7 @@ class EventTypeController extends Controller
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $eventTypes = $query->get();
+            $eventTypes = $query->orderBy('name')->get();
 
             $eventTypes->load('status');
 

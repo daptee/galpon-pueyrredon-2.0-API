@@ -13,7 +13,9 @@ class ProvinceController extends Controller
     public function index(Request $request)
     {
         try {
-            $provinces = Province::with('localities')->get();
+            $provinces = Province::with('localities')
+                ->orderBy('province')
+                ->get();
 
             return ApiResponse::create('Listado de provincias obtenido correctamente', 200, $provinces, [
                 'request' => $request,

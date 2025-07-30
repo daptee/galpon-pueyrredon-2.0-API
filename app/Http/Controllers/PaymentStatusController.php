@@ -20,7 +20,7 @@ class PaymentStatusController extends Controller
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $statuses = $query->get();
+            $statuses = $query->orderBy('name')->get();
 
             $statuses->load('status');
 

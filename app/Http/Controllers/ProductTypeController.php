@@ -15,9 +15,9 @@ class ProductTypeController extends Controller
     public function index(Request $request)
     {
         try {
-            $products = ProductType::all();
-
-            $products->load(['status']);
+            $products = ProductType::with(['status'])
+                    ->orderBy('name')
+                    ->get();
 
             return ApiResponse::create('Listado de tipos de productos obtenido correctamente', 200, $products, [
                 'request' => $request,

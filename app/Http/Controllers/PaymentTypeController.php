@@ -20,7 +20,7 @@ class PaymentTypeController extends Controller
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $paymentTypes = $query->get();
+            $paymentTypes = $query->orderBy('name')->get();
             $paymentTypes->load('status');
 
             return ApiResponse::create('Tipos de pago traídos correctamente', 200, $paymentTypes, [

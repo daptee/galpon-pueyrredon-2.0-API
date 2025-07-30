@@ -26,7 +26,7 @@ class TollController extends Controller
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $tolls = $query->get();
+            $tolls = $query->orderBy('name')->get();
 
             $tolls->load(['status']);
 

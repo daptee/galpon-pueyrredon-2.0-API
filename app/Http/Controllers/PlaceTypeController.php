@@ -27,7 +27,7 @@ class PlaceTypeController extends Controller
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $placesTypes = $query->get();
+            $placesTypes = $query->orderBy('name')->get();
 
             $placesTypes->load(['status']);
 
