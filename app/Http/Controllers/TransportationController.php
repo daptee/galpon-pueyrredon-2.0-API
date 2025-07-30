@@ -28,6 +28,8 @@ class TransportationController extends Controller
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
+            $query->orderBy('name');
+
             if ($perPage) {
                 $transportations = $query->paginate($perPage, ['*'], 'page', $page);
             } else {

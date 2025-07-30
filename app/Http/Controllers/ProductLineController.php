@@ -15,8 +15,9 @@ class ProductLineController extends Controller
     public function index(Request $request)
     {
         try {
-            $products = ProductLine::all();
-            $products->load(['status']);
+            $products = ProductLine::with(['status'])
+                    ->orderBy('name')
+                    ->get();
 
             return ApiResponse::create('Listado de lineas de productos obtenido correctamente', 200, $products, [
                 'request' => $request,

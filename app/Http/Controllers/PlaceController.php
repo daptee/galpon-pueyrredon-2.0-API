@@ -28,7 +28,8 @@ class PlaceController extends Controller
                 'placeCollectionType.status',
                 'placeArea.status',
                 'status'
-            ]);
+            ])
+                ->orderBy('name');
 
             // Aplicar filtros opcionales
             if ($request->has('place_type')) {

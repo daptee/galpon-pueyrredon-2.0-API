@@ -15,7 +15,9 @@ class ProductAttributeController extends Controller
     public function index(Request $request)
     {
         try {
-            $products = ProductAttribute::all();
+            $products = ProductAttribute::with(['status'])
+                    ->orderBy('name')
+                    ->get();
 
             $products->load(['status']);
 

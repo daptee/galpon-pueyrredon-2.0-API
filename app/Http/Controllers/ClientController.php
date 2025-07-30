@@ -21,7 +21,8 @@ class ClientController extends Controller
             $page = $request->query('page', 1);
 
             // Construir la consulta base con relaciones
-            $query = Client::with(['clientType.status', 'clientClass.status', 'contacts', 'status']);
+            $query = Client::with(['clientType.status', 'clientClass.status', 'contacts', 'status'])
+                ->orderBy('name');
 
             // Aplicar filtros si se envían
             if ($request->has('client_class')) {

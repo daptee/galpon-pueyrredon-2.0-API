@@ -20,7 +20,7 @@ class PaymentMethodController extends Controller
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $methods = $query->get();
+            $methods = $query->orderBy('name')->get();
 
             $methods->load('status'); // Cargar traducciones si es necesario
 

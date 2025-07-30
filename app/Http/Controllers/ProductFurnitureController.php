@@ -15,9 +15,10 @@ class ProductFurnitureController extends Controller
     public function index(Request $request)
     {
         try {
-            $products = ProductFurniture::all();
 
-            $products->load(['status']);
+            $products = ProductFurniture::with(['status'])
+                    ->orderBy('name')
+                    ->get();
 
             return ApiResponse::create('Listado de muebles de productos obtenido correctamente', 200, $products, [
                 'request' => $request,
