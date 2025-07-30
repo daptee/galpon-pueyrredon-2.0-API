@@ -54,9 +54,17 @@ class PaymentMethodController extends Controller
 
             $method->load('status');
 
-            return ApiResponse::create('Método de pago creado correctamente', 201, $method);
+            return ApiResponse::create('Método de pago creado correctamente', 201, $method, [
+                'request' => $request,
+                'module' => 'payment method',
+                'endpoint' => 'Crear método de pago',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear método de pago', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear método de pago', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'payment method',
+                'endpoint' => 'Crear método de pago',
+            ]);
         }
     }
 
@@ -76,7 +84,11 @@ class PaymentMethodController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'payment method',
+                    'endpoint' => 'Actualizar método de pago',
+                ]);
             }
 
             $method->update([
@@ -86,9 +98,17 @@ class PaymentMethodController extends Controller
 
             $method->load('status');
 
-            return ApiResponse::create('Método de pago actualizado correctamente', 200, $method);
+            return ApiResponse::create('Método de pago actualizado correctamente', 200, $method, [
+                'request' => $request,
+                'module' => 'payment method',
+                'endpoint' => 'Actualizar método de pago',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar método de pago', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar método de pago', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'payment method',
+                'endpoint' => 'Actualizar método de pago',
+            ]);
         }
     }
 }

@@ -113,9 +113,17 @@ class BudgetController extends Controller
                 return ApiResponse::create('Presupuesto no encontrado', 404, ['error' => 'Presupuesto no encontrado'], []);
             }
 
-            return ApiResponse::create('Presupuesto obtenido correctamente', 200, $budget, []);
+            return ApiResponse::create('Presupuesto obtenido correctamente', 200, $budget, [
+                'request' => request(),
+                'module' => 'budget',
+                'endpoint' => 'Obtener presupuesto por ID',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener el presupuesto', 500, ['error' => $e->getMessage()], []);
+            return ApiResponse::create('Error al obtener el presupuesto', 500, ['error' => $e->getMessage()], [
+                'request' => request(),
+                'module' => 'budget',
+                'endpoint' => 'Obtener presupuesto por ID',
+            ]);
         }
     }
 
@@ -130,7 +138,7 @@ class BudgetController extends Controller
                 'id_place' => 'required|integer|exists:places,id',
                 'id_transportation' => 'required|integer|exists:transportations,id',
                 'date_event' => 'required|date',
-                'time_event' => 'required|string',
+                'time_event' => 'nullable|string',
                 'days' => 'required|integer|min:1',
                 'quoted_days' => 'required|integer|min:1',
                 'total_price_products' => 'required|numeric',
@@ -303,9 +311,17 @@ class BudgetController extends Controller
                 'time' => now()->toTimeString()
             ]);
 
-            return ApiResponse::create('Observaciones actualizadas correctamente', 201, $budget, []);
+            return ApiResponse::create('Observaciones actualizadas correctamente', 201, $budget, [
+                'request' => $request,
+                'module' => 'budget',
+                'endpoint' => 'Actualizar observaciones',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar observaciones', 500, ['error' => $e->getMessage()], []);
+            return ApiResponse::create('Error al actualizar observaciones', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'budget',
+                'endpoint' => 'Actualizar observaciones',
+            ]);
         }
     }
 
@@ -365,9 +381,17 @@ class BudgetController extends Controller
                 'time' => now()->toTimeString()
             ]);
 
-            return ApiResponse::create('Estado actualizado correctamente', 201, $budget, []);
+            return ApiResponse::create('Estado actualizado correctamente', 201, $budget, [
+                'request' => $request,
+                'module' => 'budget',
+                'endpoint' => 'Actualizar estado del presupuesto',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el estado', 500, ['error' => $e->getMessage()], []);
+            return ApiResponse::create('Error al actualizar el estado', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'budget',
+                'endpoint' => 'Actualizar estado del presupuesto',
+            ]);
         }
     }
 
@@ -382,7 +406,7 @@ class BudgetController extends Controller
                 'id_place' => 'required|integer|exists:places,id',
                 'id_transportation' => 'required|integer|exists:transportations,id',
                 'date_event' => 'required|date',
-                'time_event' => 'required|string',
+                'time_event' => 'nullable|string',
                 'days' => 'required|integer|min:1',
                 'quoted_days' => 'required|integer|min:1',
                 'total_price_products' => 'required|numeric',
@@ -607,10 +631,16 @@ class BudgetController extends Controller
                 'product' => $product,
                 'available_stock' => $availableStockPerDay,
                 'requested_quantity' => $quantity,
-            ], []);
+            ], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar stock del producto',
+            ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al verificar el stock', 500, ['error' => $e->getMessage()], []);
+            return ApiResponse::create('Error al verificar el stock', 500, ['error' => $e->getMessage()], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar stock del producto',
+            ]);
         }
     }
     public function checkPrice(Request $request)
@@ -651,9 +681,15 @@ class BudgetController extends Controller
                 'has_price' => true,
                 'product' => $product,
                 'price' => $price
-            ], []);
+            ], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar precio del producto',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al verificar el precio', 500, ['error' => $e->getMessage()], []);
+            return ApiResponse::create('Error al verificar el precio', 500, ['error' => $e->getMessage()], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar precio del producto',
+            ]);
         }
     }
     public function updateContact(Request $request, $id)
@@ -696,9 +732,17 @@ class BudgetController extends Controller
                 'time' => now()->toTimeString()
             ]);
 
-            return ApiResponse::create('Contacto actualizado correctamente', 201, $budget, []);
+            return ApiResponse::create('Contacto actualizado correctamente', 201, $budget, [
+                'request' => $request,
+                'module' => 'budget',
+                'endpoint' => 'Actualizar contacto del presupuesto',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el contacto', 500, ['error' => $e->getMessage()], []);
+            return ApiResponse::create('Error al actualizar el contacto', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'budget',
+                'endpoint' => 'Actualizar contacto del presupuesto',
+            ]);
         }
     }
 

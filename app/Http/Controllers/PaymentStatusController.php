@@ -44,7 +44,11 @@ class PaymentStatusController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'payment status',
+                    'endpoint' => 'Crear estado de pago',
+                ]);
             }
 
             $status = PaymentStatus::create([
@@ -54,9 +58,17 @@ class PaymentStatusController extends Controller
 
             $status->load('status');
 
-            return ApiResponse::create('Estado de pago creado correctamente', 201, $status);
+            return ApiResponse::create('Estado de pago creado correctamente', 201, $status, [
+                'request' => $request,
+                'module' => 'payment status',
+                'endpoint' => 'Crear estado de pago',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear estado de pago', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al crear estado de pago', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'payment status',
+                'endpoint' => 'Crear estado de pago',
+            ]);
         }
     }
 
@@ -76,7 +88,11 @@ class PaymentStatusController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'payment status',
+                    'endpoint' => 'Actualizar estado de pago',
+                ]);
             }
 
             $status->update([
@@ -86,9 +102,17 @@ class PaymentStatusController extends Controller
 
             $status->load('status');
 
-            return ApiResponse::create('Estado de pago actualizado correctamente', 200, $status);
+            return ApiResponse::create('Estado de pago actualizado correctamente', 200, $status, [
+                'request' => $request,
+                'module' => 'payment status',
+                'endpoint' => 'Actualizar estado de pago',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar estado de pago', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::create('Error al actualizar estado de pago', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'payment status',
+                'endpoint' => 'Actualizar estado de pago',
+            ]);
         }
     }
 }
