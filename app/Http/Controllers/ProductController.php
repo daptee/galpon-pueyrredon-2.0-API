@@ -24,7 +24,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         try {
-            $perPage = $request->query('per_page', 30);
+            $perPage = $request->query('per_page');
             $page = $request->query('page', 1);
             $status = $request->query('status');
             $type = $request->query('type');
@@ -94,15 +94,21 @@ class ProductController extends Controller
                 $query->orderBy($sortKey, $sortOrder === 'desc' ? 'desc' : 'asc');
             }
 
-            $products = $query->paginate($perPage, ['*'], 'page', $page);
+            if ($perPage !== null) {
+                $products = $query->paginate($perPage, ['*'], 'page', $page);
 
-            $data = $products->items();
-            $meta_data = [
-                'page' => $products->currentPage(),
-                'per_page' => $products->perPage(),
-                'total' => $products->total(),
-                'last_page' => $products->lastPage(),
-            ];
+                $data = $products->items();
+                $meta_data = [
+                    'page' => $products->currentPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                    'last_page' => $products->lastPage(),
+                ];
+            } else {
+                $data = $query->get();
+                $meta_data = null;
+            }
+            
 
             return ApiResponse::paginate('Listado de productos obtenido correctamente', 200, $data, $meta_data, [
                 'request' => $request,
