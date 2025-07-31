@@ -137,7 +137,14 @@ class ProductController extends Controller
                 'images',
                 'attributeValues.attribute',
                 'prices',
-                'comboItems.product',
+                'comboItems.product.productLine',
+                'comboItems.product.productType',
+                'comboItems.product.productFurniture',
+                'comboItems.product.productStatus',
+                'comboItems.product.productStock',
+                'comboItems.product.images',
+                'comboItems.product.attributeValues.attribute',
+                'comboItems.product.prices',
             ])->findOrFail($id);
 
             //quitar id relacion
