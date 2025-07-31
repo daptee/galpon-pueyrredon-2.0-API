@@ -19,70 +19,78 @@ class BudgetController extends Controller
     public function index(Request $request)
 {
     try {
-        $perPage = $request->query('per_page'); // ahora sin valor por defecto
+        $perPage = $request->query('per_page');
         $page = $request->query('page', 1);
 
-        // 1. Obtener todos los presupuestos con relaciones
         $startDate = $request->input('start_date', now()->toDateString());
 
+        // 1. Traer presupuestos con relaciones
         $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->get();
 
-        // Ordenar por cercanía a start_date
-        $allBudgets = $allBudgets->sortBy(function ($budget) use ($startDate) {
-            return abs(strtotime($budget->date_event) - strtotime($startDate));
-        })->values();
-
-        // 2. Aplicar filtros manualmente
+        // 2. Filtrar
         $filtered = $allBudgets->filter(function ($budget) use ($request) {
-            if ($request->has('place') && $budget->id_place != $request->input('place')) {
-                return false;
-            }
-            if ($request->has('status') && $budget->id_budget_status != $request->input('status')) {
-                return false;
-            }
-            if ($request->has('client') && $budget->id_client != $request->input('client')) {
-                return false;
-            }
-            if ($request->has('event_date') && $budget->date_event != $request->input('event_date')) {
-                return false;
-            }
-            if ($request->has('start_date') && $budget->date_event < $request->input('start_date')) {
-                return false;
-            }
+            if ($request->has('place') && $budget->id_place != $request->input('place')) return false;
+            if ($request->has('status') && $budget->id_budget_status != $request->input('status')) return false;
+            if ($request->has('client') && $budget->id_client != $request->input('client')) return false;
+            if ($request->has('event_date') && $budget->date_event != $request->input('event_date')) return false;
+            if ($request->has('start_date') && $budget->date_event < $request->input('start_date')) return false;
             if ($request->has('search')) {
                 $search = $request->input('search');
-                if (!str_contains((string) $budget->id, $search)) {
-                    return false;
-                }
+                if (!str_contains((string) $budget->id, $search)) return false;
             }
             return true;
         });
 
-        // 3. Transformar a array
-        $filteredArray = json_decode(json_encode($filtered), true);
-
-        // 4. Indexar por ID
+        // 3. Transformar a array indexado por ID
+        $allArray = json_decode(json_encode($allBudgets), true);
         $byId = [];
-        foreach ($filteredArray as $budget) {
-            $budget['budgets'] = []; // inicializar hijos
-            $byId[$budget['id']] = $budget;
+        foreach ($allArray as $b) {
+            $b['budgets'] = [];
+            $byId[$b['id']] = $b;
         }
 
-        // 5. Construir árbol (procesar de atrás hacia adelante)
-        $tree = [];
-        foreach (array_reverse($byId) as $budget) {
-            if ($budget['id_budget'] && isset($byId[$budget['id_budget']])) {
-                $byId[$budget['id_budget']]['budgets'][] = &$byId[$budget['id']];
-            } else {
-                $tree[] = &$byId[$budget['id']];
+        // 4. Ordenar por cercanía a startDate
+        $sorted = collect($filtered)->sortBy(function ($b) use ($startDate) {
+            return abs(strtotime($b->date_event) - strtotime($startDate));
+        });
+
+        // 5. Generar árbol ordenado: hijos + padres ascendentes
+        $ordered = [];
+        $added = [];
+
+        foreach ($sorted as $budget) {
+            $current = $budget;
+            while ($current) {
+                $id = $current->id;
+                if (!isset($added[$id])) {
+                    $added[$id] = true;
+                    $ordered[] = $byId[$id];
+                }
+                $current = $current->id_budget ? $allBudgets->firstWhere('id', $current->id_budget) : null;
             }
         }
 
-        $total = count($tree);
+        // 6. Reindexar como árbol jerárquico
+        $treeById = [];
+        foreach ($ordered as &$b) {
+            $b['budgets'] = [];
+            $treeById[$b['id']] = &$b;
+        }
 
-        // 6. Aplicar paginación si viene per_page
+        $finalTree = [];
+        foreach ($treeById as &$b) {
+            if ($b['id_budget'] && isset($treeById[$b['id_budget']])) {
+                $treeById[$b['id_budget']]['budgets'][] = &$b;
+            } else {
+                $finalTree[] = &$b;
+            }
+        }
+
+        $total = count($finalTree);
+
+        // 7. Paginación
         if ($perPage) {
-            $paged = array_slice($tree, ($page - 1) * $perPage, $perPage);
+            $paged = array_slice($finalTree, ($page - 1) * $perPage, $perPage);
             $meta_data = [
                 'page' => $page,
                 'per_page' => (int) $perPage,
@@ -90,7 +98,7 @@ class BudgetController extends Controller
                 'last_page' => ceil($total / $perPage),
             ];
         } else {
-            $paged = $tree; // sin paginar
+            $paged = $finalTree;
             $meta_data = null;
         }
 
