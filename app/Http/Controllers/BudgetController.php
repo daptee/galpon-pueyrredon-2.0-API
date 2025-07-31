@@ -24,15 +24,15 @@ public function index(Request $request)
         $page = $request->query('page', 1);
         $startDate = $request->input('start_date', now()->toDateString());
 
-        // 1. Obtener todos los presupuestos con relaciones
+        // Obtener todos los presupuestos con relaciones
         $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->get();
 
-        // 2. Ordenar por cercanía a start_date
+        // Ordenar por cercanía a start_date
         $allBudgets = $allBudgets->sortBy(function ($budget) use ($startDate) {
             return abs(strtotime($budget->date_event) - strtotime($startDate));
         })->values();
 
-        // 3. Aplicar filtros manualmente
+        // Aplicar filtros
         $filtered = $allBudgets->filter(function ($budget) use ($request) {
             if ($request->has('place') && $budget->id_place != $request->input('place')) return false;
             if ($request->has('status') && $budget->id_budget_status != $request->input('status')) return false;
@@ -46,41 +46,54 @@ public function index(Request $request)
             return true;
         });
 
-        // 4. Transformar a array
-        $filteredArray = json_decode(json_encode($filtered), true);
+        // Convertir todos los presupuestos a array
         $allArray = json_decode(json_encode($allBudgets), true);
+        $filteredArray = json_decode(json_encode($filtered), true);
 
-        // 5. Indexar todos los presupuestos por ID
+        // Indexar todos los presupuestos por ID
         $allById = [];
         foreach ($allArray as $budget) {
-            $budget['parent'] = null; // Inicializar
+            $budget['budgets'] = [];
             $allById[$budget['id']] = $budget;
         }
 
-        // 6. Armar estructura inversa (padres dentro de hijos)
-        $finalResult = [];
+        // Insertar cada presupuesto filtrado dentro de su cadena de padres
+        $rootBudgets = [];
+        $includedIds = [];
+
         foreach ($filteredArray as $budget) {
             $current = $budget;
 
-            $seenIds = []; // Para prevenir ciclos infinitos
+            // Si ya fue incluido en una cadena, lo salteamos
+            if (in_array($current['id'], $includedIds)) continue;
 
-            while (!empty($current['id_budget']) && isset($allById[$current['id_budget']]) && !in_array($current['id_budget'], $seenIds)) {
-                $seenIds[] = $current['id_budget'];
-                $parent = $allById[$current['id_budget']];
-                unset($allById[$parent['id']]); // No se debe mostrar como individual
+            // Subir por la cadena de padres
+            while (!empty($current['id_budget']) && isset($allById[$current['id_budget']])) {
+                $parentId = $current['id_budget'];
+                $parent = &$allById[$parentId];
 
-                $parent['parent'] = $current;
+                // Evitar duplicación
+                $includedIds[] = $current['id'];
+
+                // Insertar el hijo en el padre
+                $parent['budgets'][] = $current;
+
+                // El nuevo current es el padre (seguir subiendo si tiene más)
                 $current = $parent;
             }
 
-            $finalResult[] = $current;
+            // Si no tiene padre, es raíz
+            if (!in_array($current['id'], $includedIds)) {
+                $rootBudgets[] = $current;
+                $includedIds[] = $current['id'];
+            }
         }
 
-        $total = count($finalResult);
+        // Aplicar paginación
+        $total = count($rootBudgets);
 
-        // 7. Aplicar paginación si viene per_page
         if ($perPage) {
-            $paged = array_slice($finalResult, ($page - 1) * $perPage, $perPage);
+            $paged = array_slice($rootBudgets, ($page - 1) * $perPage, $perPage);
             $meta_data = [
                 'page' => $page,
                 'per_page' => (int) $perPage,
@@ -88,7 +101,7 @@ public function index(Request $request)
                 'last_page' => ceil($total / $perPage),
             ];
         } else {
-            $paged = $finalResult;
+            $paged = $rootBudgets;
             $meta_data = null;
         }
 
