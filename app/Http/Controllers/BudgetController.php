@@ -72,6 +72,8 @@ foreach (array_reverse($byId) as $budget) {
     }
 }
 
+$total = count($tree);
+
             // 6. Aplicar paginación si viene per_page
             if ($perPage) {
                 $paged = array_slice($tree, ($page - 1) * $perPage, $perPage);
