@@ -23,7 +23,14 @@ class BudgetController extends Controller
             $page = $request->query('page', 1);
 
             // 1. Obtener todos los presupuestos con relaciones
-            $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->orderBy('date_event', 'asc')->get();
+            $startDate = $request->input('start_date', now()->toDateString());
+
+            $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->get();
+
+            // Ordenar por cercanía a start_date
+            $allBudgets = $allBudgets->sortBy(function ($budget) use ($startDate) {
+                return abs(strtotime($budget->date_event) - strtotime($startDate));
+            })->values();
 
             // 2. Aplicar filtros manualmente
             $filtered = $allBudgets->filter(function ($budget) use ($request) {
