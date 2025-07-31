@@ -16,91 +16,85 @@ use Log;
 
 class BudgetController extends Controller
 {
-    public function index(Request $request)
+    
+public function index(Request $request)
 {
     try {
         $perPage = $request->query('per_page');
-        $page = $request->query('page', 1);
+        $status = $request->query('status');
+        $type = $request->query('type');
+        $line = $request->query('line');
+        $furniture = $request->query('furniture');
+        $client = $request->query('client');
+        $search = $request->query('search');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
 
-        // 1. Traer todos los presupuestos con relaciones
-        $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->get();
+        $query = Budget::query();
 
-        // 2. Aplicar filtros manualmente
-        $filtered = $allBudgets->filter(function ($budget) use ($request) {
-            if ($request->has('place') && $budget->id_place != $request->input('place')) return false;
-            if ($request->has('status') && $budget->id_budget_status != $request->input('status')) return false;
-            if ($request->has('client') && $budget->id_client != $request->input('client')) return false;
-            if ($request->has('event_date') && $budget->date_event != $request->input('event_date')) return false;
-            if ($request->has('start_date') && $budget->date_event < $request->input('start_date')) return false;
-            if ($request->has('search')) {
-                $search = $request->input('search');
-                if (!str_contains((string)$budget->id, $search)) return false;
-            }
-            return true;
-        })->values();
-
-        // 3. Convertir a array para manipular
-        $filteredArray = json_decode(json_encode($filtered), true);
-
-        // 4. Indexar por ID para rápido acceso
-        $byId = [];
-        foreach ($filteredArray as $budget) {
-            $budget['budgets'] = []; // para anidar padres
-            $byId[$budget['id']] = $budget;
+        if ($status) {
+            $query->where('status', $status);
         }
 
-        // 5. Función recursiva para armar padres anidados
-        $buildParents = function ($budget) use (&$byId, &$buildParents) {
-            if (!$budget['id_budget'] || !isset($byId[$budget['id_budget']])) {
-                return $budget;
-            }
-            $parent = $byId[$budget['id_budget']];
-            $parent['budgets'][] = $budget;
-            return $buildParents($parent);
-        };
-
-        // 6. Armar lista solo con los presupuestos hijos (los que tienen padre)
-        $result = [];
-        foreach ($byId as $budget) {
-            if ($budget['id_budget']) {
-                $result[] = $buildParents($budget);
-            }
+        if ($type) {
+            $query->where('type', $type);
         }
 
-        // 7. Quitar duplicados ya que los padres pueden repetirse
-        $uniqueResult = [];
-        foreach ($result as $item) {
-            $uniqueResult[$item['id']] = $item;
-        }
-        $uniqueResult = array_values($uniqueResult);
-
-        // 8. Paginación manual si se requiere
-        $total = count($uniqueResult);
-        if ($perPage) {
-            $paged = array_slice($uniqueResult, ($page - 1) * $perPage, $perPage);
-            $meta_data = [
-                'page' => $page,
-                'per_page' => (int)$perPage,
-                'total' => $total,
-                'last_page' => ceil($total / $perPage),
-            ];
-        } else {
-            $paged = $uniqueResult;
-            $meta_data = null;
+        if ($line) {
+            $query->where('line', $line);
         }
 
-        return ApiResponse::paginate('Presupuestos obtenidos correctamente', 200, $paged, $meta_data, [
-            'request' => $request,
-            'module' => 'budget',
-            'endpoint' => 'Obtener presupuestos hijos con padres anidados',
-        ]);
+        if ($furniture) {
+            $query->where('furniture', $furniture);
+        }
+
+        if ($client) {
+            $query->where('client', 'LIKE', "%$client%");
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%$search%")
+                  ->orWhere('description', 'LIKE', "%$search%");
+            });
+        }
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('date_event', [$startDate, $endDate]);
+        }
+
+        // Obtenemos todos los presupuestos que pasaron los filtros
+        $budgets = $query->get();
+
+        // Procesamos los presupuestos agregando sus padres en 'budgets'
+        $result = $budgets->map(function ($budget) {
+            return $this->buildBudgetWithParents($budget);
+        });
+
+        return response()->json($perPage ? $result->forPage($request->query('page', 1), $perPage)->values() : $result, 200);
+
     } catch (\Exception $e) {
-        return ApiResponse::create('Error al obtener los presupuestos', 500, ['error' => $e->getMessage()], [
-            'request' => $request,
-            'module' => 'budget',
-            'endpoint' => 'Obtener presupuestos hijos con padres anidados',
-        ]);
+        return response()->json([
+            'message' => 'Error al obtener presupuestos',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+private function buildBudgetWithParents($budget)
+{
+    $data = $budget->toArray(); // Incluye todos los campos del presupuesto
+
+    $data['budgets'] = [];
+
+    if ($budget->id_budget) {
+        $parent = Budget::find($budget->id_budget);
+        if ($parent) {
+            $data['budgets'][] = $this->buildBudgetWithParents($parent);
+        }
+    }
+
+    return $data;
 }
 
     public function show($id)
