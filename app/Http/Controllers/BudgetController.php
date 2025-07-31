@@ -19,68 +19,76 @@ class BudgetController extends Controller
     public function index(Request $request)
 {
     try {
-        $perPage = $request->query('per_page');
+        $perPage = $request->query('per_page'); // sin valor por defecto
         $page = $request->query('page', 1);
+
         $startDate = $request->input('start_date', now()->toDateString());
 
-        // 1. Obtener todos los presupuestos con relaciones
         $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->get();
 
-        // 2. Filtrar manualmente
-        $filtered = $allBudgets->filter(function ($budget) use ($request, $startDate) {
-            if ($request->has('place') && $budget->id_place != $request->input('place')) return false;
-            if ($request->has('status') && $budget->id_budget_status != $request->input('status')) return false;
-            if ($request->has('client') && $budget->id_client != $request->input('client')) return false;
-            if ($request->has('event_date') && $budget->date_event != $request->input('event_date')) return false;
-            if ($request->has('start_date') && $budget->date_event < $request->input('start_date')) return false;
+        // Ordenar por cercanía a start_date
+        $allBudgets = $allBudgets->sortBy(function ($budget) use ($startDate) {
+            return abs(strtotime($budget->date_event) - strtotime($startDate));
+        })->values();
+
+        // Aplicar filtros
+        $filtered = $allBudgets->filter(function ($budget) use ($request) {
+            if ($request->has('place') && $budget->id_place != $request->input('place'))
+                return false;
+            if ($request->has('status') && $budget->id_budget_status != $request->input('status'))
+                return false;
+            if ($request->has('client') && $budget->id_client != $request->input('client'))
+                return false;
+            if ($request->has('event_date') && $budget->date_event != $request->input('event_date'))
+                return false;
+            if ($request->has('start_date') && $budget->date_event < $request->input('start_date'))
+                return false;
             if ($request->has('search')) {
                 $search = $request->input('search');
-                if (!str_contains((string)$budget->id, $search)) return false;
+                if (!str_contains((string) $budget->id, $search))
+                    return false;
             }
             return true;
         });
 
-        // 3. Ordenar por cercanía a start_date
-        $filtered = $filtered->sortBy(function ($budget) use ($startDate) {
-            return abs(strtotime($budget->date_event) - strtotime($startDate));
-        })->values();
+        $allById = $allBudgets->keyBy('id');
+        $usedParentIds = [];
 
-        // 4. Convertir a array y reindexar por ID
-        $filteredArray = json_decode(json_encode($filtered), true);
-        $byId = [];
-        foreach ($filteredArray as $budget) {
-            $budget['budgets'] = []; // espacio para hijos
-            $byId[$budget['id']] = $budget;
-        }
-
-        // 5. Construir jerarquía: hijo primero, luego el padre
-        $visited = [];
         $result = [];
 
-        $addWithParents = function ($budget, &$byId, &$visited, &$result) use (&$addWithParents) {
-            if (isset($visited[$budget['id']])) return;
+        foreach ($filtered as $budget) {
+            $current = json_decode(json_encode($budget), true); // convertir a array
+            $chain = &$current;
+            $chain['budgets'] = [];
 
-            $visited[$budget['id']] = true;
-
-            if ($budget['id_budget'] && isset($byId[$budget['id_budget']])) {
-                $addWithParents($byId[$budget['id_budget']], $byId, $visited, $result);
-                $byId[$budget['id_budget']]['budgets'][] = $budget;
-            } else {
-                $result[] = $budget;
+            $parentId = $budget->id_budget;
+            while ($parentId && isset($allById[$parentId])) {
+                $parent = json_decode(json_encode($allById[$parentId]), true);
+                $parent['budgets'] = [$chain];
+                $chain = $parent;
+                $usedParentIds[] = $parentId;
+                $parentId = $allById[$parentId]->id_budget;
             }
-        };
 
-        foreach ($byId as $budget) {
-            $addWithParents($budget, $byId, $visited, $result);
+            $result[] = $chain;
         }
 
-        // 6. Paginación
+        // Quitar duplicados por ID
+        $result = collect($result)->unique('id')->values()->toArray();
+
+        // Eliminar los presupuestos que son usados como padres de otros
+        $result = array_filter($result, function ($item) use ($usedParentIds) {
+            return !in_array($item['id'], $usedParentIds);
+        });
+
         $total = count($result);
+
+        // Paginación si viene per_page
         if ($perPage) {
             $paged = array_slice($result, ($page - 1) * $perPage, $perPage);
             $meta_data = [
                 'page' => $page,
-                'per_page' => (int)$perPage,
+                'per_page' => (int) $perPage,
                 'total' => $total,
                 'last_page' => ceil($total / $perPage),
             ];
