@@ -62,17 +62,15 @@ class BudgetController extends Controller
                 $byId[$budget['id']] = $budget;
             }
 
-            // 5. Construir árbol
-            $tree = [];
-            foreach ($byId as $budget) {
-                if ($budget['id_budget'] && isset($byId[$budget['id_budget']])) {
-                    $byId[$budget['id_budget']]['budgets'][] = &$byId[$budget['id']];
-                } else {
-                    $tree[] = &$byId[$budget['id']];
-                }
-            }
-
-            $total = count($tree);
+            // 5. Construir árbol (procesar de atrás hacia adelante)
+$tree = [];
+foreach (array_reverse($byId) as $budget) {
+    if ($budget['id_budget'] && isset($byId[$budget['id_budget']])) {
+        $byId[$budget['id_budget']]['budgets'][] = &$byId[$budget['id']];
+    } else {
+        $tree[] = &$byId[$budget['id']];
+    }
+}
 
             // 6. Aplicar paginación si viene per_page
             if ($perPage) {
