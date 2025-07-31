@@ -19,94 +19,96 @@ class BudgetController extends Controller
     public function index(Request $request)
 {
     try {
-        $perPage = $request->query('per_page'); // sin valor por defecto
+        $perPage = $request->query('per_page');
         $page = $request->query('page', 1);
-
         $startDate = $request->input('start_date', now()->toDateString());
 
+        // 1. Obtener todos los presupuestos con relaciones
         $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->get();
 
-        // Ordenar por cercanía a start_date
+        // 2. Convertir a array y ordenar por cercanía a la fecha
         $allBudgets = $allBudgets->sortBy(function ($budget) use ($startDate) {
             return abs(strtotime($budget->date_event) - strtotime($startDate));
         })->values();
 
-        // Aplicar filtros
-        $filtered = $allBudgets->filter(function ($budget) use ($request) {
-            if ($request->has('place') && $budget->id_place != $request->input('place'))
-                return false;
-            if ($request->has('status') && $budget->id_budget_status != $request->input('status'))
-                return false;
-            if ($request->has('client') && $budget->id_client != $request->input('client'))
-                return false;
-            if ($request->has('event_date') && $budget->date_event != $request->input('event_date'))
-                return false;
-            if ($request->has('start_date') && $budget->date_event < $request->input('start_date'))
-                return false;
+        $allBudgetsArray = json_decode(json_encode($allBudgets), true);
+
+        // 3. Indexar por ID para acceso rápido
+        $budgetById = [];
+        foreach ($allBudgetsArray as $budget) {
+            $budget['budgets'] = []; // Inicializar hijos o padres
+            $budgetById[$budget['id']] = $budget;
+        }
+
+        // 4. Filtrar según parámetros
+        $filtered = array_filter($budgetById, function ($budget) use ($request) {
+            if ($request->has('place') && $budget['id_place'] != $request->input('place')) return false;
+            if ($request->has('status') && $budget['id_budget_status'] != $request->input('status')) return false;
+            if ($request->has('client') && $budget['id_client'] != $request->input('client')) return false;
+            if ($request->has('event_date') && $budget['date_event'] != $request->input('event_date')) return false;
+            if ($request->has('start_date') && $budget['date_event'] < $request->input('start_date')) return false;
             if ($request->has('search')) {
                 $search = $request->input('search');
-                if (!str_contains((string) $budget->id, $search))
-                    return false;
+                if (!str_contains((string)$budget['id'], $search)) return false;
             }
             return true;
         });
 
-        $allById = $allBudgets->keyBy('id');
-        $usedParentIds = [];
-
-        $result = [];
+        // 5. Construir árbol de padres para cada presupuesto (hijos)
+        $finalBudgets = [];
 
         foreach ($filtered as $budget) {
-            $current = json_decode(json_encode($budget), true); // convertir a array
-            $chain = &$current;
-            $chain['budgets'] = [];
+            $current = $budget;
+            $visited = [];
 
-            $parentId = $budget->id_budget;
-            while ($parentId && isset($allById[$parentId])) {
-                $parent = json_decode(json_encode($allById[$parentId]), true);
-                $parent['budgets'] = [$chain];
-                $chain = $parent;
-                $usedParentIds[] = $parentId;
-                $parentId = $allById[$parentId]->id_budget;
+            // Recursivamente agregar padres
+            while ($current['id_budget']) {
+                $parentId = $current['id_budget'];
+
+                // Prevención de loops infinitos
+                if (in_array($parentId, $visited)) break;
+                $visited[] = $parentId;
+
+                if (isset($budgetById[$parentId])) {
+                    $parent = $budgetById[$parentId];
+                    $parent['budgets'] = [$current];
+                    $current = $parent;
+                } else {
+                    break;
+                }
             }
 
-            $result[] = $chain;
+            $finalBudgets[] = $current;
         }
 
-        // Quitar duplicados por ID
-        $result = collect($result)->unique('id')->values()->toArray();
+        // Eliminar duplicados
+        $finalBudgets = collect($finalBudgets)->unique('id')->values()->all();
+        $total = count($finalBudgets);
 
-        // Eliminar los presupuestos que son usados como padres de otros
-        $result = array_filter($result, function ($item) use ($usedParentIds) {
-            return !in_array($item['id'], $usedParentIds);
-        });
-
-        $total = count($result);
-
-        // Paginación si viene per_page
+        // 6. Aplicar paginación
         if ($perPage) {
-            $paged = array_slice($result, ($page - 1) * $perPage, $perPage);
+            $paged = array_slice($finalBudgets, ($page - 1) * $perPage, $perPage);
             $meta_data = [
                 'page' => $page,
-                'per_page' => (int) $perPage,
+                'per_page' => (int)$perPage,
                 'total' => $total,
                 'last_page' => ceil($total / $perPage),
             ];
         } else {
-            $paged = $result;
+            $paged = $finalBudgets;
             $meta_data = null;
         }
 
         return ApiResponse::paginate('Presupuestos obtenidos correctamente', 200, $paged, $meta_data, [
             'request' => $request,
             'module' => 'budget',
-            'endpoint' => 'Obtener todos los presupuestos agrupados',
+            'endpoint' => 'Obtener todos los presupuestos agrupados descendente',
         ]);
     } catch (\Exception $e) {
         return ApiResponse::create('Error al obtener los presupuestos', 500, ['error' => $e->getMessage()], [
             'request' => $request,
             'module' => 'budget',
-            'endpoint' => 'Obtener todos los presupuestos agrupados',
+            'endpoint' => 'Obtener todos los presupuestos agrupados descendente',
         ]);
     }
 }
