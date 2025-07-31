@@ -20,81 +20,90 @@ class BudgetController extends Controller
 public function index(Request $request)
 {
     try {
-        $perPage = $request->query('per_page');
-        $status = $request->query('status');
-        $type = $request->query('type');
-        $line = $request->query('line');
-        $furniture = $request->query('furniture');
-        $client = $request->query('client');
-        $search = $request->query('search');
-        $startDate = $request->query('start_date');
-        $endDate = $request->query('end_date');
+        $perPage = $request->query('per_page'); // sin valor por defecto
+        $page = $request->query('page', 1);
+        $startDate = $request->input('start_date', now()->toDateString());
 
-        $query = Budget::query();
+        // 1. Obtener todos los presupuestos con relaciones
+        $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->get();
 
-        if ($status) {
-            $query->where('status', $status);
-        }
+        // 2. Ordenar por cercanía a start_date
+        $allBudgets = $allBudgets->sortBy(function ($budget) use ($startDate) {
+            return abs(strtotime($budget->date_event) - strtotime($startDate));
+        })->values();
 
-        if ($type) {
-            $query->where('type', $type);
-        }
-
-        if ($line) {
-            $query->where('line', $line);
-        }
-
-        if ($furniture) {
-            $query->where('furniture', $furniture);
-        }
-
-        if ($client) {
-            $query->where('client', 'LIKE', "%$client%");
-        }
-
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%$search%")
-                  ->orWhere('description', 'LIKE', "%$search%");
-            });
-        }
-
-        if ($startDate && $endDate) {
-            $query->whereBetween('date_event', [$startDate, $endDate]);
-        }
-
-        // Obtenemos todos los presupuestos que pasaron los filtros
-        $budgets = $query->get();
-
-        // Procesamos los presupuestos agregando sus padres en 'budgets'
-        $result = $budgets->map(function ($budget) {
-            return $this->buildBudgetWithParents($budget);
+        // 3. Aplicar filtros manualmente
+        $filtered = $allBudgets->filter(function ($budget) use ($request) {
+            if ($request->has('place') && $budget->id_place != $request->input('place')) return false;
+            if ($request->has('status') && $budget->id_budget_status != $request->input('status')) return false;
+            if ($request->has('client') && $budget->id_client != $request->input('client')) return false;
+            if ($request->has('event_date') && $budget->date_event != $request->input('event_date')) return false;
+            if ($request->has('start_date') && $budget->date_event < $request->input('start_date')) return false;
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                if (!str_contains((string) $budget->id, $search)) return false;
+            }
+            return true;
         });
 
-        return response()->json($perPage ? $result->forPage($request->query('page', 1), $perPage)->values() : $result, 200);
+        // 4. Transformar a array
+        $filteredArray = json_decode(json_encode($filtered), true);
+        $allArray = json_decode(json_encode($allBudgets), true);
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Error al obtener presupuestos',
-            'error' => $e->getMessage(),
-        ], 500);
-    }
-}
-
-private function buildBudgetWithParents($budget)
-{
-    $data = $budget->toArray(); // Incluye todos los campos del presupuesto
-
-    $data['budgets'] = [];
-
-    if ($budget->id_budget) {
-        $parent = Budget::find($budget->id_budget);
-        if ($parent) {
-            $data['budgets'][] = $this->buildBudgetWithParents($parent);
+        // 5. Indexar todos los presupuestos por ID
+        $allById = [];
+        foreach ($allArray as $budget) {
+            $budget['parent'] = null; // Inicializar
+            $allById[$budget['id']] = $budget;
         }
-    }
 
-    return $data;
+        // 6. Armar estructura inversa (padres dentro de hijos)
+        $finalResult = [];
+        foreach ($filteredArray as $budget) {
+            $current = $budget;
+
+            $seenIds = []; // Para prevenir ciclos infinitos
+
+            while (!empty($current['id_budget']) && isset($allById[$current['id_budget']]) && !in_array($current['id_budget'], $seenIds)) {
+                $seenIds[] = $current['id_budget'];
+                $parent = $allById[$current['id_budget']];
+                unset($allById[$parent['id']]); // No se debe mostrar como individual
+
+                $parent['parent'] = $current;
+                $current = $parent;
+            }
+
+            $finalResult[] = $current;
+        }
+
+        $total = count($finalResult);
+
+        // 7. Aplicar paginación si viene per_page
+        if ($perPage) {
+            $paged = array_slice($finalResult, ($page - 1) * $perPage, $perPage);
+            $meta_data = [
+                'page' => $page,
+                'per_page' => (int) $perPage,
+                'total' => $total,
+                'last_page' => ceil($total / $perPage),
+            ];
+        } else {
+            $paged = $finalResult;
+            $meta_data = null;
+        }
+
+        return ApiResponse::paginate('Presupuestos obtenidos correctamente', 200, $paged, $meta_data, [
+            'request' => $request,
+            'module' => 'budget',
+            'endpoint' => 'Obtener todos los presupuestos agrupados',
+        ]);
+    } catch (\Exception $e) {
+        return ApiResponse::create('Error al obtener los presupuestos', 500, ['error' => $e->getMessage()], [
+            'request' => $request,
+            'module' => 'budget',
+            'endpoint' => 'Obtener todos los presupuestos agrupados',
+        ]);
+    }
 }
 
     public function show($id)
