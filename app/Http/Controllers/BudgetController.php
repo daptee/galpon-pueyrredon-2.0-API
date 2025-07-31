@@ -23,16 +23,11 @@ class BudgetController extends Controller
         $page = $request->query('page', 1);
         $startDate = $request->input('start_date', now()->toDateString());
 
-        // 1. Traer todos los presupuestos con relaciones
+        // 1. Obtener todos los presupuestos con relaciones
         $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->get();
 
-        // 2. Ordenar por cercanía a start_date
-        $allBudgets = $allBudgets->sortBy(function ($budget) use ($startDate) {
-            return abs(strtotime($budget->date_event) - strtotime($startDate));
-        })->values();
-
-        // 3. Filtrar manualmente
-        $filtered = $allBudgets->filter(function ($budget) use ($request) {
+        // 2. Filtrar manualmente
+        $filtered = $allBudgets->filter(function ($budget) use ($request, $startDate) {
             if ($request->has('place') && $budget->id_place != $request->input('place')) return false;
             if ($request->has('status') && $budget->id_budget_status != $request->input('status')) return false;
             if ($request->has('client') && $budget->id_client != $request->input('client')) return false;
@@ -45,38 +40,38 @@ class BudgetController extends Controller
             return true;
         });
 
-        // 4. Convertir a array y reindexar
+        // 3. Ordenar por cercanía a start_date
+        $filtered = $filtered->sortBy(function ($budget) use ($startDate) {
+            return abs(strtotime($budget->date_event) - strtotime($startDate));
+        })->values();
+
+        // 4. Convertir a array y reindexar por ID
         $filteredArray = json_decode(json_encode($filtered), true);
         $byId = [];
         foreach ($filteredArray as $budget) {
-            $budget['budgets'] = []; // para contener al padre
+            $budget['budgets'] = []; // espacio para hijos
             $byId[$budget['id']] = $budget;
         }
 
-        // 5. Construir lista jerárquica donde hijos vienen antes que padres
+        // 5. Construir jerarquía: hijo primero, luego el padre
         $visited = [];
         $result = [];
 
-        function addWithParents($budget, &$byId, &$visited, &$result) {
+        $addWithParents = function ($budget, &$byId, &$visited, &$result) use (&$addWithParents) {
             if (isset($visited[$budget['id']])) return;
 
             $visited[$budget['id']] = true;
 
-            // Si tiene padre y existe, procesar primero el hijo (actual), luego el padre
             if ($budget['id_budget'] && isset($byId[$budget['id_budget']])) {
-                // Asegurar que el padre se procese después del hijo
-                addWithParents($byId[$budget['id_budget']], $byId, $visited, $result);
-
-                // Agregar este presupuesto como hijo en "budgets" del padre
+                $addWithParents($byId[$budget['id_budget']], $byId, $visited, $result);
                 $byId[$budget['id_budget']]['budgets'][] = $budget;
+            } else {
+                $result[] = $budget;
             }
-
-            // Agregar el presupuesto a la lista final solo una vez
-            $result[] = $budget;
-        }
+        };
 
         foreach ($byId as $budget) {
-            addWithParents($budget, $byId, $visited, $result);
+            $addWithParents($budget, $byId, $visited, $result);
         }
 
         // 6. Paginación
@@ -85,7 +80,7 @@ class BudgetController extends Controller
             $paged = array_slice($result, ($page - 1) * $perPage, $perPage);
             $meta_data = [
                 'page' => $page,
-                'per_page' => (int) $perPage,
+                'per_page' => (int)$perPage,
                 'total' => $total,
                 'last_page' => ceil($total / $perPage),
             ];
@@ -99,7 +94,6 @@ class BudgetController extends Controller
             'module' => 'budget',
             'endpoint' => 'Obtener todos los presupuestos agrupados',
         ]);
-
     } catch (\Exception $e) {
         return ApiResponse::create('Error al obtener los presupuestos', 500, ['error' => $e->getMessage()], [
             'request' => $request,
