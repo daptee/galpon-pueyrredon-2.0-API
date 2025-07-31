@@ -19,11 +19,11 @@ class BudgetController extends Controller
     public function index(Request $request)
 {
     try {
-        $perPage = $request->query('per_page'); // sin valor por defecto
+        $perPage = $request->query('per_page');
         $page = $request->query('page', 1);
         $startDate = $request->input('start_date', now()->toDateString());
 
-        // 1. Obtener presupuestos con relaciones
+        // 1. Traer todos los presupuestos con relaciones
         $allBudgets = Budget::with(['client', 'place', 'budgetStatus'])->get();
 
         // 2. Ordenar por cercanía a start_date
@@ -40,48 +40,49 @@ class BudgetController extends Controller
             if ($request->has('start_date') && $budget->date_event < $request->input('start_date')) return false;
             if ($request->has('search')) {
                 $search = $request->input('search');
-                if (!str_contains((string) $budget->id, $search)) return false;
+                if (!str_contains((string)$budget->id, $search)) return false;
             }
             return true;
         });
 
-        // 4. Convertir a array asociativo por ID
+        // 4. Convertir a array y reindexar
         $filteredArray = json_decode(json_encode($filtered), true);
         $byId = [];
         foreach ($filteredArray as $budget) {
-            $budget['budgets'] = []; // inicializar array de padres
+            $budget['budgets'] = []; // para contener al padre
             $byId[$budget['id']] = $budget;
         }
 
-        // 5. Construir cadena de padres (del hijo hacia arriba)
+        // 5. Construir lista jerárquica donde hijos vienen antes que padres
+        $visited = [];
         $result = [];
-        foreach ($byId as $id => $budget) {
-            $current = $budget;
 
-            // encadenar padres
-            while (!empty($current['id_budget']) && isset($byId[$current['id_budget']])) {
-                $parent = $byId[$current['id_budget']];
-                $newParent = $parent;
-                $newParent['budgets'] = $current['budgets'];
-                $current['budgets'] = [$newParent];
-                $current = $newParent;
+        function addWithParents($budget, &$byId, &$visited, &$result) {
+            if (isset($visited[$budget['id']])) return;
+
+            $visited[$budget['id']] = true;
+
+            // Si tiene padre y existe, procesar primero el hijo (actual), luego el padre
+            if ($budget['id_budget'] && isset($byId[$budget['id_budget']])) {
+                // Asegurar que el padre se procese después del hijo
+                addWithParents($byId[$budget['id_budget']], $byId, $visited, $result);
+
+                // Agregar este presupuesto como hijo en "budgets" del padre
+                $byId[$budget['id_budget']]['budgets'][] = $budget;
             }
 
+            // Agregar el presupuesto a la lista final solo una vez
             $result[] = $budget;
         }
 
-        // 6. Evitar duplicados (solo mantener los nodos más profundos)
-        $unique = [];
-        foreach ($result as $entry) {
-            $unique[$entry['id']] = $entry;
+        foreach ($byId as $budget) {
+            addWithParents($budget, $byId, $visited, $result);
         }
 
-        $values = array_values($unique);
-        $total = count($values);
-
-        // 7. Paginación si se solicita
+        // 6. Paginación
+        $total = count($result);
         if ($perPage) {
-            $paged = array_slice($values, ($page - 1) * $perPage, $perPage);
+            $paged = array_slice($result, ($page - 1) * $perPage, $perPage);
             $meta_data = [
                 'page' => $page,
                 'per_page' => (int) $perPage,
@@ -89,20 +90,21 @@ class BudgetController extends Controller
                 'last_page' => ceil($total / $perPage),
             ];
         } else {
-            $paged = $values;
+            $paged = $result;
             $meta_data = null;
         }
 
         return ApiResponse::paginate('Presupuestos obtenidos correctamente', 200, $paged, $meta_data, [
             'request' => $request,
             'module' => 'budget',
-            'endpoint' => 'Obtener todos los presupuestos agrupados como hijos con padres',
+            'endpoint' => 'Obtener todos los presupuestos agrupados',
         ]);
+
     } catch (\Exception $e) {
         return ApiResponse::create('Error al obtener los presupuestos', 500, ['error' => $e->getMessage()], [
             'request' => $request,
             'module' => 'budget',
-            'endpoint' => 'Obtener todos los presupuestos agrupados como hijos con padres',
+            'endpoint' => 'Obtener todos los presupuestos agrupados',
         ]);
     }
 }
