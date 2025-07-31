@@ -240,6 +240,7 @@ Route::group([
     Route::get('/{id}', [ProductController::class, 'show'])->middleware('admin');
     Route::post('/', [ProductController::class, 'store'])->middleware('admin');
     Route::post('/{id}', [ProductController::class, 'update'])->middleware('admin');
+    Route::put('/status/{id}', [ProductController::class, 'updateStatus'])->middleware('admin');
     Route::get('/stock/report', [ProductController::class, 'report7Days'])->middleware('admin');
     Route::get('/stock/calendar', [ProductController::class, 'reportMonth'])->middleware('admin');
     Route::get('/stock/export', [ProductController::class, 'exportReport7Days'])->middleware('admin');

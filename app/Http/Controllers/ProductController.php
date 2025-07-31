@@ -108,7 +108,7 @@ class ProductController extends Controller
                 $data = $query->get();
                 $meta_data = null;
             }
-            
+
 
             return ApiResponse::paginate('Listado de productos obtenido correctamente', 200, $data, $meta_data, [
                 'request' => $request,
@@ -608,6 +608,62 @@ class ProductController extends Controller
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Actualizar producto',
+            ]);
+        }
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        try {
+            $product = Product::find($id);
+
+            if (!$product) {
+                return ApiResponse::create('Producto no encontrado', 404, ['error' => 'Producto no encontrado'], [
+                    'request' => $request,
+                    'module' => 'product',
+                    'endpoint' => 'Actualizar estado del producto',
+                ]);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'id_product_status' => 'required|exists:product_status,id'
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                    'request' => $request,
+                    'module' => 'product',
+                    'endpoint' => 'Actualizar estado del producto',
+                ]);
+            }
+
+            $product->id_product_status = $request->id_product_status;
+            $product->save();
+
+            $product->load([
+                'productLine',
+                'productType',
+                'productFurniture',
+                'productStatus',
+                'productStock',
+                'mainImage',
+                'images',
+                'attributeValues.attribute',
+                'prices',
+                'comboItems.product',
+            ]);
+
+
+            return ApiResponse::create('Estado actualizado correctamente', 201, $product, [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Actualizar estado del producto',
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al actualizar el estado', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Actualizar estado del producto',
             ]);
         }
     }
