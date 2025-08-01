@@ -361,7 +361,7 @@ class PlaceController extends Controller
                 }
             }
 
-            $fileName = 'places' . now()->format('Ymd_His') . '.xlsx';
+            $fileName = 'lugares' . now()->format('Ymd_His') . '.xlsx';
             $directory = public_path('storage/places');
 
             // Crear el directorio si no existe
