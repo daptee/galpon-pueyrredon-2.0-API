@@ -104,7 +104,7 @@ class EventController extends Controller
     {
         try {
             $budget = Budget::with([
-                'client',
+                'client.contacts',
                 'place',
                 'budgetDeliveryData.locality',
                 'payments.paymentType',
