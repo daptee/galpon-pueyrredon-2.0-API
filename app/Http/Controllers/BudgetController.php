@@ -62,15 +62,19 @@ class BudgetController extends Controller
                 $byId[$budget['id']] = $budget;
             }
 
-            // 5. Construir árbol
-            $tree = [];
-            foreach ($byId as $budget) {
+            // 5. Construir árbol anidando al revés (padres dentro de hijos)
+            foreach ($byId as $id => &$budget) {
                 if ($budget['id_budget'] && isset($byId[$budget['id_budget']])) {
-                    $byId[$budget['id_budget']]['budgets'][] = &$byId[$budget['id']];
-                } else {
-                    $tree[] = &$byId[$budget['id']];
+                    // Anidar el padre dentro del hijo
+                    $budget['budgets'][] = $byId[$budget['id_budget']];
+                    // Una vez anidado el padre, lo eliminamos del array principal para que no quede duplicado
+                    unset($byId[$budget['id_budget']]);
                 }
             }
+            unset($budget); // limpiar referencia
+
+            // 6. Lo que queda son los nodos más profundos (los que van en la raíz)
+            $tree = array_values($byId);
 
             $total = count($tree);
 
