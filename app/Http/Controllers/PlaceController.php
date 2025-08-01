@@ -318,22 +318,48 @@ class PlaceController extends Controller
                 ->orderBy('name')
                 ->get();
 
-            $result = $places->map(function ($place) {
-                return [
-                    'id_place' => $place->id,
-                    'name' => $place->name,
-                    'distance' => $place->distance ? $place->distance . " km" : null,
-                    'travel_time' => $place->travel_time ? $place->travel_time . " min" : null,
-                    'address' => $place->address,
-                    'phone' => $place->phone,
-                    'complexity_factor' => $place->complexity_factor,
-                    'observations' => $place->observations,
-                    'province' => $place->province->province ?? null,
-                    'locality' => $place->locality->locality ?? null,
-                    'collection_type' => $place->placeCollectionType->name ?? null,
-                    'area' => $place->placeArea->name ?? null,
-                ];
-            });
+            $result = collect(); // colección vacía
+
+            foreach ($places as $place) {
+                foreach ($place->tolls as $toll) {
+                    $result->push([
+                        'id_place' => $place->id,
+                        'name' => $place->name,
+                        'distance' => $place->distance ? $place->distance . " km" : null,
+                        'travel_time' => $place->travel_time ? $place->travel_time . " min" : null,
+                        'address' => $place->address,
+                        'phone' => $place->phone,
+                        'complexity_factor' => $place->complexity_factor,
+                        'observations' => $place->observations,
+                        'province' => $place->province->province ?? null,
+                        'locality' => $place->locality->locality ?? null,
+                        'collection_type' => $place->placeCollectionType->name ?? null,
+                        'area' => $place->placeArea->name ?? null,
+                        'nombre_peaje' => $toll->name,
+                        'costo_peaje' => $toll->cost,
+                    ]);
+                }
+
+                // Si no hay peajes, igualmente agregar una fila sin info de peaje
+                if ($place->tolls->isEmpty()) {
+                    $result->push([
+                        'id_place' => $place->id,
+                        'name' => $place->name,
+                        'distance' => $place->distance ? $place->distance . " km" : null,
+                        'travel_time' => $place->travel_time ? $place->travel_time . " min" : null,
+                        'address' => $place->address,
+                        'phone' => $place->phone,
+                        'complexity_factor' => $place->complexity_factor,
+                        'observations' => $place->observations,
+                        'province' => $place->province->province ?? null,
+                        'locality' => $place->locality->locality ?? null,
+                        'collection_type' => $place->placeCollectionType->name ?? null,
+                        'area' => $place->placeArea->name ?? null,
+                        'nombre_peaje' => null,
+                        'costo_peaje' => null,
+                    ]);
+                }
+            }
 
             $fileName = 'places' . now()->format('Ymd_His') . '.xlsx';
             $directory = public_path('storage/places');

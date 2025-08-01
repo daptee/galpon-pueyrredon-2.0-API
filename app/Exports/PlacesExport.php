@@ -35,13 +35,15 @@ class PlacesExport implements FromCollection, WithHeadings, WithColumnWidths
             'J' => 20,
             'K' => 20,
             'L' => 20,
+            'M' => 30,
+            'N' => 20,
         ];
     }
 
     public function headings(): array
     {
         return [
-            'ID Producto',
+            'ID Lugar',
             'Nombre',
             'Distacia',
             'Tiempo de Viaje',
@@ -53,6 +55,8 @@ class PlacesExport implements FromCollection, WithHeadings, WithColumnWidths
             'Localidad',
             'Tipo de Recolección',
             'Área',
+            'Nombre del Peaje',
+            'Costo del Peaje',
         ];
     }
 }
