@@ -40,18 +40,6 @@ class PlacesExport implements FromCollection, WithHeadings, WithColumnWidths
 
     public function headings(): array
     {
-       /*  'id_place' => $place->id,
-                    'name' => $place->name,
-                    'distance' => $place->distance,
-                    'travel_time' => $place->travel_time,
-                    'address' => $place->address,
-                    'phone' => $place->phone,
-                    'complexity_factor' => $place->complexity_factor,
-                    'observations' => $place->observations,
-                    'province' => $place->province->province ?? null,
-                    'locality' => $place->locality->locality ?? null,
-                    'collection_type' => $place->place_collection_type->name ?? null,
-                    'area' => $place->place_area->name ?? null, */
         return [
             'ID Producto',
             'Nombre',

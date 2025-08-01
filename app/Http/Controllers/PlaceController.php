@@ -322,8 +322,8 @@ class PlaceController extends Controller
                 return [
                     'id_place' => $place->id,
                     'name' => $place->name,
-                    'distance' => $place->distance,
-                    'travel_time' => $place->travel_time,
+                    'distance' => $place->distance ? $place->distance . " km" : null,
+                    'travel_time' => $place->travel_time ? $place->travel_time . " min" : null,
                     'address' => $place->address,
                     'phone' => $place->phone,
                     'complexity_factor' => $place->complexity_factor,
