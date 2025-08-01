@@ -109,3 +109,7 @@ CREATE TABLE budget_delivery_data (
     FOREIGN KEY (id_event_type) REFERENCES event_types(id) ON DELETE CASCADE,
     FOREIGN KEY (id_locality) REFERENCES localities(id) ON DELETE CASCADE
 );
+
+ALTER TABLE budget_delivery_data
+MODIFY COLUMN delivery_datetime VARCHAR(100),
+MODIFY COLUMN widthdrawal_datetime VARCHAR(100);

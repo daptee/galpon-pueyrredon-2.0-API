@@ -91,16 +91,12 @@
                 </td>
                 <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="padding: 0 0 0 4px; margin: 0 0 2px 0;">Presupuesto: </p>
-                    <p style="padding: 0 0 0 4px; margin: 2px 0;">Fecha: </p>
                     <p style="padding: 0 0 0 4px; margin: 2px 0;">Volumen: </p>
                 </td>
                 <td style="width: 10%; text-align: left; vertical-align: top;">
                     <p style="margin: 0 0 2px 0; font-weight: bold;">{{ str_pad($budget->id, 8, '0', STR_PAD_LEFT) }}
                     </p>
-                    <p style="margin: 2px 0; font-weight: bold;">
-                        {{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }}
-                    </p>
-                    <p style="margin: 2px 0; font-weight: bold;">Om3</p>
+                    <p style="margin: 2px 0; font-weight: bold;">{{$budget->volume}}</p>
                 </td>
             </tr>
         </table>
@@ -117,11 +113,11 @@
                 </td>
                 <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="padding: 0 0 0 3px; margin: 2px 0;">Fecha y hora: </p>
-                    <p style="padding: 0 0 0 3px; margin: 2px 0;">Evento: </p>
+                    <p style="padding: 13px 0 0 3px; margin: 2px 0;">Duración: </p>
                 </td>
                 <td style="width: 10%; text-align: left; vertical-align: top;">
                     <p style="margin: 2px 0;">
-                        <strong>{{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }}</strong>
+                        <strong>{{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }} - {{ $budget->budgetDeliveryData->event_time }}</strong>
                     </p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->days }} día/s</strong></p>
                 </td>
@@ -135,15 +131,13 @@
                 </td>
                 <td style="width: 61%; vertical-align: top;">
                     <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->address }}</strong></p>
-                    <p style="margin: 2px 0;"><strong>{{ \Carbon\Carbon::parse($budget->budgetDeliveryData->delivery_datetime)->format('d-M-Y') }}</strong></p>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->delivery_datetime }}</strong></p>
                 </td>
                 <td style="width: 14%; text-align: left; vertical-align: top;">
-                    <p style="padding: 0 0 0 3px; margin: 10px 0;"> </p>
-                    <p style="padding: 0 0 0 3px; margin: 2px 0;">Retiro: </p>
+                    <p style="padding: 0 0 0 6px; margin: 2px 0;">Retiro: </p>
                 </td>
                 <td style="width: 10%; text-align: left; vertical-align: top;">
-                    <p style="padding: 0 0 0 3px; margin: 10px 0;"> </p>
-                    <p style="margin: 2px 0;"><strong>{{ \Carbon\Carbon::parse($budget->budgetDeliveryData->widthdrawal_datetime)->format('d-M-Y') }}</strong></p>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_datetime }}</strong></p>
                 </td>
             </tr>
         </table>

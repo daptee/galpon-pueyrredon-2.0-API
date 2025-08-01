@@ -29,8 +29,8 @@ class BudgetDeliveryDataController extends Controller
                 'cellphone_reception' => 'nullable|string|max:20',
                 'additional_delivery_details' => 'nullable|string|max:500',
                 'additional_order_details' => 'nullable|string|max:500',
-                'delivery_datetime' => 'nullable|date_format:Y-m-d H:i:s',
-                'widthdrawal_datetime' => 'nullable|date_format:Y-m-d H:i:s'
+                'delivery_datetime' => 'nullable|string|max:255',
+                'widthdrawal_datetime' => 'nullable|string|max:255'
             ]);
             if ($validator->fails()) {
                 return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
@@ -85,8 +85,8 @@ class BudgetDeliveryDataController extends Controller
                 'cellphone_reception' => 'nullable|string|max:20',
                 'additional_delivery_details' => 'nullable|string|max:500',
                 'additional_order_details' => 'nullable|string|max:500',
-                'delivery_datetime' => 'nullable|date_format:Y-m-d H:i:s',
-                'widthdrawal_datetime' => 'nullable|date_format:Y-m-d H:i:s'
+                'delivery_datetime' => 'nullable|string|max:255',
+                'widthdrawal_datetime' => 'nullable|string|max:255'
             ]);
 
             if ($validator->fails()) {
