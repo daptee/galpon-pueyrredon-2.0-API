@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\PlacesExport;
 use App\Http\Responses\ApiResponse;
 use App\Models\PlacesTolls;
 use Illuminate\Http\Request;
 use App\Models\Place;
 use Log;
 use Validator;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Excel as ExcelFormat;
 
 class PlaceController extends Controller
 {
@@ -295,6 +298,70 @@ class PlaceController extends Controller
                 'request' => $request,
                 'module' => 'place',
                 'endpoint' => 'Actualizar un lugar',
+            ]);
+        }
+    }
+
+    public function export(Request $request)
+    {
+        try {
+
+            $places = Place::with([
+                'placeType.status',
+                'province',
+                'locality',
+                'tolls.status',
+                'placeCollectionType.status',
+                'placeArea.status',
+                'status'
+            ])
+                ->orderBy('name')
+                ->get();
+
+            $result = $places->map(function ($place) {
+                return [
+                    'id_place' => $place->id,
+                    'name' => $place->name,
+                    'distance' => $place->distance,
+                    'travel_time' => $place->travel_time,
+                    'address' => $place->address,
+                    'phone' => $place->phone,
+                    'complexity_factor' => $place->complexity_factor,
+                    'observations' => $place->observations,
+                    'province' => $place->province->province ?? null,
+                    'locality' => $place->locality->locality ?? null,
+                    'collection_type' => $place->placeCollectionType->name ?? null,
+                    'area' => $place->placeArea->name ?? null,
+                ];
+            });
+
+            $fileName = 'places' . now()->format('Ymd_His') . '.xlsx';
+            $directory = public_path('storage/places');
+
+            // Crear el directorio si no existe
+            if (!file_exists(public_path('storage/places'))) {
+                mkdir(public_path('storage/places'), 0755, true);
+            }
+            ;
+
+            $filePath = $directory . '/' . $fileName;
+
+            // Crear y guardar el archivo Excel manualmente en el path deseado
+            $writer = Excel::raw(new PlacesExport($result), ExcelFormat::XLSX);
+            file_put_contents($filePath, $writer);
+
+            return ApiResponse::create('Archivo exportado correctamente', 200, [
+                'file_url' => 'storage/places/' . $fileName,
+            ], [
+                'request' => $request,
+                'module' => 'place',
+                'endpoint' => 'Exportar lugares',
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al exportar los lugares', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'place',
+                'endpoint' => 'Exportar lugares',
             ]);
         }
     }

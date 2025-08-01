@@ -98,6 +98,7 @@ Route::group([
     'prefix' => 'places'
 ], function () {
     Route::get('/', [PlaceController::class, 'index'])->middleware('admin');
+    Route::get('/export', [PlaceController::class, 'export'])->middleware('admin');
     Route::get('/{id}', [PlaceController::class, 'show'])->middleware('admin');
     Route::post('/', [PlaceController::class, 'store'])->middleware('admin');
     Route::put('/{id}', [PlaceController::class, 'update'])->middleware('admin');
