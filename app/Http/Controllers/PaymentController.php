@@ -71,6 +71,17 @@ class PaymentController extends Controller
                 $query->where('id_payment_status', $request->input('payment_status'));
             }
 
+            // === Ordenamiento dinámico ===
+            $allowedOrderFields = ['payment_datetime', 'created_at'];
+            $orderBy = $request->query('order_by');
+            $orderDirection = $request->query('order_direction', 'desc');
+
+            if (in_array($orderBy, $allowedOrderFields)) {
+                $query->orderBy($orderBy, $orderDirection);
+            } else {
+                $query->orderBy('payment_datetime', 'desc');
+            }
+
             // Paginado
             if ($perPage !== null) {
                 $payments = $query->paginate((int) $perPage, ['*'], 'page', $page);

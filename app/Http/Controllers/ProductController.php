@@ -767,69 +767,70 @@ class ProductController extends Controller
             $start = \Carbon\Carbon::parse($request->date)->startOfMonth();
             $end = $start->copy()->endOfMonth();
 
-            // Obtener los productos usados en products_use_stock
-            $usedProductIds = ProductUseStock::distinct()->pluck('id_product')->toArray();
-
-            // Traer esos productos con stock y uso de stock
-            $products = Product::with(['productStock', 'productUseStock'])
-                ->whereIn('id', $usedProductIds)
+            // Traer todos los usos de productos en el rango del mes con relaciones
+            $productUses = ProductUseStock::where(function ($query) use ($start, $end) {
+                $query->whereBetween('date_from', [$start, $end])
+                    ->orWhereBetween('date_to', [$start, $end]);
+            })
+                ->with(['product', 'product.productStock'])
                 ->get();
-
-            // Agrupar por product_stock o id propio si no tiene product_stock
-            $groupedByStock = $products->groupBy(function ($product) {
-                return $product->product_stock ?? $product->id;
-            });
 
             $result = [];
 
             for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
                 $currentDate = $date->toDateString();
 
-                $productsForDate = collect();
+                // Filtrar usos válidos para esa fecha
+                $usesForDate = $productUses->filter(function ($use) use ($currentDate) {
+                    return $use->date_from <= $currentDate && $use->date_to >= $currentDate;
+                });
 
-                foreach ($groupedByStock as $stockId => $group) {
-                    // Buscar representante cuyo id sea igual al stockId
-                    $representativeProduct = $group->firstWhere('id', $stockId);
+                // Agrupar por presupuesto
+                $groupedByBudget = $usesForDate->groupBy('id_budget');
 
-                    if (!$representativeProduct) {
-                        $representativeProduct = $group->first();
-                    }
+                $budgets = [];
 
-                    $stock = $representativeProduct->productStock->stock ?? $representativeProduct->stock;
+                foreach ($groupedByBudget as $budgetId => $usesInBudget) {
+                    // Agrupar por producto y sumar cantidad usada
+                    $products = $usesInBudget->groupBy('id_product')->map(function ($group) {
+                        $firstUse = $group->first();
+                        $product = $firstUse->product;
 
-                    // Sumar stock usado ese día de todos los productos del grupo
-                    $totalUsed = $group->flatMap(fn($p) => $p->productUseStock)
-                        ->filter(fn($use) => $use->date_from <= $currentDate && $use->date_to >= $currentDate)
-                        ->sum('quantity');
+                        return [
+                            'id' => $product->id,
+                            'name' => $product->name,
+                            'code' => $product->code,
+                            'stock' => optional($product->productStock)->stock ?? $product->stock,
+                            'used_stock' => $group->sum('quantity'),
+                        ];
+                    })->values();
 
-                    $productsForDate->push([
-                        'id' => $representativeProduct->id,
-                        'name' => $representativeProduct->name,
-                        'code' => $representativeProduct->code,
-                        'stock' => $stock,
-                        'used_stock' => $totalUsed,
-                    ]);
+                    $budgets[] = [
+                        'id_budget' => $budgetId,
+                        'products' => $products,
+                    ];
                 }
 
                 $result[] = [
                     'date' => $currentDate,
-                    'products' => $productsForDate,
+                    'budgets' => $budgets,
                 ];
             }
 
-            return ApiResponse::create('Reporte de uso de stock por producto obtenido correctamente', 200, $result, [
+            return ApiResponse::create('Reporte generado correctamente', 200, $result, [
                 'request' => $request,
                 'module' => 'product',
-                'endpoint' => 'Reporte de uso de stock por producto',
+                'endpoint' => 'Reporte mensual agrupado por fecha y presupuesto',
             ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
                 'module' => 'product',
-                'endpoint' => 'Reporte de uso de stock por producto',
+                'endpoint' => 'Reporte mensual agrupado por fecha y presupuesto',
             ]);
         }
     }
+
 
     public function exportReport7Days(Request $request)
     {
