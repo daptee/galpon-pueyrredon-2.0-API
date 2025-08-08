@@ -27,11 +27,14 @@ class AuthController extends Controller
     {
         try {
             $request->validate([
-                'email' => 'required|email',
+                'login' => 'required|string',
                 'password' => 'required|string',
             ]);
 
-            $user = User::where('email', $request->email)->first();
+            // Buscar por email o username (user)
+            $user = User::where('email', $request->login)
+                ->orWhere('user', $request->login)
+                ->first();
 
             if (!$user || !Hash::check($request->password, $user->password)) {
                 return ApiResponse::create('Credenciales no válidas', 401, 'Unauthorized', [
@@ -41,10 +44,20 @@ class AuthController extends Controller
                 ]);
             }
 
+            // verificar si el usuario está activo
+            if ($user->status !== 1) {
+                return ApiResponse::create('Usuario inactivo', 403, 'Forbidden', [
+                    'request' => $request,
+                    'module' => 'auth',
+                    'endpoint' => 'Login',
+                ]);
+            }
+
             // Generar el token usando el servicio TokenService
             $token = $this->tokenService->generateToken($user);
 
-            $user->load('userType.status', 'client.status', 'theme', 'status')->makeHidden(['password']);;
+            $user->load('userType.status', 'client.status', 'theme', 'status')->makeHidden(['password']);
+            ;
 
             return ApiResponse::login('Inicio de sesión exitoso', 201, $user, $token, [
                 'request' => $request,
