@@ -92,6 +92,9 @@ class ProductController extends Controller
 
             if ($sortKey) {
                 $query->orderBy($sortKey, $sortOrder === 'desc' ? 'desc' : 'asc');
+            } else {
+                // Orden por defecto: alfabético ascendente por nombre del producto
+                $query->orderBy('products.name', 'asc');
             }
 
             if ($perPage !== null) {
