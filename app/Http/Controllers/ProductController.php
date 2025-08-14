@@ -693,14 +693,24 @@ class ProductController extends Controller
             $result = collect();
 
             foreach ($groupedByStock as $stockId => $group) {
+                if ($group->isEmpty()) {
+                    continue; // No hay productos en este grupo
+                }
+
                 $representativeProduct = $group->firstWhere('id', $stockId) ?? $group->first();
 
-                $stock = $representativeProduct->productStock->stock ?? $representativeProduct->stock;
+                if (!$representativeProduct) {
+                    continue; // Evitar errores si sigue siendo null
+                }
+
+                $stock = $representativeProduct->productStock->stock
+                    ?? $representativeProduct->stock
+                    ?? 0;
 
                 $usedStock = [];
 
                 foreach ($dates as $date) {
-                    $totalUsed = $group->flatMap(fn($p) => $p->productUseStock)
+                    $totalUsed = $group->flatMap(fn($p) => $p->productUseStock ?? collect())
                         ->filter(fn($use) => $use->date_from <= $date && $use->date_to >= $date)
                         ->sum('quantity');
 
@@ -709,8 +719,8 @@ class ProductController extends Controller
 
                 $result->push([
                     'id' => $representativeProduct->id,
-                    'name' => $representativeProduct->name,
-                    'code' => $representativeProduct->code,
+                    'name' => $representativeProduct->name ?? 'Sin nombre',
+                    'code' => $representativeProduct->code ?? '',
                     'stock' => $stock,
                     'used_stock_by_day' => $usedStock,
                 ]);
