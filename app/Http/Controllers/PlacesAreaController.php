@@ -13,22 +13,43 @@ class PlacesAreaController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = PlaceArea::query();
+            // Parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
+            // Construir la consulta base con relaciones
+            $query = PlaceArea::with('status');
+
+            // Filtro por estado
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
 
+            // Filtro por búsqueda
             if ($request->has('search')) {
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $placesAreas = $query->orderBy('name')->get();
+            $query->orderBy('name');
 
-            $placesAreas->load(['status']);
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $placesAreas = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $placesAreas->items();
+                $meta_data = [
+                    'page' => $placesAreas->currentPage(),
+                    'per_page' => $placesAreas->perPage(),
+                    'total' => $placesAreas->total(),
+                    'last_page' => $placesAreas->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
 
-            return ApiResponse::create('Lugares de área obtenidos correctamente', 200, $placesAreas, [
+            return ApiResponse::paginate('Lugares de área obtenidos correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'places area',
                 'endpoint' => 'Obtener lugares de área',
@@ -62,7 +83,7 @@ class PlacesAreaController extends Controller
                 'name' => $request->name,
                 'status' => 1, // Predefinido como activo
             ]);
-            
+
             $placesArea->load(['status']);
 
             return ApiResponse::create('Lugar de área creado correctamente', 201, $placesArea, [
@@ -107,7 +128,7 @@ class PlacesAreaController extends Controller
             }
 
             $placesArea->update($request->only(['name', 'status']));
-            
+
             $placesArea->load(['status']);
 
             return ApiResponse::create('Lugar de área actualizado correctamente', 200, $placesArea, [

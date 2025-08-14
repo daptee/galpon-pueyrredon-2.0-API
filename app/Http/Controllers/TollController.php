@@ -15,32 +15,53 @@ class TollController extends Controller
     {
         Log::info("Obteniendo lista de peajes");
         try {
-            $query = Toll::query();
+            // Parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
+            // Construir la consulta base con relaciones
+            $query = Toll::with('status');
+
+            // Filtro por estado
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
 
+            // Filtro por búsqueda
             if ($request->has('search')) {
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $tolls = $query->orderBy('name')->get();
+            $query->orderBy('name');
 
-            $tolls->load(['status']);
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $tolls = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $tolls->items();
+                $meta_data = [
+                    'page' => $tolls->currentPage(),
+                    'per_page' => $tolls->perPage(),
+                    'total' => $tolls->total(),
+                    'last_page' => $tolls->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
 
-            return ApiResponse::create('Peajes traídos correctamente', 200, $tolls, [
-                    'request' => $request,
-                    'module' => 'toll',
-                    'endpoint' => 'Obtener los peajes',
-                ]);
+            return ApiResponse::paginate('Peajes traídos correctamente', 200, $data, $meta_data, [
+                'request' => $request,
+                'module' => 'toll',
+                'endpoint' => 'Obtener los peajes',
+            ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al obtener los peajes', 500, ['error' => $e->getMessage()], [
-                    'request' => $request,
-                    'module' => 'toll',
-                    'endpoint' => 'Obtener los peajes',
-                ]);
+                'request' => $request,
+                'module' => 'toll',
+                'endpoint' => 'Obtener los peajes',
+            ]);
         }
     }
 
@@ -117,16 +138,16 @@ class TollController extends Controller
             $toll->load(['status']);
 
             return ApiResponse::create('Peaje actualizado correctamente', 200, $toll, [
-                    'request' => $request,
-                    'module' => 'toll',
-                    'endpoint' => 'Actualizar un peaje',
-                ]);
+                'request' => $request,
+                'module' => 'toll',
+                'endpoint' => 'Actualizar un peaje',
+            ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al actualizar el peaje', 500, ['error' => $e->getMessage()], [
-                    'request' => $request,
-                    'module' => 'toll',
-                    'endpoint' => 'Actualizar un peaje',
-                ]);
+                'request' => $request,
+                'module' => 'toll',
+                'endpoint' => 'Actualizar un peaje',
+            ]);
         }
     }
 }
