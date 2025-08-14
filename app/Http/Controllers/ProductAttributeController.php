@@ -15,13 +15,31 @@ class ProductAttributeController extends Controller
     public function index(Request $request)
     {
         try {
-            $products = ProductAttribute::with(['status'])
-                    ->orderBy('name')
-                    ->get();
+            // Parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
-            $products->load(['status']);
+            // Construir la consulta base con relaciones
+            $query = ProductAttribute::with('status')
+                ->orderBy('name');
 
-            return ApiResponse::create('Listado de atributos de productos obtenido correctamente', 200, $products, [
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $products = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $products->items();
+                $meta_data = [
+                    'page' => $products->currentPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                    'last_page' => $products->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
+
+            return ApiResponse::paginate('Listado de atributos de productos obtenido correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'product attribute',
                 'endpoint' => 'Obtener todos los atributos de productos',
@@ -51,7 +69,7 @@ class ProductAttributeController extends Controller
                     'endpoint' => 'Crear atributo de producto',
                 ]);
             }
-            
+
             $productAttribute = ProductAttribute::create($request->all());
 
             $productAttribute->load(['status']);

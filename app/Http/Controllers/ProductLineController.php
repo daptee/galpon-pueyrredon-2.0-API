@@ -15,11 +15,31 @@ class ProductLineController extends Controller
     public function index(Request $request)
     {
         try {
-            $products = ProductLine::with(['status'])
-                    ->orderBy('name')
-                    ->get();
+            // Parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
-            return ApiResponse::create('Listado de lineas de productos obtenido correctamente', 200, $products, [
+            // Construir la consulta base con relaciones
+            $query = ProductLine::with('status')
+                ->orderBy('name');
+
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $products = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $products->items();
+                $meta_data = [
+                    'page' => $products->currentPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                    'last_page' => $products->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
+
+            return ApiResponse::paginate('Listado de lineas de productos obtenido correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'product line',
                 'endpoint' => 'Obtener todas las lineas de productos',
@@ -49,7 +69,7 @@ class ProductLineController extends Controller
                     'endpoint' => 'Crear linea de productos',
                 ]);
             }
-            
+
             $productLine = ProductLine::create($request->all());
             $productLine->load(['status']);
 

@@ -12,36 +12,55 @@ class PlaceTypeController extends Controller
 {
     // GET ALL - Retorna todos los tipos de lugares, filtrando por estado si se proporciona
     public function index(Request $request)
-    
     {
-        Log::info("aquiiiii");
         try {
-            $query = PlaceType::query();
+            // Parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
+            // Construir la consulta base con relaciones
+            $query = PlaceType::with('status');
+
+            // Filtro por estado
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
 
+            // Filtro por búsqueda
             if ($request->has('search')) {
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $placesTypes = $query->orderBy('name')->get();
+            $query->orderBy('name');
 
-            $placesTypes->load(['status']);
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $placesTypes = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $placesTypes->items();
+                $meta_data = [
+                    'page' => $placesTypes->currentPage(),
+                    'per_page' => $placesTypes->perPage(),
+                    'total' => $placesTypes->total(),
+                    'last_page' => $placesTypes->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
 
-            return ApiResponse::create('Tipos de lugares traídos correctamente', 200, $placesTypes, [
-                    'request' => $request,
-                    'module' => 'place type',
-                    'endpoint' => 'Trear tipos de lugares',
-                ]);
+            return ApiResponse::paginate('Tipos de lugares traídos correctamente', 200, $data, $meta_data, [
+                'request' => $request,
+                'module' => 'place type',
+                'endpoint' => 'Traer tipos de lugares',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el tipo de lugar', 500, ['error' => $e->getMessage()], [
-                    'request' => $request,
-                    'module' => 'place type',
-                    'endpoint' => 'Trear tipos de lugares',
-                ]);
+            return ApiResponse::create('Error al traer los tipos de lugares', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'place type',
+                'endpoint' => 'Traer tipos de lugares',
+            ]);
         }
     }
 
@@ -70,16 +89,16 @@ class PlaceTypeController extends Controller
             $placeType->load(['status']);
 
             return ApiResponse::create('Tipo de lugar creado correctamente', 201, $placeType, [
-                    'request' => $request,
-                    'module' => 'place type',
-                    'endpoint' => 'Crear tipos de lugares',
-                ]);
+                'request' => $request,
+                'module' => 'place type',
+                'endpoint' => 'Crear tipos de lugares',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el tipo de lugar',  500, ['error' => $e->getMessage()], [
-                    'request' => $request,
-                    'module' => 'place type',
-                    'endpoint' => 'Crear tipos de lugares',
-                ]);
+            return ApiResponse::create('Error al crear el tipo de lugar', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'place type',
+                'endpoint' => 'Crear tipos de lugares',
+            ]);
         }
     }
 
@@ -115,16 +134,16 @@ class PlaceTypeController extends Controller
             $placeType->load(['status']);
 
             return ApiResponse::create('Tipo de lugar actualizado correctamente', 201, $placeType, [
-                    'request' => $request,
-                    'module' => 'place type',
-                    'endpoint' => 'Actualizar tipos de lugares',
-                ]);
+                'request' => $request,
+                'module' => 'place type',
+                'endpoint' => 'Actualizar tipos de lugares',
+            ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el tipo de lugar',  500, ['error' => $e->getMessage()], [
-                    'request' => $request,
-                    'module' => 'place type',
-                    'endpoint' => 'Actualizar tipos de lugares',
-                ]);
+            return ApiResponse::create('Error al actualizar el tipo de lugar', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'place type',
+                'endpoint' => 'Actualizar tipos de lugares',
+            ]);
         }
     }
 }

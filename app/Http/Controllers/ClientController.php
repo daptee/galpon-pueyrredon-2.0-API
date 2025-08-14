@@ -295,22 +295,42 @@ class ClientController extends Controller
     public function getAllClientType(Request $request)
     {
         try {
-            // Filtrar por estado si se proporciona el parámetro `status`
-            $status = $request->query('status');
-            $query = ClientsType::with('status');
+            // Obtener parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
-            if ($status) {
-                $query->where('status', $status);
+            // Construir la consulta base con relaciones
+            $query = ClientsType::with('status')
+                ->orderBy('name');
+
+            // Filtro por estado
+            if ($request->has('status')) {
+                $query->where('status', $request->input('status'));
             }
 
+            // Filtro por búsqueda
             if ($request->has('search')) {
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $clientsTypes = $query->get();
+            // Aplicar paginación si se envía per_page
+            if ($perPage) {
+                $clientsTypes = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $clientsTypes->items();
+                $meta_data = [
+                    'page' => $clientsTypes->currentPage(),
+                    'per_page' => $clientsTypes->perPage(),
+                    'total' => $clientsTypes->total(),
+                    'last_page' => $clientsTypes->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
 
-            return ApiResponse::create('Tipos de clientes traidos correctamente', 200, $clientsTypes, [
+            return ApiResponse::paginate('Tipos de clientes traídos correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Obtener tipos de clientes',
@@ -413,31 +433,51 @@ class ClientController extends Controller
     public function getAllClientClasses(Request $request)
     {
         try {
-            // Filtrar por estado si se proporciona el parámetro `status`
-            $status = $request->query('status');
-            $query = ClientsClasses::with('status');
+            // Obtener parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
-            if ($status) {
-                $query->where('status', $status);
+            // Construir la consulta base con relaciones
+            $query = ClientsClasses::with('status')
+                ->orderBy('name');
+
+            // Filtrar por estado si se envía
+            if ($request->has('status')) {
+                $query->where('status', $request->input('status'));
             }
 
+            // Filtrar por búsqueda
             if ($request->has('search')) {
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $clientsClasses = $query->get();
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $clientsClasses = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $clientsClasses->items();
+                $meta_data = [
+                    'page' => $clientsClasses->currentPage(),
+                    'per_page' => $clientsClasses->perPage(),
+                    'total' => $clientsClasses->total(),
+                    'last_page' => $clientsClasses->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
 
-            return ApiResponse::create('Clases de clientes traidas correctamente', 200, $clientsClasses, [
+            return ApiResponse::paginate('Clases de clientes traídas correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'client',
-                'endpoint' => 'Trear clases de clientes',
+                'endpoint' => 'Traer clases de clientes',
             ]);
         } catch (\Exception $e) {
             return ApiResponse::create('Error al obtener las clases de los clientes', 500, ['error' => $e->getMessage()], [
                 'request' => $request,
                 'module' => 'client',
-                'endpoint' => 'Trear clases de clientes',
+                'endpoint' => 'Traer clases de clientes',
             ]);
         }
     }

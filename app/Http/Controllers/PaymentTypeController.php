@@ -13,17 +13,38 @@ class PaymentTypeController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = PaymentType::query();
+            // Parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
+            // Construir la consulta base con relaciones
+            $query = PaymentType::with('status');
+
+            // Filtro por búsqueda
             if ($request->has('search')) {
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $paymentTypes = $query->orderBy('name')->get();
-            $paymentTypes->load('status');
+            $query->orderBy('name');
 
-            return ApiResponse::create('Tipos de pago traídos correctamente', 200, $paymentTypes, [
+            // Aplicar paginación si se envía per_page
+            if ($perPage) {
+                $paymentTypes = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $paymentTypes->items();
+                $meta_data = [
+                    'page' => $paymentTypes->currentPage(),
+                    'per_page' => $paymentTypes->perPage(),
+                    'total' => $paymentTypes->total(),
+                    'last_page' => $paymentTypes->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
+
+            return ApiResponse::paginate('Tipos de pago traídos correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'payment type',
                 'endpoint' => 'Traer tipos de pago',
@@ -103,7 +124,7 @@ class PaymentTypeController extends Controller
             $paymentType->update($request->only(['name', 'status']));
 
             $paymentType->load('status');
-            
+
             return ApiResponse::create('Tipo de pago actualizado correctamente', 200, $paymentType, [
                 'request' => $request,
                 'module' => 'payment type',

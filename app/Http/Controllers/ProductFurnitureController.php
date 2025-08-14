@@ -15,12 +15,31 @@ class ProductFurnitureController extends Controller
     public function index(Request $request)
     {
         try {
+            // Parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
-            $products = ProductFurniture::with(['status'])
-                    ->orderBy('name')
-                    ->get();
+            // Construir la consulta base con relaciones
+            $query = ProductFurniture::with('status')
+                ->orderBy('name');
 
-            return ApiResponse::create('Listado de muebles de productos obtenido correctamente', 200, $products, [
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $products = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $products->items();
+                $meta_data = [
+                    'page' => $products->currentPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                    'last_page' => $products->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
+
+            return ApiResponse::paginate('Listado de muebles de productos obtenido correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'product furniture',
                 'endpoint' => 'Obtener todos los muebles de productos',
@@ -50,7 +69,7 @@ class ProductFurnitureController extends Controller
                     'endpoint' => 'Crear mueble de producto',
                 ]);
             }
-            
+
             $productFurniture = ProductFurniture::create($request->all());
 
             $productFurniture->load(['status']);

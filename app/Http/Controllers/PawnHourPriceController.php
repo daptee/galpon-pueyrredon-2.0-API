@@ -14,12 +14,31 @@ class PawnHourPriceController extends Controller
     public function index(Request $request)
     {
         try {
+            // Obtener parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
-            $pawnHourPrices = PawnHourPrice::get();
+            // Construir la consulta base con relaciones
+            $query = PawnHourPrice::with('status')
+                ->orderBy('id', 'desc'); // o por cualquier campo que quieras
 
-            $pawnHourPrices->load(['status']);
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $pawnHourPrices = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $pawnHourPrices->items();
+                $meta_data = [
+                    'page' => $pawnHourPrices->currentPage(),
+                    'per_page' => $pawnHourPrices->perPage(),
+                    'total' => $pawnHourPrices->total(),
+                    'last_page' => $pawnHourPrices->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
 
-            return ApiResponse::create('Precios de hora de peón obtenidos correctamente', 200, $pawnHourPrices, [
+            return ApiResponse::paginate('Precios de hora de peón obtenidos correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'pawn hour prices',
                 'endpoint' => 'Obtener todos los precios de hora de peón',

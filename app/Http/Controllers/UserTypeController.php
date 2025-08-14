@@ -15,22 +15,43 @@ class UserTypeController extends Controller
     public function index(Request $request)
     {
         try {
-            $status = $request->query('status'); // Parámetro opcional
+            // Parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
-            $query = UserType::with('status'); // Aplica la relación con antelación
+            // Construir la consulta base con relaciones
+            $query = UserType::with('status');
 
-            if ($status) {
-                $query->where('status', $status);
+            // Filtro por estado si se envía
+            if ($request->has('status')) {
+                $query->where('status', $request->input('status'));
             }
 
+            // Filtro por búsqueda
             if ($request->has('search')) {
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $userTypes = $query->get(); // Ejecuta la consulta y obtiene los resultados
+            $query->orderBy('name');
 
-            return ApiResponse::create('Tipo de usuarios traidos correctamente', 200, $userTypes, [
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $userTypes = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $userTypes->items();
+                $meta_data = [
+                    'page' => $userTypes->currentPage(),
+                    'per_page' => $userTypes->perPage(),
+                    'total' => $userTypes->total(),
+                    'last_page' => $userTypes->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
+
+            return ApiResponse::paginate('Tipo de usuarios traídos correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'user type',
                 'endpoint' => 'Obtener tipos de usuarios',
@@ -43,7 +64,6 @@ class UserTypeController extends Controller
             ]);
         }
     }
-
 
     public function store(Request $request)
     {
@@ -95,7 +115,7 @@ class UserTypeController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, $validator->errors(), [                    
+                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
                     'request' => $request,
                     'module' => 'user type',
                     'endpoint' => 'Actualizar tipo de usuario',
