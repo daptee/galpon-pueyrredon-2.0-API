@@ -693,24 +693,14 @@ class ProductController extends Controller
             $result = collect();
 
             foreach ($groupedByStock as $stockId => $group) {
-                if ($group->isEmpty()) {
-                    continue; // No hay productos en este grupo
-                }
-
                 $representativeProduct = $group->firstWhere('id', $stockId) ?? $group->first();
 
-                if (!$representativeProduct) {
-                    continue; // Evitar errores si sigue siendo null
-                }
-
-                $stock = $representativeProduct->productStock->stock
-                    ?? $representativeProduct->stock
-                    ?? 0;
+                $stock = $representativeProduct->productStock->stock ?? $representativeProduct->stock;
 
                 $usedStock = [];
 
                 foreach ($dates as $date) {
-                    $totalUsed = $group->flatMap(fn($p) => $p->productUseStock ?? collect())
+                    $totalUsed = $group->flatMap(fn($p) => $p->productUseStock)
                         ->filter(fn($use) => $use->date_from <= $date && $use->date_to >= $date)
                         ->sum('quantity');
 
@@ -719,8 +709,8 @@ class ProductController extends Controller
 
                 $result->push([
                     'id' => $representativeProduct->id,
-                    'name' => $representativeProduct->name ?? 'Sin nombre',
-                    'code' => $representativeProduct->code ?? '',
+                    'name' => $representativeProduct->name,
+                    'code' => $representativeProduct->code,
                     'stock' => $stock,
                     'used_stock_by_day' => $usedStock,
                 ]);
@@ -806,11 +796,21 @@ class ProductController extends Controller
                         $firstUse = $group->first();
                         $product = $firstUse->product;
 
+                        if (!$product) {
+                            return [
+                                'id' => null,
+                                'name' => null,
+                                'code' => null,
+                                'stock' => 0,
+                                'used_stock' => $group->sum('quantity'),
+                            ];
+                        }
+
                         return [
                             'id' => $product->id,
                             'name' => $product->name,
                             'code' => $product->code,
-                            'stock' => optional($product->productStock)->stock ?? $product->stock,
+                            'stock' => optional($product->productStock)->stock ?? $product->stock ?? 0,
                             'used_stock' => $group->sum('quantity'),
                         ];
                     })->values();
