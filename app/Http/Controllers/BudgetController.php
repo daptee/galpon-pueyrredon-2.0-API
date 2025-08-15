@@ -816,7 +816,7 @@ class BudgetController extends Controller
                 'place',
                 'transportation',
                 'client',
-                'budgetProducts.product',
+                'budgetProducts.product.attributeValues',
                 'budgetDeliveryData'
             ])->findOrFail($id);
 
@@ -853,7 +853,7 @@ class BudgetController extends Controller
             ]);
 
             return ApiResponse::create('PDF regenerado correctamente', 200, [
-                'pdf_path' => "storage/delivery_information/budget-{$budget->id}.pdf"
+                'pdf_path' => $budget
             ], [
                 'module' => 'budget',
                 'endpoint' => 'Regenerar PDF',

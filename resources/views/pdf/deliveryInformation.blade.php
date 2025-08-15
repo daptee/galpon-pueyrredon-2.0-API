@@ -85,18 +85,25 @@
     <div class="title">
         <table style="width: 100%; margin-bottom: 10px;">
             <tr>
-                <td class="logo" style="width: 76%; vertical-align: top;">
-                    <img src="{{ public_path('images/logo.png') }}" style="height: 29px; margin: 7px 0;" alt="Logo">
+                <td class="logo" style="width: 65%; vertical-align: top;">
+                    <div>
+                        <img src="{{ public_path('images/logo.png') }}" style="height: 29px; vertical-align: bottom;"
+                            alt="Logo">
+                        <span
+                            style="font-weight: bold; font-size: 24px; vertical-align: top; margin: 0; padding: 0; line-height: 1;">
+                            - FICHA LOGÍSTICA
+                        </span>
+                    </div>
                     <p style="margin: 0">galponpueyrredon@administrador.com - 15-5220-9988</p>
                 </td>
-                <td style="width: 14%; text-align: left; vertical-align: top;">
-                    <p style="padding: 0 0 0 4px; margin: 0 0 2px 0;">Presupuesto: </p>
+                <td style="width: 10%; text-align: left; vertical-align: top;">
+                    <p style="padding: 0 0 0 4px; margin: 2px 0 2px 0;">Presupuesto: </p>
                     <p style="padding: 0 0 0 4px; margin: 2px 0;">Volumen: </p>
                 </td>
-                <td style="width: 10%; text-align: left; vertical-align: top;">
-                    <p style="margin: 0 0 2px 0; font-weight: bold;">{{ str_pad($budget->id, 8, '0', STR_PAD_LEFT) }}
+                <td style="width: 14%; text-align: left; vertical-align: top;">
+                    <p style="margin: 2px 0 2px 0; font-weight: bold;">{{ str_pad($budget->id, 8, '0', STR_PAD_LEFT) }}
                     </p>
-                    <p style="margin: 2px 0; font-weight: bold;">{{$budget->volume}}</p>
+                    <p style="margin: 2px 0; font-weight: bold;">{{$budget->volume}}m<sup>3</sup></p>
                 </td>
             </tr>
         </table>
@@ -107,17 +114,18 @@
                     <p style="margin: 2px 0;">Cliente: </p>
                     <p style="margin: 2px 0;">Lugar: </p>
                 </td>
-                <td style="width: 71%; vertical-align: top;">
+                <td style="width: 60%; vertical-align: top;">
                     <p style="margin: 2px 0;"><strong>{{ $budget->client->name }}</strong></p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->place->name }}</strong></p>
                 </td>
-                <td style="width: 14%; text-align: left; vertical-align: top;">
-                    <p style="padding: 0 0 0 3px; margin: 2px 0;">Fecha y hora: </p>
-                    <p style="padding: 13px 0 0 3px; margin: 2px 0;">Duración: </p>
-                </td>
                 <td style="width: 10%; text-align: left; vertical-align: top;">
+                    <p style="padding: 0 0 0 2px; margin: 2px 0;">Fecha y hora: </p>
+                    <p style="padding: 0 0 0 2px; margin: 2px 0;">Duración: </p>
+                </td>
+                <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="margin: 2px 0;">
-                        <strong>{{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }} - {{ $budget->budgetDeliveryData->event_time }}</strong>
+                        <strong>{{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }} -
+                            {{ $budget->budgetDeliveryData->event_time }}</strong>
                     </p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->days }} día/s</strong></p>
                 </td>
@@ -127,17 +135,14 @@
             <tr>
                 <td style="width: 15%; vertical-align: top;">
                     <p style="margin: 2px 0;">Dirección: </p>
-                    <p style="margin: 2px 0;">Entrega: </p>
+                    <p style="margin: 2px 0;">Opciones de entrega: </p>
+                    <p style="margin: 2px 0;">Opciones de retiro: </p>
                 </td>
                 <td style="width: 61%; vertical-align: top;">
                     <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->address }}</strong></p>
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->delivery_datetime }}</strong></p>
-                </td>
-                <td style="width: 14%; text-align: left; vertical-align: top;">
-                    <p style="padding: 0 0 0 6px; margin: 2px 0;">Retiro: </p>
-                </td>
-                <td style="width: 10%; text-align: left; vertical-align: top;">
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_datetime }}</strong></p>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->delivery_options }}</strong></p>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_options }}</strong>
+                    </p>
                 </td>
             </tr>
         </table>
@@ -149,20 +154,32 @@
             <tr>
                 <th>Cantidad</th>
                 <th>Artículo</th>
+                <th>Componentes</th>
             </tr>
         </thead>
         <tbody>
             @foreach($budget->budgetProducts as $item)
-                <tr style="background-color: {{ $loop->iteration % 2 === 0 ? '#FFFFFF' : '#F6F6FF' }};">
-                    <td style="width: 15%;">{{ $item->quantity }}</td>
-                    <td>{{ $item->product->name }}</td>
-                </tr>
+                    <tr style="background-color: {{ $loop->iteration % 2 === 0 ? '#FFFFFF' : '#F6F6FF' }};">
+                        <td style="width: 15%;">{{ $item->quantity }}</td>
+                        <td>{{ $item->product->name }}</td>
+                        <td>
+                            {{ $item->product->attributeValues
+                            ->filter(fn($attr) => isset($attr->attribute->id) && $attr->attribute->id == 5)
+                            ->pluck('value')
+                            ->implode(', ') }}
+                        </td>
+                    </tr>
             @endforeach
         </tbody>
     </table>
 
-    <p class="pedido" style="font-size: 12px; font-weight: bold; color: #8076F8;">Detalle de pedido:</p>
-
+    <!--     <p class="pedido" style="font-size: 12px; font-weight: bold; color: #8076F8;">Detalle de pedido:</p>
+ -->
+    <p class="budget">Detalles adicionales de pedido:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <strong>
+            {{ $budget->budgetDeliveryData->additional_order_details }}
+        </strong>
+    </p>
     <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
         <tr>
             <td style="width: 50%;">
@@ -172,9 +189,9 @@
                 </strong>
             </td>
             <td style="width: 50%;">
-                Opciones de entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->delivery_options }}
+                    {{ $budget->budgetDeliveryData->delivery_datetime }}
                 </strong>
             </td>
         </tr>
@@ -186,21 +203,29 @@
                 </strong>
             </td>
             <td style="width: 50%;">
-                Opciones de retiro:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Retiro:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->widthdrawal_options }}
+                    {{ $budget->budgetDeliveryData->widthdrawal_datetime }}
                 </strong>
             </td>
         </tr>
     </table>
 
+    <div class="budget">
+        <p style="margin: 8px 0;">Detalles adicionales de entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <strong>
+                {{ $budget->budgetDeliveryData->additional_delivery_details }}
+            </strong>
+        </p>
+    </div>
+
     <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
-        
+
         <tr>
             <td style="width: 25%;">
                 Distancia:&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->place->distance }}
+                    {{ $budget->place->distance }}km
                 </strong>
             </td>
             <td style="width: 25%;">
@@ -218,24 +243,11 @@
             <td style="width: 25%;">
                 Total peajes:&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    
+
                 </strong>
             </td>
         </tr>
     </table>
-
-    <div class="budget">
-        <p style="margin: 8px 0;">Detalles adicionales de entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            <strong>
-                {{ $budget->budgetDeliveryData->additional_delivery_details }}
-            </strong> 
-        </p>
-        <p style="margin: 8px 0;">Detalles adicionales de pedido:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            <strong>
-                {{ $budget->budgetDeliveryData->additional_order_details }}
-            </strong>
-        </p>
-    </div>
 
 </body>
 
