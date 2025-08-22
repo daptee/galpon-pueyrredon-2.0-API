@@ -96,7 +96,7 @@ CREATE TABLE budgets_audith (
 
 ALTER TABLE budgets
 ADD volume DECIMAL(10,2) DEFAULT 0,
-MODIFY id_client INT NULL,
+MODIFY quoted_days DECIMAL(10,2),
 ADD client_name VARCHAR(255),
 ADD bonification_edited DECIMAL(10,2) DEFAULT 0;
 

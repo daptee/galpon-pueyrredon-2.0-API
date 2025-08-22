@@ -130,7 +130,7 @@ class UserController extends Controller
 
             // Verifica si la validación falla
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'user',
                     'endpoint' => 'Crear un usuario',
@@ -203,7 +203,7 @@ class UserController extends Controller
 
             // Verifica si la validación falla
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'user',
                     'endpoint' => 'Actualizar un usuario',
@@ -277,7 +277,7 @@ class UserController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'user',
                     'endpoint' => 'Actualizar usuario propio',

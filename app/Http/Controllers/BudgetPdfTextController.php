@@ -52,7 +52,7 @@ class BudgetPdfTextController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'budget pdf text',
                     'endpoint' => 'Actualizar texto del PDF',

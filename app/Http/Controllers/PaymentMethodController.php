@@ -44,7 +44,11 @@ class PaymentMethodController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()]);
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
+                    'request' => $request,
+                    'module' => 'payment method',
+                    'endpoint' => 'Crear método de pago',
+                ]);
             }
 
             $method = PaymentMethod::create([
@@ -84,7 +88,7 @@ class PaymentMethodController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'payment method',
                     'endpoint' => 'Actualizar método de pago',

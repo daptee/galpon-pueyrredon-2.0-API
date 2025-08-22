@@ -75,7 +75,7 @@ class UserTypeController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'user type',
                     'endpoint' => 'Crear tipo de usuario',
@@ -115,7 +115,7 @@ class UserTypeController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'user type',
                     'endpoint' => 'Actualizar tipo de usuario',

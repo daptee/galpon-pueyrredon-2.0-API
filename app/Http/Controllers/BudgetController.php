@@ -304,7 +304,7 @@ class BudgetController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], []);
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
             }
 
             // si no se envían observaciones, se pone en null
@@ -350,7 +350,7 @@ class BudgetController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], []);
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
             }
 
             $budget->id_budget_status = $request->id_budget_status;
@@ -586,7 +586,7 @@ class BudgetController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], []);
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
             }
 
             // Lógica para verificar el stock
@@ -663,7 +663,7 @@ class BudgetController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], []);
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
             }
 
             // Lógica para verificar el precio
@@ -718,7 +718,7 @@ class BudgetController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], []);
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
             }
 
             $budget->client_mail = $request->client_mail;
@@ -877,7 +877,7 @@ class BudgetController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], []);
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
             }
 
             $budget = Budget::with(['client'])->findOrFail($id);

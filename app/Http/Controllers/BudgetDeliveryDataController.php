@@ -33,7 +33,7 @@ class BudgetDeliveryDataController extends Controller
                 'widthdrawal_datetime' => 'nullable|string|max:255'
             ]);
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'budget delivery data',
                     'endpoint' => 'Crear datos de entrega',
@@ -90,7 +90,7 @@ class BudgetDeliveryDataController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'budget delivery data',
                     'endpoint' => 'Actualizar datos de entrega',

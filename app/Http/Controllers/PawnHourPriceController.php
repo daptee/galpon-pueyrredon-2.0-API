@@ -62,7 +62,7 @@ class PawnHourPriceController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'pawn hour prices',
                     'endpoint' => 'Crear precio de hora de peón',
@@ -110,7 +110,7 @@ class PawnHourPriceController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'pawn hour prices',
                     'endpoint' => 'Actualizar precio de hora de peón',

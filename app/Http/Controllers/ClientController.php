@@ -9,6 +9,7 @@ use App\Models\ClientsContact;
 use Illuminate\Http\Request;
 use App\Models\ClientsType;
 use Illuminate\Support\Facades\Validator;
+use Log;
 
 class ClientController extends Controller
 {
@@ -124,7 +125,7 @@ class ClientController extends Controller
 
             // Verificar si la validación falla
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'client',
                     'endpoint' => 'Crear un cliente',
@@ -212,7 +213,7 @@ class ClientController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'client',
                     'endpoint' => 'Actualizar un cliente',
@@ -354,7 +355,7 @@ class ClientController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'client',
                     'endpoint' => 'Crear tipo de cliente',
@@ -389,7 +390,7 @@ class ClientController extends Controller
             $clientsType = ClientsType::find($id);
 
             if (!$clientsType) {
-                return response()->json(['error' => 'Client type not found'], 404, [
+                return ApiResponse::create('Tipo de cliente no encontrado', 404, ['error' => 'Client type not found'], [
                     'request' => $request,
                     'module' => 'client',
                     'endpoint' => 'Actualizar tipo de cliente',
@@ -402,7 +403,7 @@ class ClientController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'client',
                     'endpoint' => 'Actualizar tipo de cliente',
@@ -492,7 +493,7 @@ class ClientController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'client',
                     'endpoint' => 'Crear clases de clientes',
@@ -540,7 +541,7 @@ class ClientController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Errores de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'client',
                     'endpoint' => 'Actualizar clases de clientes',

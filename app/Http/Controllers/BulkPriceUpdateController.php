@@ -57,7 +57,7 @@ class BulkPriceUpdateController extends Controller
 
     public function store(Request $request)
     {
-        $validated = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'from_date' => 'required|date',
             'to_date' => 'required|date|after_or_equal:from_date',
             'percentage' => 'required|numeric',
@@ -68,8 +68,8 @@ class BulkPriceUpdateController extends Controller
             'products.*.minimun_quantity' => 'sometimes|integer',
         ]);
 
-        if ($validated->fails()) {
-            return ApiResponse::create('Validación fallida', 422, $validated->errors(), [
+        if ($validator->fails()) {
+            return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                 'request' => $request,
                 'module' => 'bulk price update',
                 'endpoint' => 'Crear actualización masiva de precios',
@@ -116,7 +116,7 @@ class BulkPriceUpdateController extends Controller
 
     public function update(Request $request, $id)
     {
-        $validated = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'from_date' => 'required|date',
             'to_date' => 'required|date|after_or_equal:from_date',
             'percentage' => 'required|numeric',
@@ -127,8 +127,8 @@ class BulkPriceUpdateController extends Controller
             'products.*.minimun_quantity' => 'sometimes|integer',
         ]);
 
-        if ($validated->fails()) {
-            return ApiResponse::create('Validación fallida', 422, $validated->errors(), [
+        if ($validator->fails()) {
+            return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                 'request' => $request,
                 'module' => 'bulk price update',
                 'endpoint' => 'Editar actualización masiva de precios',
