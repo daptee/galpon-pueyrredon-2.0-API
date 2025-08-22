@@ -43,7 +43,7 @@ class ProductTypeController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'product type',
                     'endpoint' => 'Crear tipos de productos',
@@ -80,7 +80,7 @@ class ProductTypeController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'product type',
                     'endpoint' => 'Actualizar tipo de producto',

@@ -206,7 +206,7 @@ class ProductController extends Controller
             });
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'product',
                     'endpoint' => 'Crear producto',
@@ -316,7 +316,16 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $product = Product::findOrFail($id);
+            $product = Product::find($id);
+
+            // validamos que el producto exista
+            if (!$product) {
+                return ApiResponse::create('Producto no encontrado', 404, ['error' => 'Product not found'], [
+                    'request' => $request,
+                    'module' => 'product',
+                    'endpoint' => 'Actualizar producto',
+                ]);
+            }
 
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
@@ -377,7 +386,7 @@ class ProductController extends Controller
             });
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, $validator->errors(), [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'product',
                     'endpoint' => 'Actualizar producto',
@@ -633,7 +642,7 @@ class ProductController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'product',
                     'endpoint' => 'Actualizar estado del producto',

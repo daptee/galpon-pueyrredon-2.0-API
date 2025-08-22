@@ -58,12 +58,12 @@ class ProductFurnitureController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'name' => 'sometimes|required|string|max:255',
+                'name' => 'required|string|max:255',
                 'status' => 'sometimes|in:1,2,3',
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'product furniture',
                     'endpoint' => 'Crear mueble de producto',
@@ -95,12 +95,12 @@ class ProductFurnitureController extends Controller
             $productFurniture = ProductFurniture::findOrFail($id);
 
             $validator = Validator::make($request->all(), [
-                'name' => 'sometimes|required|string|max:255',
+                'name' => 'nullable|string|max:255',
                 'status' => 'sometimes|in:1,2,3',
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'product furniture',
                     'endpoint' => 'Actualizar mueble de producto',

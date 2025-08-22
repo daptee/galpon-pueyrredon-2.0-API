@@ -44,7 +44,7 @@ class PaymentStatusController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'payment status',
                     'endpoint' => 'Crear estado de pago',
@@ -88,7 +88,7 @@ class PaymentStatusController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validación', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'payment status',
                     'endpoint' => 'Actualizar estado de pago',

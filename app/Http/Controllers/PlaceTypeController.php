@@ -74,7 +74,7 @@ class PlaceTypeController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'place type',
                     'endpoint' => 'Crear tipos de lugares',
@@ -122,7 +122,7 @@ class PlaceTypeController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return ApiResponse::create('Error de validacion', 422, ['error' => $validator->errors()], [
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], [
                     'request' => $request,
                     'module' => 'place type',
                     'endpoint' => 'Actualizar tipos de lugares',
