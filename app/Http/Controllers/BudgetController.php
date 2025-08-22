@@ -263,7 +263,17 @@ class BudgetController extends Controller
 
                 $pdfPath = public_path("storage/budgets/budget-{$budget->id}.pdf");
 
-                \Mail::to($budget->client_mail)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                $to = config('app.env') === 'testing' || config('app.env') === 'local'
+                    ? env('MAIL_REDIRECT_TO', 'galponpueyrredon@hotmail.com')
+                    : $budget->client_mail;
+
+                Log::info('Enviando presupuesto por correo', [
+                    'to' => $to,
+                    'budget_id' => $budget->id,
+                    'pdf_path' => $pdfPath
+                ]);
+
+                \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
             }
 
             // agregar auditoría
@@ -547,7 +557,17 @@ class BudgetController extends Controller
 
                 $pdfPath = public_path("storage/budgets/budget-{$budget->id}.pdf");
 
-                \Mail::to($budget->client_mail)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                $to = config('app.env') === 'testing' || config('app.env') === 'local'
+                    ? env('MAIL_REDIRECT_TO', 'galponpueyrredon@hotmail.com')
+                    : $budget->client_mail;
+
+                Log::info('Enviando presupuesto por correo', [
+                    'to' => $to,
+                    'budget_id' => $budget->id,
+                    'pdf_path' => $pdfPath
+                ]);
+
+                \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
             }
 
             // Auditoría de actualización

@@ -21,14 +21,14 @@
         @page {
             margin: 0 !important;
             padding: 0 !important;
-            background-color:rgb(255, 0, 0);
+            background-color: rgb(255, 0, 0);
         }
 
         body {
             font-family: 'Lato', sans-serif;
             font-size: 10px;
             color: #333;
-            background-color:rgb(255, 255, 255);
+            background-color: rgb(255, 255, 255);
         }
 
         .title {
@@ -59,7 +59,7 @@
             padding: 6px 36px;
         }
 
-        .budget{
+        .budget {
             padding: 6px 16px;
         }
 
@@ -165,7 +165,8 @@
         <tr>
             <td style="width: 80%; text-align: right; padding: 4px 8px;">Traslados y armado:</td>
             <td style="width: 20%; text-align: right; padding: 4px 29px 4px 8px; font-weight: bold;">
-                ${{ number_format($budget->transportation_cost, 2, ',', '.') }}</td>
+                ${{ number_format($budget->transportation_cost_edited ?? $budget->transportation_cost, 2, ',', '.') }}
+            </td>
         </tr>
         <tr>
             <td style="width: 80%; text-align: right; padding: 4px 8px;">Subtotal:</td>
