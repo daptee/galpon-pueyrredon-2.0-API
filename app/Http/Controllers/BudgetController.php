@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Budget;
 use App\Models\BudgetAudith;
+use App\Models\BudgetDeliveryData;
 use App\Models\BudgetProducts;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductUseStock;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -202,7 +204,7 @@ class BudgetController extends Controller
                         'endpoint' => 'Crear presupuesto',
                     ]);
                 }
-                if ($data['id_budget_status'] !== 1) {
+                if ($data['id_budget_status'] == 3) {
                     $parentBudget->id_budget_status = 5;
                     $parentBudget->save();
 
@@ -246,7 +248,51 @@ class BudgetController extends Controller
                 'budgetProducts.product'
             ]);
 
-            if ($data['id_budget_status'] == 2) {
+            if ($data['id_budget_status'] == 3 && $budget->id_budget) {
+                // cuando un presupuesto hijo es aceptado, el padre pasa a estado 5 (presupuesto aceptado) y tambien budget_delivery_data del padre se pasa al hijo
+
+                $deliveryData = BudgetDeliveryData::where('id_budget', $data['id_budget'])->first();
+
+                if ($deliveryData) {
+                    $deliveryData->id_budget = $budget->id;
+                    $deliveryData->save();
+                }
+
+                // agregar auditoría
+                BudgetAudith::create([
+                    'id_budget' => $budget->id,
+                    'action' => 'update_delivery_data',
+                    'new_budget_status' => $budget->id_budget_status,
+                    'observations' => 'Presupuesto hijo aceptado, se asigna budget_delivery_data del padre',
+                    'user' => auth()->user()->id,
+                    'date' => now()->toDateString(),
+                    'time' => now()->toTimeString()
+                ]);
+
+                // pasar los pagos del padre al hijo
+
+                $payments = Payment::where('id_budget', $data['id_budget'])->get();
+
+                if ($payments) {
+                    foreach ($payments as $payment) {
+                        $payment->id_budget = $budget->id;
+                        $payment->save();
+                    }
+                }
+
+                // auditoria de pagos actualizados al hijo
+                BudgetAudith::create([
+                    'id_budget' => $budget->id,
+                    'action' => 'update_payments',
+                    'new_budget_status' => $budget->id_budget_status,
+                    'observations' => 'Presupuesto hijo aceptado, se asignan pagos del padre',
+                    'user' => auth()->user()->id,
+                    'date' => now()->toDateString(),
+                    'time' => now()->toTimeString()
+                ]);
+            }
+
+            if ($data['id_budget_status'] == 2 || $data['id_budget_status'] == 3) {
                 $pdf = Pdf::loadView('pdf.budget', compact('budget'));
 
                 if (!file_exists(public_path("storage/budgets/"))) {
@@ -386,6 +432,94 @@ class BudgetController extends Controller
                     }
                 }
                 ;
+
+                // si tiene presupuesto padre, ponerle estado 5 (presupuesto aceptado)
+                if ($budget->id_budget) {
+                    $parentBudget = Budget::find($budget->id_budget);
+                    if ($parentBudget) {
+                        $parentBudget->id_budget_status = 5;
+                        $parentBudget->save();
+
+                        BudgetAudith::create([
+                            'id_budget' => $parentBudget->id,
+                            'action' => 'update_status',
+                            'new_budget_status' => $parentBudget->id_budget_status,
+                            'observations' => json_encode([
+                                'id_budget_status' => $parentBudget->id_budget_status,
+                                'status_name' => $parentBudget->budgetStatus->name
+                            ]),
+                            'user' => auth()->user()->id,
+                            'date' => now()->toDateString(),
+                            'time' => now()->toTimeString()
+                        ]);
+
+                        // delivery data del padre al hijo
+                        $deliveryData = BudgetDeliveryData::where('id_budget', $parentBudget->id)->first();
+                        if ($deliveryData) {
+                            $deliveryData->id_budget = $budget->id;
+                            $deliveryData->save();
+                        }
+
+                        BudgetAudith::create([
+                            'id_budget' => $budget->id,
+                            'action' => 'update_delivery_data',
+                            'new_budget_status' => $budget->id_budget_status,
+                            'observations' => 'Presupuesto hijo aceptado, se asigna budget_delivery_data del padre',
+                            'user' => auth()->user()->id,
+                            'date' => now()->toDateString(),
+                            'time' => now()->toTimeString()
+                        ]);
+
+                        // pasar los pagos del padre al hijo
+                        $payments = Payment::where('id_budget', $parentBudget->id)->get();
+                        if ($payments) {
+                            foreach ($payments as $payment) {
+                                $payment->id_budget = $budget->id;
+                                $payment->save();
+                            }
+                        }
+                        // auditoria de pagos actualizados al hijo
+                        BudgetAudith::create([
+                            'id_budget' => $budget->id,
+                            'action' => 'update_payments',
+                            'new_budget_status' => $budget->id_budget_status,
+                            'observations' => 'Presupuesto hijo aceptado, se asignan pagos del padre',
+                            'user' => auth()->user()->id,
+                            'date' => now()->toDateString(),
+                            'time' => now()->toTimeString()
+                        ]);
+                    }
+                }
+            }
+
+            if ($request->id_budget_status == 2 || $request->id_budget_status == 3) {
+                $pdf = Pdf::loadView('pdf.budget', compact('budget'));
+
+                if (!file_exists(public_path("storage/budgets/"))) {
+                    mkdir(public_path("storage/budgets/"), 0777, true);
+                }
+
+                if (file_exists(public_path('fonts/Lato-Regular.ttf'))) {
+                    \Log::warning('Fuente encontrada: fonts/Lato-Regular.ttf');
+                } else {
+                    \Log::warning('Fuente no encontrada: fonts/Lato-Regular.ttf');
+                }
+
+                $pdf->save(public_path("storage/budgets/budget-{$budget->id}.pdf"));
+
+                $pdfPath = public_path("storage/budgets/budget-{$budget->id}.pdf");
+
+                $to = config('app.env') === 'testing' || config('app.env') === 'local'
+                    ? env('MAIL_REDIRECT_TO', 'galponpueyrredon@hotmail.com')
+                    : $budget->client_mail;
+
+                Log::info('Enviando presupuesto por correo', [
+                    'to' => $to,
+                    'budget_id' => $budget->id,
+                    'pdf_path' => $pdfPath
+                ]);
+
+                \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
             }
 
             // agregar auditoría
@@ -609,43 +743,87 @@ class BudgetController extends Controller
                 return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
             }
 
-            // Lógica para verificar el stock
-            $product = Product::with(['productStock'])->where('id', $request->id_product)->first();
+            $product = Product::with([
+                'productStock',
+                'comboItems.product.productStock'
+            ])
+                ->where('id', $request->id_product)
+                ->first();
+
             if (!$product) {
                 return ApiResponse::create('Producto no encontrado', 404, ['error' => 'Producto no encontrado en el presupuesto'], []);
             }
 
-            $stock = 0;
             $quantity = $request->quantity;
             $days = $request->days;
             $dateFrom = \Carbon\Carbon::parse($request->date_from);
-            $dateTo = $dateFrom->copy()->addDays($days);
             $availableStockPerDay = [];
 
-            if (!$product->productStock) {
-                $stock = $product->stock;
+            $hasInsufficientStock = false;
+
+            if ($product->is_combo) {
+                // 🔹 Si es combo, verificar stock de cada producto componente
                 for ($i = 0; $i < $days; $i++) {
                     $date = $dateFrom->copy()->addDays($i)->toDateString();
-                    $used = ProductUseStock::where('id_product', $product->id)
-                        ->where('date_from', '<=', $date)
-                        ->where('date_to', '>=', $date)
-                        ->sum('quantity');
-                    $availableStockPerDay[$date] = $stock - $used;
+                    $dayOk = true;
+
+                    foreach ($product->comboItems as $comboItem) {
+                        $childProduct = $comboItem->product;
+                        $requiredQuantity = $quantity * $comboItem->quantity; // combo × cantidad usada
+
+                        $stock = $childProduct->productStock
+                            ? $childProduct->productStock->stock
+                            : $childProduct->stock;
+
+                        $used = ProductUseStock::when($childProduct->productStock, function ($q) use ($childProduct, $date) {
+                            return $q->where('id_product_stock', $childProduct->productStock->id);
+                        }, function ($q) use ($childProduct, $date) {
+                            return $q->where('id_product', $childProduct->id);
+                        })
+                            ->where('date_from', '<=', $date)
+                            ->where('date_to', '>=', $date)
+                            ->sum('quantity');
+
+                        $available = $stock - $used;
+
+                        if (!isset($availableStockPerDay[$date])) {
+                            $availableStockPerDay[$date] = [];
+                        }
+                        $availableStockPerDay[$date][$childProduct->id] = $available;
+
+                        if ($available < $requiredQuantity) {
+                            $dayOk = false;
+                        }
+                    }
+
+                    if (!$dayOk) {
+                        $hasInsufficientStock = true;
+                    }
                 }
             } else {
-                $stock = $product->productStock->stock;
+                // 🔹 Si es producto individual
+                $stock = $product->productStock ? $product->productStock->stock : $product->stock;
+
                 for ($i = 0; $i < $days; $i++) {
                     $date = $dateFrom->copy()->addDays($i)->toDateString();
-                    $used = ProductUseStock::where('id_product_stock', $product->productStock->id)
+
+                    $used = ProductUseStock::when($product->productStock, function ($q) use ($product, $date) {
+                        return $q->where('id_product_stock', $product->productStock->id);
+                    }, function ($q) use ($product, $date) {
+                        return $q->where('id_product', $product->id);
+                    })
                         ->where('date_from', '<=', $date)
                         ->where('date_to', '>=', $date)
                         ->sum('quantity');
-                    $availableStockPerDay[$date] = $stock - $used;
+
+                    $available = $stock - $used;
+                    $availableStockPerDay[$date] = $available;
+
+                    if ($available < $quantity) {
+                        $hasInsufficientStock = true;
+                    }
                 }
             }
-
-            // Validar si en algún día no hay suficiente stock
-            $hasInsufficientStock = collect($availableStockPerDay)->some(fn($available) => $available < $quantity);
 
             if ($hasInsufficientStock) {
                 return ApiResponse::create('Stock insuficiente', 200, [
@@ -674,6 +852,7 @@ class BudgetController extends Controller
             ]);
         }
     }
+
     public function checkPrice(Request $request)
     {
         try {
