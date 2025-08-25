@@ -123,7 +123,9 @@ class ProductPriceController extends Controller
 
             $result = $products->map(function ($product) use ($date) {
                 $price = $product->prices->first();
-                return [
+
+                // Valores fijos
+                $data = [
                     'id_product' => $product->id,
                     'name' => $product->name,
                     'code' => $product->code,
@@ -132,7 +134,37 @@ class ProductPriceController extends Controller
                     'type' => $product->productType->name ?? null,
                     'furniture' => $product->productFurniture->name ?? null,
                     'vigente_price' => $price ? $price->price : null,
+                    'estado' => $product->productStatus->name ?? null,
                 ];
+
+                // Mapear atributos dinámicos a sus columnas
+                foreach ($product->attributeValues as $attrValue) {
+                    $attrName = strtolower($attrValue->attribute->name);
+
+                    switch ($attrName) {
+                        case 'color':
+                            $data['color'] = $attrValue->value;
+                            break;
+                        case 'diametro':
+                            $data['diametro'] = $attrValue->value;
+                            break;
+                        case 'altura':
+                            $data['altura'] = $attrValue->value;
+                            break;
+                        case 'volumen':
+                            $data['volumen_atributo'] = $attrValue->value;
+                            break;
+                        case 'componentes':
+                            if (isset($data['componentes'])) {
+                                $data['componentes'] .= ', ' . $attrValue->value;
+                            } else {
+                                $data['componentes'] = $attrValue->value;
+                            }
+                            break;
+                    }
+                }
+
+                return $data;
             });
 
             $fileName = 'product_prices_' . now()->format('Ymd_His') . '.xlsx';
