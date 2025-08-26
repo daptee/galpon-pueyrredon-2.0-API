@@ -746,9 +746,7 @@ class BudgetController extends Controller
             $product = Product::with([
                 'productStock',
                 'comboItems.product.productStock'
-            ])
-                ->where('id', $request->id_product)
-                ->first();
+            ])->find($request->id_product);
 
             if (!$product) {
                 return ApiResponse::create('Producto no encontrado', 404, ['error' => 'Producto no encontrado en el presupuesto'], []);
@@ -757,61 +755,135 @@ class BudgetController extends Controller
             $quantity = $request->quantity;
             $days = $request->days;
             $dateFrom = \Carbon\Carbon::parse($request->date_from);
-            $availableStockPerDay = [];
 
+            $availableStockPerDay = [];
+            $childrenDetails = [];
             $hasInsufficientStock = false;
 
-            if ($product->is_combo) {
-                // 🔹 Si es combo, verificar stock de cada producto componente
-                for ($i = 0; $i < $days; $i++) {
-                    $date = $dateFrom->copy()->addDays($i)->toDateString();
-                    $dayOk = true;
+            // 🔹 Caso COMBO
+            if ($product->id_product_type == 2) {
+                foreach ($product->comboItems as $comboItem) {
+                    $childProduct = $comboItem->product;
+                    $requiredQuantity = $quantity * $comboItem->quantity;
+                    $childAvailablePerDay = [];
+                    $childHasStock = true;
 
-                    foreach ($product->comboItems as $comboItem) {
-                        $childProduct = $comboItem->product;
-                        $requiredQuantity = $quantity * $comboItem->quantity; // combo × cantidad usada
+                    $stock = $childProduct->productStock
+                        ? $childProduct->productStock->stock
+                        : $childProduct->stock;
 
-                        $stock = $childProduct->productStock
-                            ? $childProduct->productStock->stock
-                            : $childProduct->stock;
+                    for ($i = 0; $i < $days; $i++) {
+                        $date = $dateFrom->copy()->addDays($i)->toDateString();
 
-                        $used = ProductUseStock::when($childProduct->productStock, function ($q) use ($childProduct, $date) {
-                            return $q->where('id_product_stock', $childProduct->productStock->id);
-                        }, function ($q) use ($childProduct, $date) {
-                            return $q->where('id_product', $childProduct->id);
-                        })
+                        $used = ProductUseStock::when(
+                            $childProduct->productStock,
+                            function ($q) use ($childProduct, $date) {
+                                return $q->where('id_product_stock', $childProduct->productStock->id);
+                            },
+                            function ($q) use ($childProduct, $date) {
+                                return $q->where('id_product', $childProduct->id);
+                            }
+                        )
                             ->where('date_from', '<=', $date)
                             ->where('date_to', '>=', $date)
                             ->sum('quantity');
 
                         $available = $stock - $used;
-
-                        if (!isset($availableStockPerDay[$date])) {
-                            $availableStockPerDay[$date] = [];
-                        }
-                        $availableStockPerDay[$date][$childProduct->id] = $available;
+                        $childAvailablePerDay[$date] = $available;
 
                         if ($available < $requiredQuantity) {
-                            $dayOk = false;
+                            $childHasStock = false;
+                            $hasInsufficientStock = true;
                         }
                     }
 
-                    if (!$dayOk) {
-                        $hasInsufficientStock = true;
+                    $childrenDetails[] = [
+                        'product' => $childProduct,
+                        'required_quantity' => $requiredQuantity,
+                        'available_stock' => $childAvailablePerDay,
+                        'stock_ok' => $childHasStock
+                    ];
+                }
+
+                // 🔹 Agrupar hijos por productStock o product->id
+                $groupedTotals = [];
+                foreach ($childrenDetails as $child) {
+                    $realId = $child['product']->productStock
+                        ? $child['product']->productStock->id
+                        : $child['product']->id;
+
+                    if (!isset($groupedTotals[$realId])) {
+                        $groupedTotals[$realId] = [
+                            'required_quantity' => 0,
+                            'available_stock' => $child['available_stock'],
+                            'stock_ok' => true,
+                        ];
+                    }
+
+                    $groupedTotals[$realId]['required_quantity'] += $child['required_quantity'];
+
+                    foreach ($child['available_stock'] as $date => $available) {
+                        if (isset($groupedTotals[$realId]['available_stock'][$date])) {
+                            $groupedTotals[$realId]['available_stock'][$date] = min(
+                                $groupedTotals[$realId]['available_stock'][$date],
+                                $available
+                            );
+                        } else {
+                            $groupedTotals[$realId]['available_stock'][$date] = $available;
+                        }
+                    }
+
+                    $groupedTotals[$realId]['stock_ok'] =
+                        $groupedTotals[$realId]['stock_ok'] && $child['stock_ok'];
+                }
+
+                // 🔹 Inyectar las cantidades agrupadas en cada hijo
+                foreach ($childrenDetails as &$child) {
+                    $realId = $child['product']->productStock
+                        ? $child['product']->productStock->id
+                        : $child['product']->id;
+
+                    $child['required_quantity'] = $groupedTotals[$realId]['required_quantity'];
+                    $child['available_stock'] = $groupedTotals[$realId]['available_stock'];
+
+                    // Re-evaluar stock_ok con la cantidad total
+                    $childHasStock = true;
+                    foreach ($child['available_stock'] as $date => $available) {
+                        if ($available < $child['required_quantity']) {
+                            $childHasStock = false;
+                            $hasInsufficientStock = true;
+                            break;
+                        }
+                    }
+                    $child['stock_ok'] = $childHasStock;
+                }
+                unset($child);
+
+                // 🔹 Re-evaluar stock insuficiente
+                foreach ($childrenDetails as $child) {
+                    foreach ($child['available_stock'] as $date => $available) {
+                        if ($available < $child['required_quantity']) {
+                            $hasInsufficientStock = true;
+                            break;
+                        }
                     }
                 }
             } else {
-                // 🔹 Si es producto individual
+                // 🔹 Caso PRODUCTO INDIVIDUAL
                 $stock = $product->productStock ? $product->productStock->stock : $product->stock;
 
                 for ($i = 0; $i < $days; $i++) {
                     $date = $dateFrom->copy()->addDays($i)->toDateString();
 
-                    $used = ProductUseStock::when($product->productStock, function ($q) use ($product, $date) {
-                        return $q->where('id_product_stock', $product->productStock->id);
-                    }, function ($q) use ($product, $date) {
-                        return $q->where('id_product', $product->id);
-                    })
+                    $used = ProductUseStock::when(
+                        $product->productStock,
+                        function ($q) use ($product, $date) {
+                            return $q->where('id_product_stock', $product->productStock->id);
+                        },
+                        function ($q) use ($product, $date) {
+                            return $q->where('id_product', $product->id);
+                        }
+                    )
                         ->where('date_from', '<=', $date)
                         ->where('date_to', '>=', $date)
                         ->sum('quantity');
@@ -825,21 +897,24 @@ class BudgetController extends Controller
                 }
             }
 
+            // 🔹 Respuesta
             if ($hasInsufficientStock) {
                 return ApiResponse::create('Stock insuficiente', 200, [
                     'error' => 'Stock insuficiente',
                     'stock' => false,
                     'product' => $product,
-                    'available_stock' => $availableStockPerDay,
-                    'requested_quantity' => $quantity
+                    'available_stock' => $product->id_product_type == 2 ? null : $availableStockPerDay,
+                    'requested_quantity' => $quantity,
+                    'check_stock_combo' => $product->id_product_type == 2 ? $childrenDetails : null
                 ], []);
             }
 
             return ApiResponse::create('Stock verificado correctamente', 200, [
                 'stock' => true,
                 'product' => $product,
-                'available_stock' => $availableStockPerDay,
+                'available_stock' => $product->id_product_type == 2 ? null : $availableStockPerDay,
                 'requested_quantity' => $quantity,
+                'check_stock_combo' => $product->id_product_type == 2 ? $childrenDetails : null
             ], [
                 'module' => 'budget',
                 'endpoint' => 'Verificar stock del producto',
@@ -852,6 +927,7 @@ class BudgetController extends Controller
             ]);
         }
     }
+
 
     public function checkPrice(Request $request)
     {
