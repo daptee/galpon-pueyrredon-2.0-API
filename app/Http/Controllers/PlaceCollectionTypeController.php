@@ -14,34 +14,67 @@ class PlaceCollectionTypeController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = PlaceCollectionType::query();
+            // Parámetros de paginación
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
 
+            // Construir la consulta base con relación
+            $query = PlaceCollectionType::with('status');
+
+            // Filtro por estado
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
 
+            // Filtro por búsqueda
             if ($request->has('search')) {
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $collectionTypes = $query->get();
+            $query->orderBy('name');
 
-            $collectionTypes->load(['status']);
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $collectionTypes = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $collectionTypes->items();
+                $meta_data = [
+                    'page' => $collectionTypes->currentPage(),
+                    'per_page' => $collectionTypes->perPage(),
+                    'total' => $collectionTypes->total(),
+                    'last_page' => $collectionTypes->lastPage(),
+                ];
+            } else {
+                // Si no se especifica per_page, traer todos los registros
+                $data = $query->get();
+                $meta_data = null;
+            }
 
-            return ApiResponse::create('Tipos de cobro de lugares traídos correctamente', 200, $collectionTypes, [
-                'request' => $request,
-                'module' => 'place collection type',
-                'endpoint' => 'Obtener tipos de cobro de lugares',
-            ]);
+            return ApiResponse::paginate(
+                'Tipos de cobro de lugares traídos correctamente',
+                200,
+                $data,
+                $meta_data,
+                [
+                    'request' => $request,
+                    'module' => 'place collection type',
+                    'endpoint' => 'Obtener tipos de cobro de lugares',
+                ]
+            );
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los tipos de cobro de lugares', 500, ['error' => $e->getMessage()], [
-                'request' => $request,
-                'module' => 'place collection type',
-                'endpoint' => 'Obtener tipos de cobro de lugares',
-            ]);
+            return ApiResponse::create(
+                'Error al obtener los tipos de cobro de lugares',
+                500,
+                ['error' => $e->getMessage()],
+                [
+                    'request' => $request,
+                    'module' => 'place collection type',
+                    'endpoint' => 'Obtener tipos de cobro de lugares',
+                ]
+            );
         }
     }
+
 
     // POST - Crear un nuevo tipo de cobro de lugar
     public function store(Request $request)
