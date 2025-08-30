@@ -10,6 +10,7 @@ use App\Models\BudgetDeliveryData;
 use App\Models\BudgetProducts;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\ProductProducts;
 use App\Models\ProductUseStock;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -114,7 +115,6 @@ class BudgetController extends Controller
         try {
             $budget = Budget::with([
                 'budgetStatus',
-                /* 'pdfText', */
                 'place',
                 'transportation',
                 'client',
@@ -123,20 +123,85 @@ class BudgetController extends Controller
             ])->find($id);
 
             if (!$budget) {
-                return ApiResponse::create('Presupuesto no encontrado', 404, ['error' => 'Presupuesto no encontrado'], []);
+                return ApiResponse::create(
+                    'Presupuesto no encontrado',
+                    404,
+                    ['error' => 'Presupuesto no encontrado'],
+                    []
+                );
             }
 
-            return ApiResponse::create('Presupuesto obtenido correctamente', 200, $budget, [
-                'request' => request(),
-                'module' => 'budget',
-                'endpoint' => 'Obtener presupuesto por ID',
-            ]);
+            // Días de duración del evento
+            $eventDays = $budget->days ?? 1; // ajusta según tu modelo
+
+            // Procesamos productos para calcular disponibilidad
+            foreach ($budget->budgetProducts as $budgetProduct) {
+                $product = $budgetProduct->product;
+
+                if (!$product) {
+                    $budgetProduct->availability = false;
+                    continue;
+                }
+
+                // Si es combo (id_product_type == 2)
+                if ($product->id_product_type == 2) {
+                    $comboRelations = ProductProducts::where('id_parent_product', $product->id)->with('product')->get();
+                    $comboAvailable = true;
+                    $childrenDetails = [];
+
+                    foreach ($comboRelations as $relation) {
+                        $child = $relation->product;
+                        if (!$child)
+                            continue;
+
+                        // Cantidad requerida = cantidad en el presupuesto * cantidad del hijo * días de evento
+                        $requiredQty = $budgetProduct->quantity * $relation->quantity * $eventDays;
+                        $hasStock = $child->stock >= $requiredQty;
+
+                        $childrenDetails[] = [
+                            'id' => $child->id,
+                            'name' => $child->name,
+                            'required' => $requiredQty,
+                            'stock' => $child->stock,
+                            'available' => $hasStock,
+                        ];
+
+                        if (!$hasStock) {
+                            $comboAvailable = false;
+                        }
+                    }
+
+                    $budgetProduct->availability = $comboAvailable;
+                    $budgetProduct->combo_items = $childrenDetails;
+
+                } else {
+                    // Producto simple
+                    $requiredQty = $budgetProduct->quantity * $eventDays;
+                    $budgetProduct->availability = $product->stock >= $requiredQty;
+                }
+            }
+
+            return ApiResponse::create(
+                'Presupuesto obtenido correctamente',
+                200,
+                $budget,
+                [
+                    'request' => request(),
+                    'module' => 'budget',
+                    'endpoint' => 'Obtener presupuesto por ID',
+                ]
+            );
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener el presupuesto', 500, ['error' => $e->getMessage()], [
-                'request' => request(),
-                'module' => 'budget',
-                'endpoint' => 'Obtener presupuesto por ID',
-            ]);
+            return ApiResponse::create(
+                'Error al obtener el presupuesto',
+                500,
+                ['error' => $e->getMessage()],
+                [
+                    'request' => request(),
+                    'module' => 'budget',
+                    'endpoint' => 'Obtener presupuesto por ID',
+                ]
+            );
         }
     }
 
