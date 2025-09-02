@@ -205,6 +205,60 @@ class BudgetController extends Controller
         }
     }
 
+    public function checkBudget(Request $request)
+    {
+        try {
+            $rules = [
+                'client_id' => 'required|integer|exists:clients,id',
+                'date_event' => 'required|date',
+                'place_id' => 'required|integer|exists:places,id',
+            ];
+
+            $validated = $request->validate($rules);
+
+            // Buscar presupuestos con esos 3 parámetros
+            $budgets = Budget::where('id_client', $validated['client_id'])
+                ->where('date_event', $validated['date_event'])
+                ->where('id_place', $validated['place_id'])
+                ->pluck('id'); // solo traigo los ids de presupuestos encontrados
+
+            if ($budgets->isEmpty()) {
+                return ApiResponse::create(
+                    'No existe presupuesto con esos datos',
+                    200,
+                    ['exists' => false, 'budgets' => []],
+                    [
+                        'request' => $request,
+                        'module' => 'budget',
+                        'endpoint' => 'Validar presupuesto duplicado',
+                    ]
+                );
+            }
+
+            return ApiResponse::create(
+                'Ya existe presupuesto con esos datos',
+                200,
+                ['exists' => true, 'budgets' => $budgets],
+                [
+                    'request' => $request,
+                    'module' => 'budget',
+                    'endpoint' => 'Validar presupuesto duplicado',
+                ]
+            );
+        } catch (\Exception $e) {
+            return ApiResponse::create(
+                'Error al validar presupuesto',
+                500,
+                ['error' => $e->getMessage()],
+                [
+                    'request' => $request,
+                    'module' => 'budget',
+                    'endpoint' => 'Validar presupuesto duplicado',
+                ]
+            );
+        }
+    }
+
     public function store(Request $request)
     {
         try {
