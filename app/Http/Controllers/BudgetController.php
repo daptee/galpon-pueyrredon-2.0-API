@@ -611,6 +611,17 @@ class BudgetController extends Controller
                 }
             }
 
+            // SI EL ESTADO ES DIFERENTE DE 3 ELIMINAMOS USO DE STOCK
+            if ($request->id_budget_status != 3) {
+                // primero validamos si tiene uso de stock
+                $usedStocks = ProductUseStock::where('id_budget', $budget->id)->get();
+                if ($usedStocks && $usedStocks->count() > 0) {
+                    foreach ($usedStocks as $usedStock) {
+                        $usedStock->delete();
+                    }
+                }
+            };
+
             if ($request->id_budget_status == 2 || $request->id_budget_status == 3) {
                 $pdf = Pdf::loadView('pdf.budget', compact('budget'));
 

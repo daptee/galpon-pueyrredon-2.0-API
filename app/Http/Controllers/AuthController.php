@@ -37,7 +37,7 @@ class AuthController extends Controller
                 ->first();
 
             if (!$user || !Hash::check($request->password, $user->password)) {
-                return ApiResponse::create('Credenciales no válidas', 401, 'Unauthorized', [
+                return ApiResponse::create('Credenciales no válidas', 401, 'Usuario o password incorrectos', [
                     'request' => $request,
                     'module' => 'auth',
                     'endpoint' => 'Login',
