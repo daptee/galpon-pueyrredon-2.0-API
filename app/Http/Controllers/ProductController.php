@@ -728,6 +728,11 @@ class ProductController extends Controller
                 ]);
             }
 
+            // 🔹 Filtrar productos sin alteración de stock
+            $result = $result->filter(function ($item) {
+                return collect($item['used_stock_by_day'])->some(fn($value) => $value > 0);
+            })->values();
+
             $total = $result->count();
 
             if ($perPage) {
