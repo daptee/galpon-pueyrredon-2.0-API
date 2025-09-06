@@ -262,6 +262,7 @@ Route::group([
     Route::get('/', [BudgetController::class, 'index'])->middleware('admin');
     Route::get('/{id}', [BudgetController::class, 'show'])->middleware('admin');
     Route::get('/pdf/{id}', [BudgetController::class, 'generatePdf'])->middleware('admin');
+    Route::get('/tree-status/{id}', [BudgetController::class, 'treeStatus'])->middleware('admin');
     Route::post('/', [BudgetController::class, 'store'])->middleware('admin');
     Route::put('/{id}', [BudgetController::class, 'update'])->middleware('admin');
     Route::post('/resend/{id}', [BudgetController::class, 'resendEmail'])->middleware('admin');

@@ -259,6 +259,80 @@ class BudgetController extends Controller
         }
     }
 
+    public function treeStatus($id, Request $request)
+    {
+        try {
+            $budget = Budget::with(['client', 'place', 'budgetStatus'])->find($id);
+
+            if (!$budget) {
+                return ApiResponse::create(
+                    'Presupuesto no encontrado',
+                    404,
+                    ['error' => 'Presupuesto no encontrado'],
+                    []
+                );
+            }
+
+            // Buscar padres recursivamente
+            $parents = collect();
+            $current = $budget;
+            while ($current && $current->id_budget) {
+                $parent = Budget::with(['client', 'place', 'budgetStatus'])->find($current->id_budget);
+                if ($parent) {
+                    $parents->push($parent);
+                    $current = $parent;
+                } else {
+                    break;
+                }
+            }
+
+            // Buscar hijos recursivamente
+            $children = collect();
+            $stack = collect([$budget]);
+            while ($stack->isNotEmpty()) {
+                $node = $stack->pop();
+                $kids = Budget::with(['client', 'place', 'budgetStatus'])
+                    ->where('id_budget', $node->id)
+                    ->get();
+                foreach ($kids as $child) {
+                    $children->push($child);
+                    $stack->push($child);
+                }
+            }
+
+            // Unir todos (padres + actual + hijos)
+            $all = $parents->reverse()->merge([$budget])->merge($children);
+
+            // Agrupar por id_budget_status
+            $grouped = $all->groupBy(function ($item) {
+                return $item->budgetStatus->name ?? 'Sin Estado';
+            });
+
+            return ApiResponse::create(
+                'Árbol de presupuesto obtenido correctamente',
+                200,
+                $grouped,
+                [
+                    'request' => $request,
+                    'module' => 'budget',
+                    'endpoint' => 'Obtener árbol de presupuesto',
+                ]
+            );
+        } catch (\Exception $e) {
+            return ApiResponse::create(
+                'Error al obtener árbol de presupuesto',
+                500,
+                ['error' => $e->getMessage()],
+                [
+                    'request' => $request,
+                    'module' => 'budget',
+                    'endpoint' => 'Obtener árbol de presupuesto',
+                ]
+            );
+        }
+    }
+
+
     public function store(Request $request)
     {
         try {
@@ -620,7 +694,8 @@ class BudgetController extends Controller
                         $usedStock->delete();
                     }
                 }
-            };
+            }
+            ;
 
             if ($request->id_budget_status == 2 || $request->id_budget_status == 3) {
                 $pdf = Pdf::loadView('pdf.budget', compact('budget'));
