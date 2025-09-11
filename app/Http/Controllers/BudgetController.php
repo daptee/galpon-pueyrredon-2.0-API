@@ -115,7 +115,8 @@ class BudgetController extends Controller
         try {
             $budget = Budget::with([
                 'budgetStatus',
-                'place',
+                'place.locality',
+                'place.province',
                 'transportation',
                 'client',
                 'budgetProducts.product',
@@ -1298,12 +1299,12 @@ class BudgetController extends Controller
                 'client',
                 'budgetProducts.product.attributeValues',
                 'budgetDeliveryData'
-            ])->findOrFail($id);
+            ])->find($id);
 
             // Si el evento NO tiene cargado los datos de entrega, retornar un error en la peticion de que no hay datos de entrega cargados.
 
-            if (!$budget->budgetDeliveryData) {
-                return ApiResponse::create('Datos de entrega no encontrados', 404, ['error' => 'No hay datos de entrega cargados para este presupuesto'], [
+            if (!$budget) {
+                return ApiResponse::create('Presupuesto no encontrados', 404, ['error' => 'Este presupuesto no existe'], [
                     'module' => 'budget',
                     'endpoint' => 'Generar PDF de información de entrega',
                 ]);

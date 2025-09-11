@@ -115,7 +115,7 @@
                     <p style="margin: 2px 0;">Lugar: </p>
                 </td>
                 <td style="width: 60%; vertical-align: top;">
-                    <p style="margin: 2px 0;"><strong>{{ $budget->client->name }}</strong></p>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->client->name ?? $budget->client_mail }}</strong></p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->place->name }}</strong></p>
                 </td>
                 <td style="width: 10%; text-align: left; vertical-align: top;">
@@ -125,7 +125,7 @@
                 <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="margin: 2px 0;">
                         <strong>{{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }} -
-                            {{ $budget->budgetDeliveryData->event_time }}</strong>
+                            {{ $budget->budgetDeliveryData->event_time ?? "" }}</strong>
                     </p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->days }} día/s</strong></p>
                 </td>
@@ -139,9 +139,9 @@
                     <p style="margin: 2px 0;">Opciones de retiro: </p>
                 </td>
                 <td style="width: 61%; vertical-align: top;">
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->address }}</strong></p>
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->delivery_options }}</strong></p>
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_options }}</strong>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->address ?? "" }}</strong></p>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->delivery_options ?? "" }}</strong></p>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_options ?? "" }}</strong>
                     </p>
                 </td>
             </tr>
@@ -177,7 +177,7 @@
  -->
     <p class="budget">Detalles adicionales de pedido:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
         <strong>
-            {{ $budget->budgetDeliveryData->additional_order_details }}
+            {{ $budget->budgetDeliveryData->additional_order_details ?? "" }}
         </strong>
     </p>
     <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
@@ -185,13 +185,13 @@
             <td style="width: 50%;">
                 Coordinación:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->coordination_contact }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_coordination }}
+                    {{ $budget->budgetDeliveryData->coordination_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_coordination ?? "" }}
                 </strong>
             </td>
             <td style="width: 50%;">
                 Entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->delivery_datetime }}
+                    {{ $budget->budgetDeliveryData->delivery_datetime ?? "" }}
                 </strong>
             </td>
         </tr>
@@ -199,13 +199,13 @@
             <td style="width: 50%;">
                 Recepción:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->reception_contact }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_reception }}
+                    {{ $budget->budgetDeliveryData->reception_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_reception ?? "" }}
                 </strong>
             </td>
             <td style="width: 50%;">
                 Retiro:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->widthdrawal_datetime }}
+                    {{ $budget->budgetDeliveryData->widthdrawal_datetime ?? "" }}
                 </strong>
             </td>
         </tr>
@@ -214,7 +214,7 @@
     <div class="budget">
         <p style="margin: 8px 0;">Detalles adicionales de entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <strong>
-                {{ $budget->budgetDeliveryData->additional_delivery_details }}
+                {{ $budget->budgetDeliveryData->additional_delivery_details ?? "" }}
             </strong>
         </p>
     </div>

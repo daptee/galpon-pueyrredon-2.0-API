@@ -733,6 +733,9 @@ class ProductController extends Controller
                 return collect($item['used_stock_by_day'])->some(fn($value) => $value > 0);
             })->values();
 
+            // 🔹 Ordenar alfabéticamente por nombre
+            $result = $result->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
+
             $total = $result->count();
 
             if ($perPage) {
