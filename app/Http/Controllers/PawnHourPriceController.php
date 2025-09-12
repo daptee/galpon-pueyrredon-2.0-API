@@ -22,6 +22,12 @@ class PawnHourPriceController extends Controller
             $query = PawnHourPrice::with('status')
                 ->orderBy('id', 'desc'); // o por cualquier campo que quieras
 
+            // 🔹 Filtro por search (price)
+            if ($request->has('search')) {
+                $search = strtolower($request->query('search'));
+                $query->whereRaw('LOWER(price) LIKE ?', ["%$search%"]);
+            }
+
             // Aplicar paginación si se especifica per_page
             if ($perPage) {
                 $pawnHourPrices = $query->paginate($perPage, ['*'], 'page', $page);
