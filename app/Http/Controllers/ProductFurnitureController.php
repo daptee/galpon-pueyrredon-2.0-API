@@ -23,6 +23,12 @@ class ProductFurnitureController extends Controller
             $query = ProductFurniture::with('status')
                 ->orderBy('name');
 
+            // 🔹 Filtro por search (name)
+            if ($request->has('search')) {
+                $search = strtolower($request->query('search'));
+                $query->whereRaw('LOWER(name) LIKE ?', ["%$search%"]);
+            }
+
             // Aplicar paginación si se especifica per_page
             if ($perPage) {
                 $products = $query->paginate($perPage, ['*'], 'page', $page);

@@ -736,6 +736,14 @@ class ProductController extends Controller
             // 🔹 Ordenar alfabéticamente por nombre
             $result = $result->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
 
+            // 🔹 Filtrar por nombre o código si viene search
+            if ($request->has('search')) {
+                $search = strtolower($request->query('search'));
+                $result = $result->filter(function ($item) use ($search) {
+                    return strpos(strtolower($item['name']), $search) !== false;
+                })->values();
+            }
+
             $total = $result->count();
 
             if ($perPage) {

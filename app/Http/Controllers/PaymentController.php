@@ -48,6 +48,12 @@ class PaymentController extends Controller
                 });
             }
 
+            // 🔹 Filtro por presupuesto (id_budget) usando "search"
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where('id_budget', $search);
+            }
+
             // Filtro por fecha de pago (rango)
             if ($request->has('payment_date_start') && $request->has('payment_date_end')) {
                 $query->whereBetween('payment_datetime', [

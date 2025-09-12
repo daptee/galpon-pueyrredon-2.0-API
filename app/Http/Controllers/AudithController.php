@@ -31,17 +31,25 @@ class AudithController extends Controller
                 $query->whereDate('created_at', '<=', $request->date_to);
             }
 
+            if ($request->has('search')) {
+                $search = strtolower($request->search);
+                $query->where(function ($q) use ($search) {
+                    $q->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.module'))) LIKE ?", ["%$search%"])
+                        ->orWhereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.title'))) LIKE ?", ["%$search%"]);
+                });
+            }
+
             if ($request->has('module')) {
                 $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.module'))) LIKE ?", ['%' . strtolower($request->module) . '%']);
             }
-            
-            if ($request->has('title')) { 
+
+            if ($request->has('title')) {
                 $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.title'))) LIKE ?", ['%' . strtolower($request->title) . '%']);
             }
-            
+
             if ($request->has('status')) {
                 $query->whereRaw("LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.status'))) LIKE ?", ['%' . strtolower($request->status) . '%']);
-            }                                
+            }
 
             // Ordenar por fecha de creación (más recientes primero)
             $query->orderBy('created_at', 'desc');
@@ -52,14 +60,14 @@ class AudithController extends Controller
             // Convertir "data" e "ip" en JSON
             $data = $audits->getCollection()->map(function ($audit) {
                 $decodedData = json_decode($audit->getAttribute('data'), true); // Decodificar "data"
-            
+
                 if (isset($decodedData['request']) && is_string($decodedData['request'])) {
                     $decodedData['request'] = json_decode($decodedData['request'], true);
                 }
-            
+
                 $audit->setAttribute('data', $decodedData);
                 $audit->setAttribute('ip', json_decode($audit->getAttribute('ip'), true));
-            
+
                 return $audit;
             });
 

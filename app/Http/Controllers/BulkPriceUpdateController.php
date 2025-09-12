@@ -22,6 +22,16 @@ class BulkPriceUpdateController extends Controller
             $query = BulkPriceUpdate::with(['productPrices.product'])
                 ->orderBy('from_date', 'desc');
 
+            // 🔹 Search por fecha (from_date)
+            if ($request->has('search')) {
+                $search = $request->query('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('from_date', 'like', "%{$search}%")
+                        ->orWhere('to_date', 'like', "%{$search}%");
+                });
+            }
+
+
             if ($perPage) {
                 $bulks = $query->paginate($perPage, ['*'], 'page', $page);
                 $data = $bulks->items();
@@ -74,7 +84,8 @@ class BulkPriceUpdateController extends Controller
                 'module' => 'bulk price update',
                 'endpoint' => 'Crear actualización masiva de precios',
             ]);
-        };
+        }
+        ;
 
 
         DB::beginTransaction();

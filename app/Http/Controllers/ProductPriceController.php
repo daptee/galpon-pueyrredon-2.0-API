@@ -49,6 +49,14 @@ class ProductPriceController extends Controller
                 ->join('product_furnitures', 'products.id_product_furniture', '=', 'product_furnitures.id')
                 ->select('products.*');
 
+            // 🔹 Filtrar por nombre o código si viene ?search=
+            if ($request->has('search')) {
+                $search = $request->query('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('products.name', 'like', "%{$search}%");
+                });
+            }
+
             if ($sortKey) {
                 $query->orderBy($sortKey, $sortOrder === 'desc' ? 'desc' : 'asc');
             }
