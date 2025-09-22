@@ -613,8 +613,7 @@ class BudgetController extends Controller
 
             if ($request->id_budget_status == 3) {
                 foreach ($budget->budgetProducts as $item) {
-                    if ($item->has_stock) {
-                        ProductUseStock::create([
+                                          ProductUseStock::create([
                             'id_budget' => $budget->id,
                             'id_product' => $item->id_product,
                             'id_product_stock' => $item->product->product_stock == null ? $item->id_product : $item->product->product_stock,
@@ -623,7 +622,6 @@ class BudgetController extends Controller
                             'date_to' => \Carbon\Carbon::parse($budget->date_event)->addDays($budget->days - 1),
                             'quantity' => $item->quantity
                         ]);
-                    }
                 }
                 ;
 
@@ -882,7 +880,6 @@ class BudgetController extends Controller
         // Manejo de uso de stock
         if ($data['id_budget_status'] == 3) {
             foreach ($budget->budgetProducts as $item) {
-                if ($item->has_stock) {
                     ProductUseStock::create([
                         'id_budget' => $budget->id,
                         'id_product' => $item->id_product,
@@ -891,7 +888,6 @@ class BudgetController extends Controller
                         'date_to' => \Carbon\Carbon::parse($budget->date_event)->addDays($budget->days - 1),
                         'quantity' => $item->quantity
                     ]);
-                }
             }
         } else {
             // si no está en estado 3 eliminamos uso de stock
