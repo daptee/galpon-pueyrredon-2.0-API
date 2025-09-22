@@ -13,92 +13,106 @@ use Maatwebsite\Excel\Excel as ExcelFormat;
 class EventController extends Controller
 {
     public function index(Request $request)
-    {
-        try {
-            $perPage = $request->query('per_page');
-            $page = $request->query('page', 1);
+{
+    try {
+        $perPage = $request->query('per_page');
+        $page = $request->query('page', 1);
 
-            $query = Budget::with(['place', 'client', 'budgetStatus', 'budgetDeliveryData',                 'payments.paymentType',
-                'payments.paymentMethod',
-                'payments.paymentStatus',
-                'payments.user'])
-                ->where('id_budget_status', 3); // o el ID del estado aprobado
+        $query = Budget::with([
+            'place',
+            'client',
+            'budgetStatus',
+            'budgetDeliveryData',
+            'payments.paymentType',
+            'payments.paymentMethod',
+            'payments.paymentStatus',
+            'payments.user'
+        ])
+        ->where('id_budget_status', 3); // o el ID del estado aprobado
 
-            // Buscador por ID de presupuesto
-            if ($request->has('search')) {
-                $search = $request->input('search');
-                $query->where('id', 'like', '%' . $search . '%');
-            }
+        // Buscador por ID de presupuesto
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where('id', 'like', '%' . $search . '%');
+        }
 
-            // Filtros
-            if ($request->has('place')) {
-                $query->where('id_place', $request->input('place'));
-            }
+        // Filtros
+        if ($request->has('place')) {
+            $query->where('id_place', $request->input('place'));
+        }
 
-            if ($request->has('client')) {
-                $query->where('id_client', $request->input('client'));
-            }
+        if ($request->has('client')) {
+            $query->where('id_client', $request->input('client'));
+        }
 
-            if ($request->has('date_event')) {
-                $query->whereDate('date_event', $request->input('date_event'));
-            }
+        if ($request->has('date_event')) {
+            $query->whereDate('date_event', $request->input('date_event'));
+        }
 
-            if ($request->has('start_date')) {
-                $query->whereDate('date_event', '>=', $request->input('start_date'));
-            }
+        if ($request->has('start_date')) {
+            $query->whereDate('date_event', '>=', $request->input('start_date'));
+        }
 
-            if ($request->has('pending_balance') && $request->input('pending_balance') == 1) {
-                $query->where(function ($q) {
-                    $q->where('total', '>', 0)
-                        ->whereRaw('(
+        if ($request->has('pending_balance') && $request->input('pending_balance') == 1) {
+            $query->where(function ($q) {
+                $q->where('total', '>', 0)
+                    ->whereRaw('(
                         SELECT COALESCE(SUM(p.amount), 0) 
                         FROM payments p 
                         WHERE p.id_budget = budgets.id 
                         AND p.id_payment_status = 1
                     ) < budgets.total');
-                });
-            }
-            
-            if ($request->has('pending_balance') && $request->input('pending_balance') == 0) {
-                $query->where(function ($q) {
-                    $q->where('total', '=', 0)
-                        ->orWhereRaw('(
+            });
+        }
+
+        if ($request->has('pending_balance') && $request->input('pending_balance') == 0) {
+            $query->where(function ($q) {
+                $q->where('total', '=', 0)
+                    ->orWhereRaw('(
                         SELECT COALESCE(SUM(p.amount), 0) 
                         FROM payments p 
                         WHERE p.id_budget = budgets.id 
                         AND p.id_payment_status = 1
                     ) >= budgets.total');
-                });
-            } 
+            });
+        } 
 
-            if ($perPage) {
-                $budgets = $query->paginate($perPage, ['*'], 'page', $page);
-                $data = $budgets->items();
-                $meta_data = [
-                    'page' => $budgets->currentPage(),
-                    'per_page' => $budgets->perPage(),
-                    'total' => $budgets->total(),
-                    'last_page' => $budgets->lastPage(),
-                ];
-            } else {
-                // Si no se especifica per_page, traer todos los registros sin paginación
-                $data = $query->get();
-                $meta_data = null;
-            }
-
-            return ApiResponse::paginate('Eventos obtenidos correctamente', 200, $data, $meta_data, [
-                'request' => $request,
-                'module' => 'event',
-                'endpoint' => 'Obtener eventos aprobados',
-            ]);
-        } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener eventos', 500, ['error' => $e->getMessage()], [
-                'request' => $request,
-                'module' => 'event',
-                'endpoint' => 'Obtener eventos aprobados',
-            ]);
+        // Ejecutar query
+        if ($perPage) {
+            $budgets = $query->paginate($perPage, ['*'], 'page', $page);
+            $data = $budgets->items();
+            $meta_data = [
+                'page' => $budgets->currentPage(),
+                'per_page' => $budgets->perPage(),
+                'total' => $budgets->total(),
+                'last_page' => $budgets->lastPage(),
+            ];
+        } else {
+            $data = $query->get();
+            $meta_data = null;
         }
+
+        // 🔹 Ordenar por cercanía a start_date si viene en el request
+        if ($request->has('start_date')) {
+            $startDate = $request->input('start_date');
+            $data = collect($data)->sortBy(function ($budget) use ($startDate) {
+                return abs(strtotime($budget->date_event) - strtotime($startDate));
+            })->values();
+        }
+
+        return ApiResponse::paginate('Eventos obtenidos correctamente', 200, $data, $meta_data, [
+            'request' => $request,
+            'module' => 'event',
+            'endpoint' => 'Obtener eventos aprobados',
+        ]);
+    } catch (\Exception $e) {
+        return ApiResponse::create('Error al obtener eventos', 500, ['error' => $e->getMessage()], [
+            'request' => $request,
+            'module' => 'event',
+            'endpoint' => 'Obtener eventos aprobados',
+        ]);
     }
+}
 
     public function show($id)
     {
