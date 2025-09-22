@@ -17,6 +17,7 @@ class EventController extends Controller
     try {
         $perPage = $request->query('per_page');
         $page = $request->query('page', 1);
+        $startDate = $request->query('start_date', now()->toDateString());
 
         $query = Budget::with([
             'place',
@@ -28,7 +29,7 @@ class EventController extends Controller
             'payments.paymentStatus',
             'payments.user'
         ])
-        ->where('id_budget_status', 3); // o el ID del estado aprobado
+        ->where('id_budget_status', 3);
 
         // Buscador por ID de presupuesto
         if ($request->has('search')) {
@@ -50,7 +51,7 @@ class EventController extends Controller
         }
 
         if ($request->has('start_date')) {
-            $query->whereDate('date_event', '>=', $request->input('start_date'));
+            $query->whereDate('date_event', '>=', $startDate);
         }
 
         if ($request->has('pending_balance') && $request->input('pending_balance') == 1) {
@@ -80,7 +81,7 @@ class EventController extends Controller
         // Ejecutar query
         if ($perPage) {
             $budgets = $query->paginate($perPage, ['*'], 'page', $page);
-            $data = $budgets->items();
+            $data = collect($budgets->items());
             $meta_data = [
                 'page' => $budgets->currentPage(),
                 'per_page' => $budgets->perPage(),
@@ -92,13 +93,10 @@ class EventController extends Controller
             $meta_data = null;
         }
 
-        // 🔹 Ordenar por cercanía a start_date si viene en el request
-        if ($request->has('start_date')) {
-            $startDate = $request->input('start_date');
-            $data = collect($data)->sortBy(function ($budget) use ($startDate) {
-                return abs(strtotime($budget->date_event) - strtotime($startDate));
-            })->values();
-        }
+        // 🔹 Ordenar por cercanía a start_date (por defecto)
+        $data = collect($data)->sortBy(function ($budget) use ($startDate) {
+            return abs(strtotime($budget->date_event) - strtotime($startDate));
+        })->values();
 
         return ApiResponse::paginate('Eventos obtenidos correctamente', 200, $data, $meta_data, [
             'request' => $request,
