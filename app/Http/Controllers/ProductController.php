@@ -691,12 +691,28 @@ class ProductController extends Controller
             $perPage = $request->query('per_page');
             $page = $request->query('page', 1);
 
+            $type = $request->query('type');
+            $line = $request->query('line');
+            $furniture = $request->query('furniture');
+
             // Obtener productos usados
             $usedProductIds = ProductUseStock::distinct()->pluck('id_product')->toArray();
 
-            $products = Product::with(['productStock', 'productUseStock'])
-                ->whereIn('id', $usedProductIds)
-                ->get();
+            $productsQuery = Product::with(['productStock', 'productUseStock'])
+                ->whereIn('id', $usedProductIds);
+
+            // 🔹 Filtros adicionales
+            if (!is_null($type)) {
+                $productsQuery->where('products.id_product_type', $type);
+            }
+            if (!is_null($line)) {
+                $productsQuery->where('products.id_product_line', $line);
+            }
+            if (!is_null($furniture)) {
+                $productsQuery->where('products.id_product_furniture', $furniture);
+            }
+
+            $products = $productsQuery->get();
 
             $groupedByStock = $products->groupBy(function ($product) {
                 return $product->product_stock ?? $product->id;
