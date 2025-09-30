@@ -162,6 +162,8 @@ class BudgetController extends Controller
                         $childrenDetails[] = [
                             'id' => $child->id,
                             'name' => $child->name,
+                            'volume' => $child->volume,
+                            'quantity_in_combo' => $relation->quantity,
                             'required' => $requiredQty,
                             'stock' => $child->stock,
                             'available' => $hasStock,
