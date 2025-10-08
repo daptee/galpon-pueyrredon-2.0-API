@@ -26,7 +26,7 @@
 
         body {
             font-family: 'Lato', sans-serif;
-            font-size: 10px;
+            font-size: 11px;
             color: #333;
             background-color: rgb(255, 255, 255);
         }
@@ -70,7 +70,7 @@
 
         .footer {
             background-color: rgb(255, 255, 255);
-            font-size: 10px;
+            font-size: 11px;
             color: #666;
             padding: 6px 36px;
         }
@@ -94,7 +94,7 @@
                             - FICHA LOGÍSTICA
                         </span>
                     </div>
-                    <p style="margin: 0">galponpueyrredon@administrador.com - 15-5220-9988</p>
+                    <p style="margin: 0">galponpueyrredon@hotmail.com</p>
                 </td>
                 <td style="width: 10%; text-align: left; vertical-align: top;">
                     <p style="padding: 0 0 0 4px; margin: 2px 0 2px 0;">Presupuesto: </p>
@@ -189,17 +189,17 @@
                 </strong>
             </td>
             <td style="width: 50%;">
-                Entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Recepción:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->delivery_datetime ?? "" }}
+                    {{ $budget->budgetDeliveryData->reception_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_reception ?? "" }}
                 </strong>
             </td>
         </tr>
         <tr>
             <td style="width: 50%;">
-                Recepción:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                Entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->reception_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_reception ?? "" }}
+                    {{ $budget->budgetDeliveryData->delivery_datetime ?? "" }}
                 </strong>
             </td>
             <td style="width: 50%;">
