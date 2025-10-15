@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ProductStockReportExport;
-use App\Exports\StockUsageExport;
 use App\Http\Responses\ApiResponse;
 use App\Models\ProductAttributeValue;
 use App\Models\ProductImage;
@@ -30,9 +29,9 @@ class ProductController extends Controller
             $type = $request->query('type');
             $line = $request->query('line');
             $furniture = $request->query('furniture');
-            $sortOrder = $request->query('sort_order', 'asc'); // asc o desc
+            $sortOrder = $request->query('sort_order', 'asc');
+            $dateStock = $request->query('date_stock'); // 🔹 fecha recibida
 
-            // Alias de sort_by
             $sortAlias = [
                 'name' => 'products.name',
                 'price' => 'products.price',
@@ -48,18 +47,18 @@ class ProductController extends Controller
 
             $sortKey = $sortAlias[$request->query('sort_by')] ?? null;
 
-            // Query con joins para ordenar por nombre de relaciones
             $query = Product::with([
                 'productLine',
                 'productType',
                 'productFurniture',
                 'productStatus',
-                // debo traer el ultimo precio
                 'prices' => function ($query) {
                     $query->latest('valid_date_from')->take(1);
                 },
                 'mainImage',
                 'attributeValues.attribute',
+                'productUseStock', // 🔹 necesario para calcular stock usado
+                'productStock',
             ])
                 ->join('product_lines', 'products.id_product_line', '=', 'product_lines.id')
                 ->join('product_types', 'products.id_product_type', '=', 'product_types.id')
@@ -69,15 +68,12 @@ class ProductController extends Controller
             if (!is_null($status)) {
                 $query->where('products.id_product_status', $status);
             }
-
             if (!is_null($type)) {
                 $query->where('products.id_product_type', $type);
             }
-
             if (!is_null($line)) {
                 $query->where('products.id_product_line', $line);
             }
-
             if (!is_null($furniture)) {
                 $query->where('products.id_product_furniture', $furniture);
             }
@@ -93,13 +89,11 @@ class ProductController extends Controller
             if ($sortKey) {
                 $query->orderBy($sortKey, $sortOrder === 'desc' ? 'desc' : 'asc');
             } else {
-                // Orden por defecto: alfabético ascendente por nombre del producto
                 $query->orderBy('products.name', 'asc');
             }
 
             if ($perPage !== null) {
                 $products = $query->paginate($perPage, ['*'], 'page', $page);
-
                 $data = $products->items();
                 $meta_data = [
                     'page' => $products->currentPage(),
@@ -112,6 +106,24 @@ class ProductController extends Controller
                 $meta_data = null;
             }
 
+            // 🔹 Ajustar el stock disponible según la fecha enviada
+            if ($dateStock) {
+                $date = \Carbon\Carbon::parse($dateStock)->toDateString();
+
+                foreach ($data as $product) {
+                    $baseStock = optional($product->productStock)->stock ?? $product->stock ?? 0;
+
+                    $usedStock = $product->productUseStock
+                        ->filter(fn($use) => $use->date_from <= $date && $use->date_to >= $date)
+                        ->sum('quantity');
+
+                    $product->available_stock = max(0, $baseStock - $usedStock);
+                }
+            } else {
+                foreach ($data as $product) {
+                    $product->available_stock = optional($product->productStock)->stock ?? $product->stock ?? 0;
+                }
+            }
 
             return ApiResponse::paginate('Listado de productos obtenido correctamente', 200, $data, $meta_data, [
                 'request' => $request,
