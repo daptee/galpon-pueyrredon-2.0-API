@@ -1294,7 +1294,8 @@ class BudgetController extends Controller
                 }
 
                 $price = (object) [
-                    'price' => $totalPrice
+                    'id_product' => $product->id,
+                    'price' => number_format($totalPrice, 2, '.', ''),
                 ];
             }
 
