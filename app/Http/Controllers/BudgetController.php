@@ -1256,24 +1256,54 @@ class BudgetController extends Controller
                 return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
             }
 
-            // Lógica para verificar el precio
-            $product = Product::with(['prices'])
+            $product = Product::with(['prices', 'comboItems.product.prices'])
                 ->where('id', $request->id_product)
                 ->first();
+
             if (!$product) {
                 return ApiResponse::create('Producto no encontrado', 404, ['error' => 'Producto no encontrado en el presupuesto'], []);
             }
+
+            // Buscamos precio directo del producto
             $price = $product->prices()
                 ->where('valid_date_from', '<=', $request->date)
                 ->where('valid_date_to', '>=', $request->date)
                 ->first();
+
+            // 🔹 Si es combo y no tiene precio directo, sumamos los precios de los hijos
+            if (!$price && $product->id_product_type) {
+                $totalPrice = 0;
+
+                foreach ($product->comboItems as $comboItem) {
+                    $childProduct = $comboItem->product;
+                    $childPrice = $childProduct->prices()
+                        ->where('valid_date_from', '<=', $request->date)
+                        ->where('valid_date_to', '>=', $request->date)
+                        ->first();
+
+                    if (!$childPrice) {
+                        return ApiResponse::create('Precio no disponible para un producto del combo', 200, [
+                            'error' => 'Precio no disponible para un producto del combo',
+                            'has_price' => false,
+                            'product' => $product,
+                            'price' => null
+                        ], []);
+                    }
+
+                    $totalPrice += $childPrice->price * $comboItem->quantity;
+                }
+
+                $price = (object) [
+                    'price' => $totalPrice
+                ];
+            }
 
             if (!$price) {
                 return ApiResponse::create('Precio no disponible', 200, [
                     'error' => 'Precio no disponible',
                     'has_price' => false,
                     'product' => $product,
-                    'price' => $price
+                    'price' => null
                 ], []);
             }
 
@@ -1286,6 +1316,7 @@ class BudgetController extends Controller
                 'module' => 'budget',
                 'endpoint' => 'Verificar precio del producto',
             ]);
+
         } catch (\Exception $e) {
             return ApiResponse::create('Error al verificar el precio', 500, ['error' => $e->getMessage()], [
                 'module' => 'budget',
@@ -1293,6 +1324,7 @@ class BudgetController extends Controller
             ]);
         }
     }
+
     public function updateContact(Request $request, $id)
     {
         try {
