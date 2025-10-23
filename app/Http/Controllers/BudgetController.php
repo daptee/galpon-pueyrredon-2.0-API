@@ -1308,6 +1308,8 @@ class BudgetController extends Controller
                 ], []);
             }
 
+            $product->makeHidden('comboItems');
+
             return ApiResponse::create('Precio verificado correctamente', 200, [
                 'error' => 'Precio disponible',
                 'has_price' => true,
