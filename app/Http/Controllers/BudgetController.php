@@ -1271,7 +1271,7 @@ class BudgetController extends Controller
                 ->first();
 
             // 🔹 Si es combo y no tiene precio directo, sumamos los precios de los hijos
-            if (!$price && $product->id_product_type) {
+            if (!$price && $product->id_product_type == 2) {
                 $totalPrice = 0;
 
                 foreach ($product->comboItems as $comboItem) {
