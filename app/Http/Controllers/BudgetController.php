@@ -1264,44 +1264,45 @@ class BudgetController extends Controller
                 return ApiResponse::create('Producto no encontrado', 404, ['error' => 'Producto no encontrado en el presupuesto'], []);
             }
 
-            // Buscamos precio directo del producto
+            // 🔹 Buscamos precio directo del producto
             $price = $product->prices()
                 ->where('valid_date_from', '<=', $request->date)
                 ->where('valid_date_to', '>=', $request->date)
                 ->first();
 
-            // 🔹 Si es combo y no tiene precio directo, buscamos el más cercano a la fecha
+            // 🔹 Si es combo y no tiene precio directo
             if (!$price && $product->id_product_type == 2) {
                 $totalPrice = 0;
-                $hasMissingPrice = false;
+                $missingChildPrice = false;
 
                 foreach ($product->comboItems as $comboItem) {
                     $childProduct = $comboItem->product;
 
-                    // Primero intentamos encontrar precio válido para esa fecha
+                    // Buscamos precio válido para la fecha
                     $childPrice = $childProduct->prices()
                         ->where('valid_date_from', '<=', $request->date)
                         ->where('valid_date_to', '>=', $request->date)
                         ->first();
 
-                    // Si no hay precio exacto, buscamos el más cercano (por fecha más próxima)
+                    // Si no tiene precio exacto, buscamos el más cercano (solo como respaldo)
                     if (!$childPrice) {
                         $childPrice = $childProduct->prices()
                             ->orderByRaw('ABS(DATEDIFF(valid_date_from, ?))', [$request->date])
                             ->first();
                     }
 
-                    // Si tampoco encontramos un precio cercano, marcamos que falta
+                    // Si sigue sin precio, marcamos que falta y salimos
                     if (!$childPrice) {
-                        $hasMissingPrice = true;
+                        $missingChildPrice = true;
                         break;
                     }
 
+                    // Sumamos el precio del hijo multiplicado por su cantidad
                     $totalPrice += $childPrice->price * $comboItem->quantity;
                 }
 
-                // Si falta precio en alguno de los hijos, devolvemos la respuesta estándar sin modificar formato
-                if ($hasMissingPrice) {
+                // 🔸 Si alguno no tiene precio → respondemos como no disponible
+                if ($missingChildPrice) {
                     return ApiResponse::create('Precio no disponible para un producto del combo', 200, [
                         'error' => 'Precio no disponible para un producto del combo',
                         'has_price' => false,
@@ -1310,12 +1311,26 @@ class BudgetController extends Controller
                     ], []);
                 }
 
+                // 🔸 Si todos tienen precio → devolvemos total y has_price = true
                 $price = (object) [
                     'id_product' => $product->id,
                     'price' => number_format($totalPrice, 2, '.', ''),
                 ];
+
+                $product->makeHidden('comboItems');
+
+                return ApiResponse::create('Precio verificado correctamente', 200, [
+                    'error' => 'Precio disponible',
+                    'has_price' => true,
+                    'product' => $product,
+                    'price' => $price
+                ], [
+                    'module' => 'budget',
+                    'endpoint' => 'Verificar precio del producto',
+                ]);
             }
 
+            // 🔹 Si no es combo o sí tiene precio directo
             if (!$price) {
                 return ApiResponse::create('Precio no disponible', 200, [
                     'error' => 'Precio no disponible',
@@ -1344,6 +1359,7 @@ class BudgetController extends Controller
             ]);
         }
     }
+
 
     public function updateContact(Request $request, $id)
     {
