@@ -710,9 +710,13 @@ class ProductController extends Controller
             // Obtener productos usados
             $usedProductIds = ProductUseStock::distinct()->pluck('id_product')->toArray();
 
-            $productsQuery = Product::with(['productStock', 'productUseStock', 'comboItems.product'])
-                ->whereIn('id', $usedProductIds);
+            $productsQuery = Product::with([
+                'productStock',
+                'productUseStock',
+                'comboItems.product.productStock', // productos individuales del combo
+            ])->whereIn('id', $usedProductIds);
 
+            // 🔹 Filtros adicionales
             if (!is_null($type)) {
                 $productsQuery->where('products.id_product_type', $type);
             }
@@ -746,8 +750,8 @@ class ProductController extends Controller
                     $usedStock[$date] = $totalUsed;
                 }
 
-                // ✅ Si el producto es combo, mostramos sus productos internos en lugar del combo
-                if ($representativeProduct->is_combo ?? false) {
+                // ✅ Si el producto es un combo (id_product_type = 2), mostramos sus productos internos
+                if ($representativeProduct->id_product_type == 2) {
                     foreach ($representativeProduct->comboItems as $comboItem) {
                         $inner = $comboItem->product;
                         if ($inner) {
@@ -757,7 +761,7 @@ class ProductController extends Controller
                                 'code' => $inner->code,
                                 'stock' => $inner->productStock->stock ?? $inner->stock,
                                 'used_stock_by_day' => $usedStock,
-                                'from_combo' => $representativeProduct->name, // opcional: para saber de qué combo vino
+                                'from_combo' => $representativeProduct->name, // opcional: de qué combo vino
                             ]);
                         }
                     }
@@ -772,16 +776,20 @@ class ProductController extends Controller
                 }
             }
 
-            // Filtrar productos sin uso
-            $result = $result->filter(fn($item) => collect($item['used_stock_by_day'])->some(fn($v) => $v > 0))->values();
+            // 🔹 Filtrar productos sin alteración de stock
+            $result = $result->filter(function ($item) {
+                return collect($item['used_stock_by_day'])->some(fn($value) => $value > 0);
+            })->values();
 
-            // Ordenar alfabéticamente
+            // 🔹 Ordenar alfabéticamente por nombre
             $result = $result->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
 
-            // Filtro por búsqueda
+            // 🔹 Filtrar por nombre si viene search
             if ($request->has('search')) {
                 $search = strtolower($request->query('search'));
-                $result = $result->filter(fn($item) => strpos(strtolower($item['name']), $search) !== false)->values();
+                $result = $result->filter(function ($item) use ($search) {
+                    return strpos(strtolower($item['name']), $search) !== false;
+                })->values();
             }
 
             $total = $result->count();
@@ -826,6 +834,7 @@ class ProductController extends Controller
             ]);
         }
     }
+
 
     public function reportMonth(Request $request)
     {
