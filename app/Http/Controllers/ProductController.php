@@ -841,57 +841,54 @@ class ProductController extends Controller
             $start = \Carbon\Carbon::parse($request->date)->startOfMonth();
             $end = $start->copy()->endOfMonth();
 
-            // Traer todos los usos de productos en el rango del mes con relaciones
             $productUses = ProductUseStock::where(function ($query) use ($start, $end) {
                 $query->whereBetween('date_from', [$start, $end])
                     ->orWhereBetween('date_to', [$start, $end]);
-            })
-                ->with(['product', 'product.productStock'])
-                ->get();
+            })->with(['product', 'product.productStock', 'product.comboItems.product.productStock'])->get();
 
             $result = [];
 
             for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
                 $currentDate = $date->toDateString();
+                $usesForDate = $productUses->filter(fn($use) => $use->date_from <= $currentDate && $use->date_to >= $currentDate);
 
-                // Filtrar usos válidos para esa fecha
-                $usesForDate = $productUses->filter(function ($use) use ($currentDate) {
-                    return $use->date_from <= $currentDate && $use->date_to >= $currentDate;
-                });
-
-                // Agrupar por presupuesto
                 $groupedByBudget = $usesForDate->groupBy('id_budget');
-
                 $budgets = [];
 
                 foreach ($groupedByBudget as $budgetId => $usesInBudget) {
-                    // Agrupar por producto y sumar cantidad usada
-                    $products = $usesInBudget->groupBy('id_product')->map(function ($group) {
-                        $firstUse = $group->first();
-                        $product = $firstUse->product;
+                    $productsMap = [];
 
-                        if (!$product) {
-                            return [
-                                'id' => null,
-                                'name' => null,
-                                'code' => null,
-                                'stock' => 0,
-                                'used_stock' => $group->sum('quantity'),
-                            ];
+                    foreach ($usesInBudget as $use) {
+                        $product = $use->product;
+                        if (!$product)
+                            continue;
+
+                        if ($product->id_product_type == 2) {
+                            // Combo → distribuir a productos individuales
+                            foreach ($product->comboItems as $comboItem) {
+                                $inner = $comboItem->product;
+                                if (!$inner)
+                                    continue;
+
+                                $productsMap[$inner->id]['id'] = $inner->id;
+                                $productsMap[$inner->id]['name'] = $inner->name;
+                                $productsMap[$inner->id]['code'] = $inner->code;
+                                $productsMap[$inner->id]['stock'] = $inner->productStock->stock ?? $inner->stock;
+                                $productsMap[$inner->id]['used_stock'] = ($productsMap[$inner->id]['used_stock'] ?? 0) + ($use->quantity * $comboItem->quantity);
+                            }
+                        } else {
+                            // Producto normal
+                            $productsMap[$product->id]['id'] = $product->id;
+                            $productsMap[$product->id]['name'] = $product->name;
+                            $productsMap[$product->id]['code'] = $product->code;
+                            $productsMap[$product->id]['stock'] = $product->productStock->stock ?? $product->stock;
+                            $productsMap[$product->id]['used_stock'] = ($productsMap[$product->id]['used_stock'] ?? 0) + $use->quantity;
                         }
-
-                        return [
-                            'id' => $product->id,
-                            'name' => $product->name,
-                            'code' => $product->code,
-                            'stock' => optional($product->productStock)->stock ?? $product->stock ?? 0,
-                            'used_stock' => $group->sum('quantity'),
-                        ];
-                    })->values();
+                    }
 
                     $budgets[] = [
                         'id_budget' => $budgetId,
-                        'products' => $products,
+                        'products' => array_values($productsMap),
                     ];
                 }
 
