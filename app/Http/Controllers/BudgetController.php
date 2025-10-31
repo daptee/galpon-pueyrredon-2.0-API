@@ -1051,6 +1051,55 @@ class BudgetController extends Controller
                 return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
             }
 
+            // 🔹 Por defecto ignoramos el presupuesto actual (si existe)
+            $idBudgetToIgnore = $request->id_budget;
+
+            // 🔹 Verificar si hay que usar otro presupuesto aprobado del árbol
+            if ($request->id_budget) {
+                $budget = Budget::find($request->id_budget);
+
+                if ($budget) {
+                    // Si NO está aprobado
+                    if ($budget->id_budget_status != 3) {
+                        // Buscar presupuestos relacionados (padres e hijos)
+                        $relatedBudgets = collect();
+
+                        // Padres
+                        $current = $budget;
+                        while ($current && $current->id_budget) {
+                            $parent = Budget::find($current->id_budget);
+                            if ($parent) {
+                                $relatedBudgets->push($parent);
+                                $current = $parent;
+                            } else {
+                                break;
+                            }
+                        }
+
+                        // Hijos (recursivo)
+                        $stack = collect([$budget]);
+                        while ($stack->isNotEmpty()) {
+                            $node = $stack->pop();
+                            $children = Budget::where('id_budget', $node->id)->get();
+                            foreach ($children as $child) {
+                                $relatedBudgets->push($child);
+                                $stack->push($child);
+                            }
+                        }
+
+                        // Buscar un presupuesto aprobado en el árbol
+                        $approved = $relatedBudgets->firstWhere('id_budget_status', 3);
+
+                        // Si encontramos uno aprobado, lo usamos para ignorar stock
+                        if ($approved) {
+                            $idBudgetToIgnore = $approved->id;
+                        }
+                    }
+                }
+            }
+
+            // 🔹 A partir de acá sigue igual, solo usamos $idBudgetToIgnore
+
             $product = Product::with([
                 'productStock',
                 'comboItems.product.productStock'
@@ -1094,9 +1143,9 @@ class BudgetController extends Controller
                         )
                             ->where('date_from', '<=', $date)
                             ->where('date_to', '>=', $date)
-                            ->when($request->id_budget, function ($q) use ($request) {
-                                // ✅ Ignorar stock reservado para el presupuesto actual
-                                return $q->where('id_budget', '<>', $request->id_budget);
+                            ->when($idBudgetToIgnore, function ($q) use ($idBudgetToIgnore) {
+                                // ✅ Ignorar stock reservado para el presupuesto aprobado o el actual
+                                return $q->where('id_budget', '<>', $idBudgetToIgnore);
                             })
                             ->sum('quantity');
 
@@ -1116,70 +1165,6 @@ class BudgetController extends Controller
                         'stock_ok' => $childHasStock
                     ];
                 }
-
-                // 🔹 Agrupar hijos por productStock o product->id
-                $groupedTotals = [];
-                foreach ($childrenDetails as $child) {
-                    $realId = $child['product']->productStock
-                        ? $child['product']->productStock->id
-                        : $child['product']->id;
-
-                    if (!isset($groupedTotals[$realId])) {
-                        $groupedTotals[$realId] = [
-                            'required_quantity' => 0,
-                            'available_stock' => $child['available_stock'],
-                            'stock_ok' => true,
-                        ];
-                    }
-
-                    $groupedTotals[$realId]['required_quantity'] += $child['required_quantity'];
-
-                    foreach ($child['available_stock'] as $date => $available) {
-                        if (isset($groupedTotals[$realId]['available_stock'][$date])) {
-                            $groupedTotals[$realId]['available_stock'][$date] = min(
-                                $groupedTotals[$realId]['available_stock'][$date],
-                                $available
-                            );
-                        } else {
-                            $groupedTotals[$realId]['available_stock'][$date] = $available;
-                        }
-                    }
-
-                    $groupedTotals[$realId]['stock_ok'] =
-                        $groupedTotals[$realId]['stock_ok'] && $child['stock_ok'];
-                }
-
-                // 🔹 Inyectar las cantidades agrupadas en cada hijo
-                foreach ($childrenDetails as &$child) {
-                    $realId = $child['product']->productStock
-                        ? $child['product']->productStock->id
-                        : $child['product']->id;
-
-                    $child['required_quantity'] = $groupedTotals[$realId]['required_quantity'];
-                    $child['available_stock'] = $groupedTotals[$realId]['available_stock'];
-
-                    // Re-evaluar stock_ok con la cantidad total
-                    $childHasStock = true;
-                    foreach ($child['available_stock'] as $date => $available) {
-                        if ($available < $child['required_quantity']) {
-                            $childHasStock = false;
-                            $hasInsufficientStock = true;
-                            break;
-                        }
-                    }
-                    $child['stock_ok'] = $childHasStock;
-                }
-                unset($child);
-
-                // 🔹 Re-evaluar stock insuficiente
-                foreach ($childrenDetails as $child) {
-                    foreach ($child['available_stock'] as $date => $available) {
-                        if ($available < $child['required_quantity']) {
-                            $hasInsufficientStock = true;
-                            break;
-                        }
-                    }
-                }
             } else {
                 // 🔹 Caso PRODUCTO INDIVIDUAL
                 $stock = $product->productStock ? $product->productStock->stock : $product->stock;
@@ -1198,9 +1183,9 @@ class BudgetController extends Controller
                     )
                         ->where('date_from', '<=', $date)
                         ->where('date_to', '>=', $date)
-                        ->when($request->id_budget, function ($q) use ($request) {
-                            // ✅ Ignorar stock reservado para el presupuesto actual
-                            return $q->where('id_budget', '<>', $request->id_budget);
+                        ->when($idBudgetToIgnore, function ($q) use ($idBudgetToIgnore) {
+                            // ✅ Ignorar stock reservado para el presupuesto aprobado o el actual
+                            return $q->where('id_budget', '<>', $idBudgetToIgnore);
                         })
                         ->sum('quantity');
 
@@ -1213,7 +1198,7 @@ class BudgetController extends Controller
                 }
             }
 
-            // 🔹 Respuesta
+            // 🔹 Respuesta final
             if ($hasInsufficientStock) {
                 return ApiResponse::create('Stock insuficiente', 200, [
                     'error' => 'Stock insuficiente',
