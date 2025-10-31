@@ -1264,73 +1264,41 @@ class BudgetController extends Controller
                 return ApiResponse::create('Producto no encontrado', 404, ['error' => 'Producto no encontrado en el presupuesto'], []);
             }
 
-            // 🔹 Buscamos precio directo del producto
+            // Buscamos precio directo del producto
             $price = $product->prices()
                 ->where('valid_date_from', '<=', $request->date)
                 ->where('valid_date_to', '>=', $request->date)
                 ->first();
 
-            // 🔹 Si es combo y no tiene precio directo
+            // 🔹 Si es combo y no tiene precio directo, sumamos los precios de los hijos
             if (!$price && $product->id_product_type == 2) {
                 $totalPrice = 0;
-                $missingChildPrice = false;
 
                 foreach ($product->comboItems as $comboItem) {
                     $childProduct = $comboItem->product;
-
-                    // Buscamos precio válido para la fecha
                     $childPrice = $childProduct->prices()
                         ->where('valid_date_from', '<=', $request->date)
                         ->where('valid_date_to', '>=', $request->date)
                         ->first();
 
-                    // Si no tiene precio exacto, buscamos el más cercano (solo como respaldo)
                     if (!$childPrice) {
-                        $childPrice = $childProduct->prices()
-                            ->orderByRaw('ABS(DATEDIFF(valid_date_from, ?))', [$request->date])
-                            ->first();
+                        return ApiResponse::create('Precio no disponible para un producto del combo', 200, [
+                            'error' => 'Precio no disponible para un producto del combo',
+                            'has_price' => false,
+                            'product' => $product,
+                            'price' => null
+                        ], []);
                     }
 
-                    // Si sigue sin precio, marcamos que falta y salimos
-                    if (!$childPrice) {
-                        $missingChildPrice = true;
-                        break;
-                    }
-
-                    // Sumamos el precio del hijo multiplicado por su cantidad
                     $totalPrice += $childPrice->price * $comboItem->quantity;
                 }
 
-                // 🔸 Si alguno no tiene precio → respondemos como no disponible
-                if ($missingChildPrice) {
-                    return ApiResponse::create('Precio no disponible para un producto del combo', 200, [
-                        'error' => 'Precio no disponible para un producto del combo',
-                        'has_price' => false,
-                        'product' => $product,
-                        'price' => null
-                    ], []);
-                }
-
-                // 🔸 Si todos tienen precio → devolvemos total y has_price = true
                 $price = (object) [
                     'id_product' => $product->id,
                     'price' => number_format($totalPrice, 2, '.', ''),
                 ];
-
-                $product->makeHidden('comboItems');
-
-                return ApiResponse::create('Precio verificado correctamente', 200, [
-                    'error' => 'Precio disponible',
-                    'has_price' => true,
-                    'product' => $product,
-                    'price' => $price
-                ], [
-                    'module' => 'budget',
-                    'endpoint' => 'Verificar precio del producto',
-                ]);
             }
 
-            // 🔹 Si no es combo o sí tiene precio directo
             if (!$price) {
                 return ApiResponse::create('Precio no disponible', 200, [
                     'error' => 'Precio no disponible',
@@ -1359,7 +1327,6 @@ class BudgetController extends Controller
             ]);
         }
     }
-
 
     public function updateContact(Request $request, $id)
     {
