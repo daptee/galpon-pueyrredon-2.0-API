@@ -1270,27 +1270,44 @@ class BudgetController extends Controller
                 ->where('valid_date_to', '>=', $request->date)
                 ->first();
 
-            // 🔹 Si es combo y no tiene precio directo, sumamos los precios de los hijos
+            // 🔹 Si es combo y no tiene precio directo, buscamos el más cercano a la fecha
             if (!$price && $product->id_product_type == 2) {
                 $totalPrice = 0;
+                $hasMissingPrice = false;
 
                 foreach ($product->comboItems as $comboItem) {
                     $childProduct = $comboItem->product;
+
+                    // Primero intentamos encontrar precio válido para esa fecha
                     $childPrice = $childProduct->prices()
                         ->where('valid_date_from', '<=', $request->date)
                         ->where('valid_date_to', '>=', $request->date)
                         ->first();
 
+                    // Si no hay precio exacto, buscamos el más cercano (por fecha más próxima)
                     if (!$childPrice) {
-                        return ApiResponse::create('Precio no disponible para un producto del combo', 200, [
-                            'error' => 'Precio no disponible para un producto del combo',
-                            'has_price' => false,
-                            'product' => $product,
-                            'price' => null
-                        ], []);
+                        $childPrice = $childProduct->prices()
+                            ->orderByRaw('ABS(DATEDIFF(valid_date_from, ?))', [$request->date])
+                            ->first();
+                    }
+
+                    // Si tampoco encontramos un precio cercano, marcamos que falta
+                    if (!$childPrice) {
+                        $hasMissingPrice = true;
+                        break;
                     }
 
                     $totalPrice += $childPrice->price * $comboItem->quantity;
+                }
+
+                // Si falta precio en alguno de los hijos, devolvemos la respuesta estándar sin modificar formato
+                if ($hasMissingPrice) {
+                    return ApiResponse::create('Precio no disponible para un producto del combo', 200, [
+                        'error' => 'Precio no disponible para un producto del combo',
+                        'has_price' => false,
+                        'product' => $product,
+                        'price' => null
+                    ], []);
                 }
 
                 $price = (object) [
