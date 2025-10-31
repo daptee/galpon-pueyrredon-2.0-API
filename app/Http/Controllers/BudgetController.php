@@ -621,100 +621,94 @@ class BudgetController extends Controller
                 'budgetProducts.product'
             ]);
 
+            // Si el presupuesto se aprueba
             if ($request->id_budget_status == 3) {
+
+                // Función para obtener todo el árbol (padres e hijos)
+
+                $allBudgets = $this->getBudgetTree($budget->id);
+
+                // Excluir el presupuesto que estamos aprobando
+                $toClose = $allBudgets->filter(fn($b) => $b->id !== $budget->id);
+
                 foreach ($budget->budgetProducts as $item) {
                     ProductUseStock::create([
                         'id_budget' => $budget->id,
                         'id_product' => $item->id_product,
                         'id_product_stock' => $item->product->product_stock == null ? $item->id_product : $item->product->product_stock,
                         'date_from' => $budget->date_event,
-                        //sumar los dias al evento
                         'date_to' => \Carbon\Carbon::parse($budget->date_event)->addDays($budget->days - 1),
                         'quantity' => $item->quantity
                     ]);
                 }
-                ;
 
-                // si tiene presupuesto padre, ponerle estado 5 (presupuesto aceptado)
-                if ($budget->id_budget) {
-                    $parentBudget = Budget::find($budget->id_budget);
-                    if ($parentBudget) {
-                        $parentBudget->id_budget_status = 5;
-                        $parentBudget->save();
+                foreach ($toClose as $b) {
+                    $b->id_budget_status = 5; // Cerrado/aceptado automáticamente
+                    $b->save();
 
-                        BudgetAudith::create([
-                            'id_budget' => $parentBudget->id,
-                            'action' => 'update_status',
-                            'new_budget_status' => $parentBudget->id_budget_status,
-                            'observations' => json_encode([
-                                'id_budget_status' => $parentBudget->id_budget_status,
-                                'status_name' => $parentBudget->budgetStatus->name
-                            ]),
-                            'user' => auth()->user()->id,
-                            'date' => now()->toDateString(),
-                            'time' => now()->toTimeString()
-                        ]);
+                    // Auditoría de estado
+                    BudgetAudith::create([
+                        'id_budget' => $b->id,
+                        'action' => 'update_status',
+                        'new_budget_status' => $b->id_budget_status,
+                        'observations' => json_encode([
+                            'id_budget_status' => $b->id_budget_status,
+                            'status_name' => $b->budgetStatus->name
+                        ]),
+                        'user' => auth()->user()->id,
+                        'date' => now()->toDateString(),
+                        'time' => now()->toTimeString()
+                    ]);
 
-                        // delivery data del padre al hijo
-                        $deliveryData = BudgetDeliveryData::where('id_budget', $parentBudget->id)->first();
-                        if ($deliveryData) {
-                            $deliveryData->id_budget = $budget->id;
-                            $deliveryData->save();
-                        }
+                    // Delivery data
+                    $deliveryData = BudgetDeliveryData::where('id_budget', $b->id_budget)->first();
+                    if ($deliveryData) {
+                        $deliveryData->id_budget = $b->id;
+                        $deliveryData->save();
 
                         BudgetAudith::create([
-                            'id_budget' => $budget->id,
+                            'id_budget' => $b->id,
                             'action' => 'update_delivery_data',
-                            'new_budget_status' => $budget->id_budget_status,
-                            'observations' => 'Presupuesto hijo aceptado, se asigna budget_delivery_data del padre',
-                            'user' => auth()->user()->id,
-                            'date' => now()->toDateString(),
-                            'time' => now()->toTimeString()
-                        ]);
-
-                        // pasar los pagos del padre al hijo
-                        $payments = Payment::where('id_budget', $parentBudget->id)->get();
-                        if ($payments) {
-                            foreach ($payments as $payment) {
-                                $payment->id_budget = $budget->id;
-                                $payment->save();
-                            }
-                        }
-                        // auditoria de pagos actualizados al hijo
-                        BudgetAudith::create([
-                            'id_budget' => $budget->id,
-                            'action' => 'update_payments',
-                            'new_budget_status' => $budget->id_budget_status,
-                            'observations' => 'Presupuesto hijo aceptado, se asignan pagos del padre',
-                            'user' => auth()->user()->id,
-                            'date' => now()->toDateString(),
-                            'time' => now()->toTimeString()
-                        ]);
-
-                        // eliminamos el stock usado si se cierra el presupuesto
-                        $usedStocks = ProductUseStock::where('id_budget', $parentBudget->id)->get();
-                        if ($usedStocks && $usedStocks->count() > 0) {
-                            foreach ($usedStocks as $usedStock) {
-                                $usedStock->delete();
-                            }
-                        }
-                        // auditoria de presupuesto
-                        BudgetAudith::create([
-                            'id_budget' => $budget->id,
-                            'action' => 'update_use_stock',
-                            'new_budget_status' => $budget->id_budget_status,
-                            'observations' => 'Actualizacion del estado del presupuesto hijo a aceptado, se le elimina el stock usado al padre',
+                            'new_budget_status' => $b->id_budget_status,
+                            'observations' => 'Se asigna budget_delivery_data',
                             'user' => auth()->user()->id,
                             'date' => now()->toDateString(),
                             'time' => now()->toTimeString()
                         ]);
                     }
-                }
-            }
 
-            // SI EL ESTADO ES DIFERENTE DE 3 ELIMINAMOS USO DE STOCK
-            if ($request->id_budget_status != 3) {
-                // primero validamos si tiene uso de stock
+                    // Pasar pagos del padre al hijo
+                    $payments = Payment::where('id_budget', $b->id_budget)->get();
+                    foreach ($payments as $payment) {
+                        $payment->id_budget = $b->id;
+                        $payment->save();
+                    }
+
+                    BudgetAudith::create([
+                        'id_budget' => $b->id,
+                        'action' => 'update_payments',
+                        'new_budget_status' => $b->id_budget_status,
+                        'observations' => 'Se asignan pagos del presupuesto cerrado',
+                        'user' => auth()->user()->id,
+                        'date' => now()->toDateString(),
+                        'time' => now()->toTimeString()
+                    ]);
+
+                    // Eliminar stock usado
+                    ProductUseStock::where('id_budget', $b->id)->delete();
+
+                    BudgetAudith::create([
+                        'id_budget' => $b->id,
+                        'action' => 'update_use_stock',
+                        'new_budget_status' => $b->id_budget_status,
+                        'observations' => 'Se elimina stock usado al cerrar presupuesto',
+                        'user' => auth()->user()->id,
+                        'date' => now()->toDateString(),
+                        'time' => now()->toTimeString()
+                    ]);
+                }
+            } else {
+                // si no está en estado 3 eliminamos uso de stock
                 $usedStocks = ProductUseStock::where('id_budget', $budget->id)->get();
                 if ($usedStocks && $usedStocks->count() > 0) {
                     foreach ($usedStocks as $usedStock) {
@@ -722,7 +716,6 @@ class BudgetController extends Controller
                     }
                 }
             }
-            ;
 
             if ($request->id_budget_status == 2 || $request->id_budget_status == 3) {
                 $pdf = Pdf::loadView('pdf.budget', compact('budget'));
@@ -855,81 +848,101 @@ class BudgetController extends Controller
 
             $data = $request->all();
 
-            // Si tiene presupuesto padre y el nuevo estado es 3 -> actualizamos el padre a estado 5
-            if (!empty($data['id_budget'])) {
-                $parentBudget = Budget::find($data['id_budget']);
-                if ($parentBudget && $data['id_budget_status'] == 3) {
-                    $parentBudget->id_budget_status = 5;
-                    $parentBudget->save();
+            if ($request->id_budget_status == 3) {
 
+                // Función para obtener todo el árbol (padres e hijos)
+
+                $allBudgets = $this->getBudgetTree($budget->id);
+
+                // Excluir el presupuesto que estamos aprobando
+                $toClose = $allBudgets->filter(fn($b) => $b->id !== $budget->id);
+
+                foreach ($budget->budgetProducts as $item) {
+                    ProductUseStock::create([
+                        'id_budget' => $budget->id,
+                        'id_product' => $item->id_product,
+                        'id_product_stock' => $item->product->product_stock == null ? $item->id_product : $item->product->product_stock,
+                        'date_from' => $budget->date_event,
+                        'date_to' => \Carbon\Carbon::parse($budget->date_event)->addDays($budget->days - 1),
+                        'quantity' => $item->quantity
+                    ]);
+                }
+
+                foreach ($toClose as $b) {
+                    $b->id_budget_status = 5; // Cerrado/aceptado automáticamente
+                    $b->save();
+
+                    // Auditoría de estado
                     BudgetAudith::create([
-                        'id_budget' => $parentBudget->id,
+                        'id_budget' => $b->id,
                         'action' => 'update_status',
-                        'new_budget_status' => $parentBudget->id_budget_status,
+                        'new_budget_status' => $b->id_budget_status,
                         'observations' => json_encode([
-                            'id_budget_status' => $parentBudget->id_budget_status,
-                            'status_name' => $parentBudget->budgetStatus->name
+                            'id_budget_status' => $b->id_budget_status,
+                            'status_name' => $b->budgetStatus->name
                         ]),
                         'user' => auth()->user()->id,
                         'date' => now()->toDateString(),
                         'time' => now()->toTimeString()
                     ]);
-                    // delivery data del padre al hijo
-                    $deliveryData = BudgetDeliveryData::where('id_budget', $parentBudget->id)->first();
+
+                    // Delivery data
+                    $deliveryData = BudgetDeliveryData::where('id_budget', $b->id_budget)->first();
                     if ($deliveryData) {
-                        $deliveryData->id_budget = $budget->id;
+                        $deliveryData->id_budget = $b->id;
                         $deliveryData->save();
+
+                        BudgetAudith::create([
+                            'id_budget' => $b->id,
+                            'action' => 'update_delivery_data',
+                            'new_budget_status' => $b->id_budget_status,
+                            'observations' => 'Se asigna budget_delivery_data',
+                            'user' => auth()->user()->id,
+                            'date' => now()->toDateString(),
+                            'time' => now()->toTimeString()
+                        ]);
+                    }
+
+                    // Pasar pagos del padre al hijo
+                    $payments = Payment::where('id_budget', $b->id_budget)->get();
+                    foreach ($payments as $payment) {
+                        $payment->id_budget = $b->id;
+                        $payment->save();
                     }
 
                     BudgetAudith::create([
-                        'id_budget' => $budget->id,
-                        'action' => 'update_delivery_data',
-                        'new_budget_status' => $budget->id_budget_status,
-                        'observations' => 'Presupuesto hijo aceptado, se asigna budget_delivery_data del padre',
-                        'user' => auth()->user()->id,
-                        'date' => now()->toDateString(),
-                        'time' => now()->toTimeString()
-                    ]);
-
-                    // pasar los pagos del padre al hijo
-                    $payments = Payment::where('id_budget', $parentBudget->id)->get();
-                    if ($payments) {
-                        foreach ($payments as $payment) {
-                            $payment->id_budget = $budget->id;
-                            $payment->save();
-                        }
-                    }
-                    // auditoria de pagos actualizados al hijo
-                    BudgetAudith::create([
-                        'id_budget' => $budget->id,
+                        'id_budget' => $b->id,
                         'action' => 'update_payments',
-                        'new_budget_status' => $budget->id_budget_status,
-                        'observations' => 'Presupuesto hijo aceptado, se asignan pagos del padre',
+                        'new_budget_status' => $b->id_budget_status,
+                        'observations' => 'Se asignan pagos del presupuesto cerrado',
                         'user' => auth()->user()->id,
                         'date' => now()->toDateString(),
                         'time' => now()->toTimeString()
                     ]);
 
-                    // eliminamos el stock del padre    
-                    $usedStocks = ProductUseStock::where('id_budget', $parentBudget->id)->get();
-                    if ($usedStocks && $usedStocks->count() > 0) {
-                        foreach ($usedStocks as $usedStock) {
-                            $usedStock->delete();
-                        }
-                    }
-                    // auditoria de presupuesto
+                    // Eliminar stock usado
+                    ProductUseStock::where('id_budget', $b->id)->delete();
+
                     BudgetAudith::create([
-                        'id_budget' => $budget->id,
+                        'id_budget' => $b->id,
                         'action' => 'update_use_stock',
-                        'new_budget_status' => $budget->id_budget_status,
-                        'observations' => 'Actualizacion del presupuesto hijo a aceptado, se le elimina el stock usado al padre',
+                        'new_budget_status' => $b->id_budget_status,
+                        'observations' => 'Se elimina stock usado al cerrar presupuesto',
                         'user' => auth()->user()->id,
                         'date' => now()->toDateString(),
                         'time' => now()->toTimeString()
                     ]);
                 }
+            } else {
+                // si no está en estado 3 eliminamos uso de stock
+                $usedStocks = ProductUseStock::where('id_budget', $budget->id)->get();
+                if ($usedStocks && $usedStocks->count() > 0) {
+                    foreach ($usedStocks as $usedStock) {
+                        $usedStock->delete();
+                    }
+                }
             }
-
+            
             // Actualizar presupuesto
             $budget->update($data);
 
@@ -957,28 +970,6 @@ class BudgetController extends Controller
                 'client',
                 'budgetProducts.product'
             ]);
-
-            // Manejo de uso de stock
-            if ($data['id_budget_status'] == 3) {
-                foreach ($budget->budgetProducts as $item) {
-                    ProductUseStock::create([
-                        'id_budget' => $budget->id,
-                        'id_product' => $item->id_product,
-                        'id_product_stock' => $item->product->product_stock == null ? $item->id_product : $item->product->product_stock,
-                        'date_from' => $budget->date_event,
-                        'date_to' => \Carbon\Carbon::parse($budget->date_event)->addDays($budget->days - 1),
-                        'quantity' => $item->quantity
-                    ]);
-                }
-            } else {
-                // si no está en estado 3 eliminamos uso de stock
-                $usedStocks = ProductUseStock::where('id_budget', $budget->id)->get();
-                if ($usedStocks && $usedStocks->count() > 0) {
-                    foreach ($usedStocks as $usedStock) {
-                        $usedStock->delete();
-                    }
-                }
-            }
 
             // Generar PDF y enviar email en estados 2 o 3
             if ($data['id_budget_status'] == 2 || $data['id_budget_status'] == 3) {
@@ -1577,5 +1568,41 @@ class BudgetController extends Controller
             ]);
         }
     }
+
+    private function getBudgetTree($budgetId)
+    {
+        $budget = Budget::find($budgetId);
+        if (!$budget)
+            return collect();
+
+        // Padres
+        $parents = collect();
+        $current = $budget;
+        while ($current && $current->id_budget) {
+            $parent = Budget::find($current->id_budget);
+            if ($parent) {
+                $parents->push($parent);
+                $current = $parent;
+            } else {
+                break;
+            }
+        }
+
+        // Hijos
+        $children = collect();
+        $stack = collect([$budget]);
+        while ($stack->isNotEmpty()) {
+            $node = $stack->pop();
+            $kids = Budget::where('id_budget', $node->id)->get();
+            foreach ($kids as $child) {
+                $children->push($child);
+                $stack->push($child);
+            }
+        }
+
+        // Todos
+        return $parents->reverse()->merge([$budget])->merge($children);
+    }
+
 
 }
