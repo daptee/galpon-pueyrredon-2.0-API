@@ -710,10 +710,9 @@ class ProductController extends Controller
             // Obtener productos usados
             $usedProductIds = ProductUseStock::distinct()->pluck('id_product')->toArray();
 
-            $productsQuery = Product::with(['productStock', 'productUseStock'])
+            $productsQuery = Product::with(['productStock', 'productUseStock', 'comboItems.product'])
                 ->whereIn('id', $usedProductIds);
 
-            // 🔹 Filtros adicionales
             if (!is_null($type)) {
                 $productsQuery->where('products.id_product_type', $type);
             }
@@ -747,29 +746,42 @@ class ProductController extends Controller
                     $usedStock[$date] = $totalUsed;
                 }
 
-                $result->push([
-                    'id' => $representativeProduct->id,
-                    'name' => $representativeProduct->name,
-                    'code' => $representativeProduct->code,
-                    'stock' => $stock,
-                    'used_stock_by_day' => $usedStock,
-                ]);
+                // ✅ Si el producto es combo, mostramos sus productos internos en lugar del combo
+                if ($representativeProduct->is_combo ?? false) {
+                    foreach ($representativeProduct->comboItems as $comboItem) {
+                        $inner = $comboItem->product;
+                        if ($inner) {
+                            $result->push([
+                                'id' => $inner->id,
+                                'name' => $inner->name,
+                                'code' => $inner->code,
+                                'stock' => $inner->productStock->stock ?? $inner->stock,
+                                'used_stock_by_day' => $usedStock,
+                                'from_combo' => $representativeProduct->name, // opcional: para saber de qué combo vino
+                            ]);
+                        }
+                    }
+                } else {
+                    $result->push([
+                        'id' => $representativeProduct->id,
+                        'name' => $representativeProduct->name,
+                        'code' => $representativeProduct->code,
+                        'stock' => $stock,
+                        'used_stock_by_day' => $usedStock,
+                    ]);
+                }
             }
 
-            // 🔹 Filtrar productos sin alteración de stock
-            $result = $result->filter(function ($item) {
-                return collect($item['used_stock_by_day'])->some(fn($value) => $value > 0);
-            })->values();
+            // Filtrar productos sin uso
+            $result = $result->filter(fn($item) => collect($item['used_stock_by_day'])->some(fn($v) => $v > 0))->values();
 
-            // 🔹 Ordenar alfabéticamente por nombre
+            // Ordenar alfabéticamente
             $result = $result->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
 
-            // 🔹 Filtrar por nombre o código si viene search
+            // Filtro por búsqueda
             if ($request->has('search')) {
                 $search = strtolower($request->query('search'));
-                $result = $result->filter(function ($item) use ($search) {
-                    return strpos(strtolower($item['name']), $search) !== false;
-                })->values();
+                $result = $result->filter(fn($item) => strpos(strtolower($item['name']), $search) !== false)->values();
             }
 
             $total = $result->count();
