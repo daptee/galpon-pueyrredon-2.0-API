@@ -702,7 +702,6 @@ class ProductController extends Controller
 
             $perPage = $request->query('per_page');
             $page = $request->query('page', 1);
-
             $type = $request->query('type');
             $line = $request->query('line');
             $furniture = $request->query('furniture');
@@ -716,80 +715,79 @@ class ProductController extends Controller
                 'comboItems.product.productStock', // productos individuales del combo
             ])->whereIn('id', $usedProductIds);
 
-            // 🔹 Filtros adicionales
-            if (!is_null($type)) {
+            // Filtros adicionales
+            if (!is_null($type))
                 $productsQuery->where('products.id_product_type', $type);
-            }
-            if (!is_null($line)) {
+            if (!is_null($line))
                 $productsQuery->where('products.id_product_line', $line);
-            }
-            if (!is_null($furniture)) {
+            if (!is_null($furniture))
                 $productsQuery->where('products.id_product_furniture', $furniture);
-            }
 
             $products = $productsQuery->get();
 
-            $groupedByStock = $products->groupBy(function ($product) {
-                return $product->product_stock ?? $product->id;
-            });
+            $groupedByStock = $products->groupBy(fn($product) => $product->product_stock ?? $product->id);
 
-            $result = collect();
+            $finalResult = [];
 
             foreach ($groupedByStock as $stockId => $group) {
                 $representativeProduct = $group->firstWhere('id', $stockId) ?? $group->first();
 
-                $stock = $representativeProduct->productStock->stock ?? $representativeProduct->stock;
-
-                $usedStock = [];
-
+                // Calculamos el uso diario del producto o combo
+                $usedStockByDay = [];
                 foreach ($dates as $date) {
-                    $totalUsed = $group->flatMap(fn($p) => $p->productUseStock)
+                    $usedStockByDay[$date] = $group->flatMap(fn($p) => $p->productUseStock)
                         ->filter(fn($use) => $use->date_from <= $date && $use->date_to >= $date)
                         ->sum('quantity');
-
-                    $usedStock[$date] = $totalUsed;
                 }
 
-                // ✅ Si el producto es un combo (id_product_type = 2), mostramos sus productos internos
                 if ($representativeProduct->id_product_type == 2) {
+                    // Producto combo → distribuir a productos individuales
                     foreach ($representativeProduct->comboItems as $comboItem) {
                         $inner = $comboItem->product;
-                        if ($inner) {
-                            $result->push([
-                                'id' => $inner->id,
-                                'name' => $inner->name,
-                                'code' => $inner->code,
-                                'stock' => $inner->productStock->stock ?? $inner->stock,
-                                'used_stock_by_day' => $usedStock,
-                                'from_combo' => $representativeProduct->name, // opcional: de qué combo vino
-                            ]);
+                        if (!$inner)
+                            continue;
+
+                        foreach ($dates as $date) {
+                            $finalResult[$inner->id]['used_stock_by_day'][$date] =
+                                ($finalResult[$inner->id]['used_stock_by_day'][$date] ?? 0) +
+                                ($usedStockByDay[$date] * $comboItem->quantity);
                         }
+
+                        $finalResult[$inner->id]['id'] = $inner->id;
+                        $finalResult[$inner->id]['name'] = $inner->name;
+                        $finalResult[$inner->id]['code'] = $inner->code;
+                        $finalResult[$inner->id]['stock'] = $inner->productStock->stock ?? $inner->stock;
+                        $finalResult[$inner->id]['from_combo'][] = $representativeProduct->name;
                     }
                 } else {
-                    $result->push([
+                    // Producto normal
+                    $finalResult[$representativeProduct->id] = [
                         'id' => $representativeProduct->id,
                         'name' => $representativeProduct->name,
                         'code' => $representativeProduct->code,
-                        'stock' => $stock,
-                        'used_stock_by_day' => $usedStock,
-                    ]);
+                        'stock' => $representativeProduct->productStock->stock ?? $representativeProduct->stock,
+                        'used_stock_by_day' => $usedStockByDay,
+                    ];
                 }
             }
 
-            // 🔹 Filtrar productos sin alteración de stock
-            $result = $result->filter(function ($item) {
-                return collect($item['used_stock_by_day'])->some(fn($value) => $value > 0);
+            // Convertimos a colección y unimos from_combo si existe
+            $result = collect($finalResult)->map(function ($item) {
+                if (isset($item['from_combo']))
+                    $item['from_combo'] = implode(', ', $item['from_combo']);
+                return $item;
             })->values();
 
-            // 🔹 Ordenar alfabéticamente por nombre
+            // Filtrar productos sin alteración de stock
+            $result = $result->filter(fn($item) => collect($item['used_stock_by_day'])->some(fn($v) => $v > 0))->values();
+
+            // Ordenar alfabéticamente por nombre
             $result = $result->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
 
-            // 🔹 Filtrar por nombre si viene search
+            // Filtrar por search si existe
             if ($request->has('search')) {
                 $search = strtolower($request->query('search'));
-                $result = $result->filter(function ($item) use ($search) {
-                    return strpos(strtolower($item['name']), $search) !== false;
-                })->values();
+                $result = $result->filter(fn($item) => strpos(strtolower($item['name']), $search) !== false)->values();
             }
 
             $total = $result->count();
@@ -798,7 +796,6 @@ class ProductController extends Controller
                 $perPage = (int) $perPage;
                 $page = (int) $page;
                 $paged = $result->forPage($page, $perPage)->values();
-
                 $meta_data = [
                     'page' => $page,
                     'per_page' => $perPage,
