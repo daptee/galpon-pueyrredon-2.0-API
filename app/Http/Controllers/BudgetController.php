@@ -48,8 +48,17 @@ class BudgetController extends Controller
                 if ($request->has('start_date') && $budget->date_event < $request->input('start_date'))
                     return false;
                 if ($request->has('search')) {
-                    $search = $request->input('search');
-                    if (!str_contains((string) $budget->id, $search))
+                    $search = strtolower($request->input('search'));
+
+                    // Buscar por ID de presupuesto
+                    $matchesId = str_contains(strtolower((string) $budget->id), $search);
+
+                    // Buscar por nombre del cliente
+                    $clientName = $budget->client ? strtolower($budget->client->name . ' ' . $budget->client->lastname) : '';
+                    $matchesClientName = str_contains($clientName, $search);
+
+                    // Si no coincide con ninguno, filtrar
+                    if (!$matchesId && !$matchesClientName)
                         return false;
                 }
                 return true;

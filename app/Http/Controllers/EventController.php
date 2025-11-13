@@ -31,10 +31,17 @@ class EventController extends Controller
         ])
         ->where('id_budget_status', 3);
 
-        // Buscador por ID de presupuesto
+        // Buscador por ID de presupuesto o nombre del cliente
         if ($request->has('search')) {
             $search = $request->input('search');
-            $query->where('id', 'like', '%' . $search . '%');
+            $query->where(function($q) use ($search) {
+                // Buscar por ID de presupuesto
+                $q->where('id', 'like', '%' . $search . '%')
+                  // Buscar por nombre del cliente (en la tabla clients)
+                  ->orWhereHas('client', function($clientQuery) use ($search) {
+                      $clientQuery->whereRaw("CONCAT(LOWER(name), ' ', LOWER(lastname)) LIKE ?", ['%' . strtolower($search) . '%']);
+                  });
+            });
         }
 
         // Filtros
