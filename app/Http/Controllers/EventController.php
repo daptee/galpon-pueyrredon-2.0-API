@@ -37,10 +37,8 @@ class EventController extends Controller
             $query->where(function($q) use ($search) {
                 // Buscar por ID de presupuesto
                 $q->where('id', 'like', '%' . $search . '%')
-                  // Buscar por nombre del cliente (en la tabla clients)
-                  ->orWhereHas('client', function($clientQuery) use ($search) {
-                      $clientQuery->whereRaw("CONCAT(LOWER(name), ' ', LOWER(lastname)) LIKE ?", ['%' . strtolower($search) . '%']);
-                  });
+                  // Buscar por nombre del cliente (campo client_name en budgets)
+                  ->orWhere('client_name', 'like', '%' . $search . '%');
             });
         }
 

@@ -53,8 +53,8 @@ class BudgetController extends Controller
                     // Buscar por ID de presupuesto
                     $matchesId = str_contains(strtolower((string) $budget->id), $search);
 
-                    // Buscar por nombre del cliente
-                    $clientName = $budget->client ? strtolower($budget->client->name . ' ' . $budget->client->lastname) : '';
+                    // Buscar por nombre del cliente (campo client_name en budgets)
+                    $clientName = strtolower($budget->client_name ?? '');
                     $matchesClientName = str_contains($clientName, $search);
 
                     // Si no coincide con ninguno, filtrar
