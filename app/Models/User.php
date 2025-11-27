@@ -2,46 +2,67 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
-    use HasFactory, Notifiable;
+    use Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'name',
+        'user',
+        'password',
         'email',
-        'password',
+        'id_user_type',
+        'name',
+        'lastname',
+        'phone',
+        'is_internal',
+        'id_client',
+        'permissions',
+        'theme',
+        'status',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
-        'password',
-        'remember_token',
+        'id_user_type',
+        'id_client'
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $casts = [
+        'permissions' => 'array',
+        'is_internal' => 'boolean',
+    ];
+
+    // Métodos requeridos por la interfaz JWTSubject
+    public function getJWTIdentifier()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->getKey(); // Retorna la clave primaria del usuario (id por defecto)
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return []; // Puedes agregar cualquier información personalizada al token
+    }
+
+    public function userType()
+    {
+        return $this->belongsTo(UserType::class, 'id_user_type');
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class, 'id_client');
+    }
+
+    public function theme()
+    {
+        return $this->belongsTo(Theme::class, 'theme');
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(Status::class, 'status');
     }
 }
