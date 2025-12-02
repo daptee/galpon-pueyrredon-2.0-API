@@ -75,13 +75,16 @@ class EventController extends Controller
             $query->where(function ($q) {
                 $q->where('total', '=', 0)
                     ->orWhereRaw('(
-                        SELECT COALESCE(SUM(p.amount), 0) 
-                        FROM payments p 
-                        WHERE p.id_budget = budgets.id 
+                        SELECT COALESCE(SUM(p.amount), 0)
+                        FROM payments p
+                        WHERE p.id_budget = budgets.id
                         AND p.id_payment_status = 1
                     ) >= budgets.total');
             });
-        } 
+        }
+
+        // Ordenar por cercanía a start_date usando una subconsulta
+        $query->orderByRaw('ABS(UNIX_TIMESTAMP(date_event) - UNIX_TIMESTAMP(?)) ASC', [$startDate]);
 
         // Ejecutar query
         if ($perPage) {
@@ -97,11 +100,6 @@ class EventController extends Controller
             $data = $query->get();
             $meta_data = null;
         }
-
-        // 🔹 Ordenar por cercanía a start_date (por defecto)
-        $data = collect($data)->sortBy(function ($budget) use ($startDate) {
-            return abs(strtotime($budget->date_event) - strtotime($startDate));
-        })->values();
 
         return ApiResponse::paginate('Eventos obtenidos correctamente', 200, $data, $meta_data, [
             'request' => $request,
