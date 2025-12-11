@@ -124,7 +124,7 @@ class PaymentController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'id_budget' => 'required|integer|exists:budgets,id',
-                'payment_datatime' => 'required|date_format:Y-m-d H:i:s',
+                'payment_datatime' => 'required|date_format:Y-m-d',
                 'id_payment_type' => 'required|integer|exists:payment_types,id',
                 'id_payment_method' => 'required|integer|exists:payment_methods,id',
                 'amount' => 'required|numeric|min:0.01',
