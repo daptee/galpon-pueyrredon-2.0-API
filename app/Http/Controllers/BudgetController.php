@@ -479,10 +479,10 @@ class BudgetController extends Controller
                         ]);
                     }
 
-                    // Pasar pagos del padre al hijo
-                    $payments = Payment::where('id_budget', $b->id_budget)->get();
+                    // Pasar pagos del presupuesto cerrado a la nueva versión aprobada
+                    $payments = Payment::where('id_budget', $b->id)->get();
                     foreach ($payments as $payment) {
-                        $payment->id_budget = $b->id;
+                        $payment->id_budget = $budget->id;
                         $payment->save();
                     }
 
@@ -692,10 +692,10 @@ class BudgetController extends Controller
                         ]);
                     }
 
-                    // Pasar pagos del padre al hijo
-                    $payments = Payment::where('id_budget', $b->id_budget)->get();
+                    // Pasar pagos del presupuesto cerrado a la nueva versión aprobada
+                    $payments = Payment::where('id_budget', $b->id)->get();
                     foreach ($payments as $payment) {
-                        $payment->id_budget = $b->id;
+                        $payment->id_budget = $budget->id;
                         $payment->save();
                     }
 
@@ -918,10 +918,10 @@ class BudgetController extends Controller
                         ]);
                     }
 
-                    // Pasar pagos del padre al hijo
-                    $payments = Payment::where('id_budget', $b->id_budget)->get();
+                    // Pasar pagos del presupuesto cerrado a la nueva versión aprobada
+                    $payments = Payment::where('id_budget', $b->id)->get();
                     foreach ($payments as $payment) {
-                        $payment->id_budget = $b->id;
+                        $payment->id_budget = $budget->id;
                         $payment->save();
                     }
 
