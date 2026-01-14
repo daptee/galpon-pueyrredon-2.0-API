@@ -358,7 +358,7 @@ class ProductController extends Controller
                     'nullable',
                     function ($attribute, $value, $fail) {
                         // Si es archivo, debe ser imagen válida
-                        if (is_file($value)) {
+                        if ($value instanceof \Illuminate\Http\UploadedFile) {
                             if (!in_array($value->getClientOriginalExtension(), ['jpeg', 'jpg', 'png'])) {
                                 return $fail('El archivo debe ser una imagen jpeg, jpg o png.');
                             }
