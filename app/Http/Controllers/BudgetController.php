@@ -618,7 +618,8 @@ class BudgetController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'id_budget_status' => 'required|exists:budget_status,id'
+                'id_budget_status' => 'required|exists:budget_status,id',
+                'observations_status' => 'nullable|string|max:255',
             ]);
 
             if ($validator->fails()) {
@@ -761,7 +762,7 @@ class BudgetController extends Controller
                 'id_budget' => $budget->id,
                 'action' => 'CAMBIO DE ESTADO',
                 'new_budget_status' => $budget->id_budget_status,
-                'observations' => 'Estado actualizado',
+                'observations' => $request->observations_status ?? 'Estado actualizado',
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
