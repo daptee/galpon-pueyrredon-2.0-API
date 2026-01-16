@@ -1623,6 +1623,7 @@ class BudgetController extends Controller
             } elseif ($onlyZero) {
                 $budgets = Budget::where(function ($query) {
                     $query->where('volume', 0)
+                          ->orWhere('volume', '0.00')
                           ->orWhereNull('volume');
                 })->get();
             } else {
