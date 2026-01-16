@@ -19,9 +19,16 @@ class BudgetsExport implements FromCollection, WithHeadings, WithColumnWidths
     public function collection()
     {
         return collect($this->budgets)->map(function ($budget) {
+            $client = $budget['client'] ?? null;
+            $place = $budget['place'] ?? null;
+
+            $clientName = $client
+                ? ($client['company'] ?? ($client['name'] . ' ' . ($client['lastname'] ?? '')))
+                : ($budget['client_name'] ?? 'Sin cliente');
+
             return [
-                $budget['client']['company'] ?? $budget['client']['name'] . ' ' . $budget['client']['lastname'],
-                $budget['place']['name'],
+                $clientName,
+                $place['name'] ?? 'Sin lugar',
                 $budget['date_event'],
                 $budget['days'],
                 $budget['quoted_days'],
@@ -32,7 +39,7 @@ class BudgetsExport implements FromCollection, WithHeadings, WithColumnWidths
                 $budget['iva'],
                 $budget['volume'],
                 $budget['client_bonification_edited'] ?? $budget['client_bonification'],
-                $budget['place']['distance'],
+                $place['distance'] ?? 0,
             ];
         });
     }
