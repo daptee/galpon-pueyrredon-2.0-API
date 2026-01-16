@@ -274,6 +274,7 @@ Route::group([
     Route::post('/check-budget', [BudgetController::class, 'checkBudget'])->middleware('admin');
     Route::post('/sendMails/{id}', [BudgetController::class, 'sendMails'])->middleware('admin');
     Route::get('/generate-pdf-delivery-information/{id}', [BudgetController::class, 'generatePdfDeliveryInformation'])->middleware('admin');
+    Route::post('/calculate-volume', [BudgetController::class, 'calculateVolume'])->middleware('admin');
 });
 
 Route::group([
