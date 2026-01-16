@@ -451,12 +451,9 @@ class BudgetController extends Controller
                     // Auditoría de estado
                     BudgetAudith::create([
                         'id_budget' => $b->id,
-                        'action' => 'update_status',
+                        'action' => 'CAMBIO DE ESTADO',
                         'new_budget_status' => $b->id_budget_status,
-                        'observations' => json_encode([
-                            'id_budget_status' => $b->id_budget_status,
-                            'status_name' => $b->budgetStatus->name
-                        ]),
+                        'observations' => 'Se reemplazo por su version mas nueva',
                         'user' => auth()->user()->id,
                         'date' => now()->toDateString(),
                         'time' => now()->toTimeString()
@@ -470,9 +467,9 @@ class BudgetController extends Controller
 
                         BudgetAudith::create([
                             'id_budget' => $b->id,
-                            'action' => 'update_delivery_data',
+                            'action' => 'ACTUALIZACION DE DATOS DE DELIVERY',
                             'new_budget_status' => $b->id_budget_status,
-                            'observations' => 'Se asigna budget_delivery_data',
+                            'observations' => 'Se asigna delivery data al nuevo presupuesto',
                             'user' => auth()->user()->id,
                             'date' => now()->toDateString(),
                             'time' => now()->toTimeString()
@@ -488,7 +485,7 @@ class BudgetController extends Controller
 
                     BudgetAudith::create([
                         'id_budget' => $b->id,
-                        'action' => 'update_payments',
+                        'action' => 'ACTUALIZACION DATOS DE PAGOS',
                         'new_budget_status' => $b->id_budget_status,
                         'observations' => 'Se asignan pagos del presupuesto cerrado',
                         'user' => auth()->user()->id,
@@ -501,7 +498,7 @@ class BudgetController extends Controller
 
                     BudgetAudith::create([
                         'id_budget' => $b->id,
-                        'action' => 'update_use_stock',
+                        'action' => 'ELIMINACION DE STOCK USADO',
                         'new_budget_status' => $b->id_budget_status,
                         'observations' => 'Se elimina stock usado al cerrar presupuesto',
                         'user' => auth()->user()->id,
@@ -544,9 +541,9 @@ class BudgetController extends Controller
             // agregar auditoría
             BudgetAudith::create([
                 'id_budget' => $budget->id,
-                'action' => 'create',
+                'action' => 'ALTA',
                 'new_budget_status' => $budget->id_budget_status,
-                'observations' => $data['observations'] ?? null,
+                'observations' => 'Presupuesto creado',
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
@@ -589,7 +586,7 @@ class BudgetController extends Controller
             // agregar auditoría
             BudgetAudith::create([
                 'id_budget' => $budget->id,
-                'action' => 'update_observations',
+                'action' => 'ACTUALIZAR OBSERVACIONES',
                 'new_budget_status' => $budget->id_budget_status,
                 'observations' => $budget->observations,
                 'user' => auth()->user()->id,
@@ -621,7 +618,8 @@ class BudgetController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'id_budget_status' => 'required|exists:budget_status,id'
+                'id_budget_status' => 'required|exists:budget_status,id',
+                'observations_status' => 'nullable|string|max:255',
             ]);
 
             if ($validator->fails()) {
@@ -664,12 +662,9 @@ class BudgetController extends Controller
                     // Auditoría de estado
                     BudgetAudith::create([
                         'id_budget' => $b->id,
-                        'action' => 'update_status',
+                        'action' => 'CAMBIO DE ESTADO',
                         'new_budget_status' => $b->id_budget_status,
-                        'observations' => json_encode([
-                            'id_budget_status' => $b->id_budget_status,
-                            'status_name' => $b->budgetStatus->name
-                        ]),
+                        'observations' => 'Se reemplazo por su version mas nueva',
                         'user' => auth()->user()->id,
                         'date' => now()->toDateString(),
                         'time' => now()->toTimeString()
@@ -683,9 +678,9 @@ class BudgetController extends Controller
 
                         BudgetAudith::create([
                             'id_budget' => $b->id,
-                            'action' => 'update_delivery_data',
+                            'action' => 'ACTUALIZACION DE DATOS DE DELIVERY',
                             'new_budget_status' => $b->id_budget_status,
-                            'observations' => 'Se asigna budget_delivery_data',
+                            'observations' => 'Se asigna delivery data al nuevo presupuesto',
                             'user' => auth()->user()->id,
                             'date' => now()->toDateString(),
                             'time' => now()->toTimeString()
@@ -701,7 +696,7 @@ class BudgetController extends Controller
 
                     BudgetAudith::create([
                         'id_budget' => $b->id,
-                        'action' => 'update_payments',
+                        'action' => 'ACTUALIZACION DATOS DE PAGOS',
                         'new_budget_status' => $b->id_budget_status,
                         'observations' => 'Se asignan pagos del presupuesto cerrado',
                         'user' => auth()->user()->id,
@@ -714,7 +709,7 @@ class BudgetController extends Controller
 
                     BudgetAudith::create([
                         'id_budget' => $b->id,
-                        'action' => 'update_use_stock',
+                        'action' => 'ELIMINACION DE STOCK USADO',
                         'new_budget_status' => $b->id_budget_status,
                         'observations' => 'Se elimina stock usado al cerrar presupuesto',
                         'user' => auth()->user()->id,
@@ -765,12 +760,9 @@ class BudgetController extends Controller
             // agregar auditoría
             BudgetAudith::create([
                 'id_budget' => $budget->id,
-                'action' => 'update_status',
+                'action' => 'CAMBIO DE ESTADO',
                 'new_budget_status' => $budget->id_budget_status,
-                'observations' => json_encode([
-                    'id_budget_status' => $budget->id_budget_status,
-                    'status_name' => $budget->budgetStatus->name
-                ]),
+                'observations' => $request->observations_status ?? 'Estado actualizado',
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
@@ -890,12 +882,9 @@ class BudgetController extends Controller
                     // Auditoría de estado
                     BudgetAudith::create([
                         'id_budget' => $b->id,
-                        'action' => 'update_status',
+                        'action' => 'ACTUALIZACION DE ESTADO',
                         'new_budget_status' => $b->id_budget_status,
-                        'observations' => json_encode([
-                            'id_budget_status' => $b->id_budget_status,
-                            'status_name' => $b->budgetStatus->name
-                        ]),
+                        'observations' => 'Se reemplazo por su version mas nueva',
                         'user' => auth()->user()->id,
                         'date' => now()->toDateString(),
                         'time' => now()->toTimeString()
@@ -909,9 +898,9 @@ class BudgetController extends Controller
 
                         BudgetAudith::create([
                             'id_budget' => $b->id,
-                            'action' => 'update_delivery_data',
+                            'action' => 'ACTUALIZACION DE DATOS DE DELIVERY',
                             'new_budget_status' => $b->id_budget_status,
-                            'observations' => 'Se asigna budget_delivery_data',
+                            'observations' => 'Se asigna delivery data al nuevo presupuesto',
                             'user' => auth()->user()->id,
                             'date' => now()->toDateString(),
                             'time' => now()->toTimeString()
@@ -927,7 +916,7 @@ class BudgetController extends Controller
 
                     BudgetAudith::create([
                         'id_budget' => $b->id,
-                        'action' => 'update_payments',
+                        'action' => 'ACTUALIZACION DATOS DE PAGOS',
                         'new_budget_status' => $b->id_budget_status,
                         'observations' => 'Se asignan pagos del presupuesto cerrado',
                         'user' => auth()->user()->id,
@@ -940,7 +929,7 @@ class BudgetController extends Controller
 
                     BudgetAudith::create([
                         'id_budget' => $b->id,
-                        'action' => 'update_use_stock',
+                        'action' => 'ELIMINACION DE STOCK USADO',
                         'new_budget_status' => $b->id_budget_status,
                         'observations' => 'Se elimina stock usado al cerrar presupuesto',
                         'user' => auth()->user()->id,
@@ -1020,9 +1009,9 @@ class BudgetController extends Controller
             // Auditoría de actualización
             BudgetAudith::create([
                 'id_budget' => $budget->id,
-                'action' => 'update',
+                'action' => 'EDICIÓN',
                 'new_budget_status' => $budget->id_budget_status,
-                'observations' => $data['observations'] ?? null,
+                'observations' => 'Presupuesto editado',
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
@@ -1391,12 +1380,9 @@ class BudgetController extends Controller
             // agregar auditoría
             BudgetAudith::create([
                 'id_budget' => $budget->id,
-                'action' => 'update_contact',
+                'action' => 'ACTUALIZACION DE CONTACTO',
                 'new_budget_status' => $budget->id_budget_status,
-                'observations' => json_encode([
-                    'client_mail' => $budget->client_mail,
-                    'client_phone' => $budget->client_phone
-                ]),
+                'observations' => 'Contacto actualizado correctamente',
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()
@@ -1443,7 +1429,7 @@ class BudgetController extends Controller
 
             BudgetAudith::create([
                 'id_budget' => $budget->id,
-                'action' => 'generate_pdf',
+                'action' => 'GENERAR PDF',
                 'new_budget_status' => $budget->id_budget_status,
                 'observations' => 'PDF generado correctamente',
                 'user' => auth()->user()->id,
@@ -1503,7 +1489,7 @@ class BudgetController extends Controller
 
             BudgetAudith::create([
                 'id_budget' => $budget->id,
-                'action' => 'generate_pdf',
+                'action' => 'GENERAR PDF',
                 'new_budget_status' => $budget->id_budget_status,
                 'observations' => 'PDF generado correctamente',
                 'user' => auth()->user()->id,
@@ -1559,9 +1545,9 @@ class BudgetController extends Controller
             // agregar auditoría
             BudgetAudith::create([
                 'id_budget' => $budget->id,
-                'action' => 'send_mails',
+                'action' => 'ENVIO DE MAILS',
                 'new_budget_status' => $budget->id_budget_status,
-                'observations' => json_encode($request->mails),
+                'observations' => 'Mails enviados a: ' . implode(', ', $request->mails),
                 'user' => auth()->user()->id,
                 'date' => now()->toDateString(),
                 'time' => now()->toTimeString()

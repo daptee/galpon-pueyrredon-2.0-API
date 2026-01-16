@@ -358,7 +358,7 @@ class ProductController extends Controller
                     'nullable',
                     function ($attribute, $value, $fail) {
                         // Si es archivo, debe ser imagen válida
-                        if (is_file($value)) {
+                        if ($value instanceof \Illuminate\Http\UploadedFile) {
                             if (!in_array($value->getClientOriginalExtension(), ['jpeg', 'jpg', 'png'])) {
                                 return $fail('El archivo debe ser una imagen jpeg, jpg o png.');
                             }
@@ -366,9 +366,12 @@ class ProductController extends Controller
                                 return $fail('El archivo no debe superar los 2MB.');
                             }
                         }
-                        // Si es string, debe ser una ruta que empiece con "/storage/"
-                        elseif (is_string($value) && !str_starts_with($value, '/storage/')) {
-                            return $fail('La cadena de imagen debe ser una ruta válida del almacenamiento.');
+                        // Si es string, debe ser una ruta válida de storage
+                        elseif (is_string($value)) {
+                            // Aceptar tanto "/storage/..." como "storage/..."
+                            if (!str_starts_with($value, '/storage/') && !str_starts_with($value, 'storage/')) {
+                                return $fail('La cadena de imagen debe ser una ruta válida del almacenamiento.');
+                            }
                         }
                     }
                 ],
