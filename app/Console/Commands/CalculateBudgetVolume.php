@@ -15,7 +15,7 @@ class CalculateBudgetVolume extends Command
      *
      * @var string
      */
-    protected $signature = 'budget:calculate-volume {--budget_id= : ID específico del presupuesto a calcular}';
+    protected $signature = 'budget:calculate-volume {--budget_id= : ID específico del presupuesto a calcular} {--only-zero : Solo calcular presupuestos con volumen en 0}';
 
     /**
      * The console command description.
@@ -30,6 +30,7 @@ class CalculateBudgetVolume extends Command
     public function handle()
     {
         $budgetId = $this->option('budget_id');
+        $onlyZero = $this->option('only-zero');
 
         if ($budgetId) {
             $budgets = Budget::where('id', $budgetId)->get();
@@ -37,6 +38,12 @@ class CalculateBudgetVolume extends Command
                 $this->error("No se encontró el presupuesto con ID: {$budgetId}");
                 return 1;
             }
+        } elseif ($onlyZero) {
+            // Solo obtener presupuestos con volumen = 0 o null
+            $budgets = Budget::where(function ($query) {
+                $query->where('volume', 0)
+                      ->orWhereNull('volume');
+            })->get();
         } else {
             // Obtener todos los presupuestos
             $budgets = Budget::all();

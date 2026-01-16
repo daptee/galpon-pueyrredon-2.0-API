@@ -1605,5 +1605,130 @@ class BudgetController extends Controller
         return $parents->reverse()->merge([$budget])->merge($children);
     }
 
+    public function calculateVolume(Request $request)
+    {
+        try {
+            $budgetId = $request->query('budget_id');
+            $onlyZero = $request->query('only_zero', false);
 
+            if ($budgetId) {
+                $budgets = Budget::where('id', $budgetId)->get();
+                if ($budgets->isEmpty()) {
+                    return ApiResponse::create('Presupuesto no encontrado', 404, null, [
+                        'request' => $request,
+                        'module' => 'budget',
+                        'endpoint' => 'Calcular volumen',
+                    ]);
+                }
+            } elseif ($onlyZero) {
+                $budgets = Budget::where(function ($query) {
+                    $query->where('volume', 0)
+                          ->orWhereNull('volume');
+                })->get();
+            } else {
+                $budgets = Budget::all();
+            }
+
+            $updated = 0;
+            $results = [];
+
+            foreach ($budgets as $budget) {
+                $totalVolume = $this->calculateBudgetVolume($budget);
+
+                if ($budget->volume != $totalVolume) {
+                    $oldVolume = $budget->volume;
+                    $budget->volume = $totalVolume;
+                    $budget->save();
+                    $updated++;
+
+                    $results[] = [
+                        'budget_id' => $budget->id,
+                        'old_volume' => $oldVolume,
+                        'new_volume' => $totalVolume,
+                    ];
+                }
+            }
+
+            return ApiResponse::create('Volumen calculado correctamente', 200, [
+                'total_processed' => $budgets->count(),
+                'total_updated' => $updated,
+                'updates' => $results,
+            ], [
+                'request' => $request,
+                'module' => 'budget',
+                'endpoint' => 'Calcular volumen',
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al calcular volumen', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'budget',
+                'endpoint' => 'Calcular volumen',
+            ]);
+        }
+    }
+
+    private function calculateBudgetVolume(Budget $budget): float
+    {
+        $budgetProducts = BudgetProducts::where('id_budget', $budget->id)->get();
+
+        if ($budgetProducts->isEmpty()) {
+            return 0;
+        }
+
+        $totalVolume = 0;
+
+        foreach ($budgetProducts as $budgetProduct) {
+            $product = Product::with(['comboItems.product'])->find($budgetProduct->id_product);
+
+            if (!$product) {
+                continue;
+            }
+
+            $productVolume = $this->getProductVolume($product);
+            $totalVolume += $productVolume * $budgetProduct->quantity;
+        }
+
+        return round($totalVolume, 2);
+    }
+
+    private function getProductVolume(Product $product): float
+    {
+        // Si es un combo (id_product_type == 2)
+        if ($product->id_product_type == 2) {
+            return $this->getComboVolume($product);
+        }
+
+        return $product->volume ?? 0;
+    }
+
+    private function getComboVolume(Product $comboProduct): float
+    {
+        $comboItems = ProductProducts::where('id_parent_product', $comboProduct->id)
+            ->with('product')
+            ->get();
+
+        if ($comboItems->isEmpty()) {
+            return 0;
+        }
+
+        $totalVolume = 0;
+
+        foreach ($comboItems as $item) {
+            $childProduct = $item->product;
+
+            if (!$childProduct) {
+                continue;
+            }
+
+            if ($childProduct->id_product_type == 2) {
+                $childVolume = $this->getComboVolume($childProduct);
+            } else {
+                $childVolume = $childProduct->volume ?? 0;
+            }
+
+            $totalVolume += $childVolume * $item->quantity;
+        }
+
+        return $totalVolume;
+    }
 }
