@@ -39,9 +39,10 @@ class CalculateBudgetVolume extends Command
                 return 1;
             }
         } elseif ($onlyZero) {
-            // Solo obtener presupuestos con volumen = 0 o null
+            // Solo obtener presupuestos con volumen = 0, 0.00 o null
             $budgets = Budget::where(function ($query) {
                 $query->where('volume', 0)
+                      ->orWhere('volume', '0.00')
                       ->orWhereNull('volume');
             })->get();
         } else {
