@@ -70,6 +70,8 @@ class ProductPriceController extends Controller
                     'id_product' => $product->id,
                     'name' => $product->name,
                     'code' => $product->code,
+                    'stock' => $product->stock,
+                    'volume' => $product->volume,
                     'line' => $product->productLine->name ?? null,
                     'type' => $product->productType->name ?? null,
                     'furniture' => $product->productFurniture->name ?? null,
