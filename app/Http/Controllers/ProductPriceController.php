@@ -191,7 +191,7 @@ class ProductPriceController extends Controller
             file_put_contents($filePath, $writer);
 
             return ApiResponse::create('Archivo exportado correctamente', 200, [
-                'file_url' => 'storage/prices/' . $fileName,
+                'file_url' => 'prices/' . $fileName,
             ], [
                 'request' => $request,
                 'module' => 'product price',

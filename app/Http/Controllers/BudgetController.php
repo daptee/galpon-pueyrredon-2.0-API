@@ -1438,7 +1438,7 @@ class BudgetController extends Controller
             ]);
 
             return ApiResponse::create('PDF regenerado correctamente', 200, [
-                'pdf_path' => "storage/budgets/budget-{$budget->id}.pdf"
+                'pdf_path' => "budgets/budget-{$budget->id}.pdf"
             ], [
                 'module' => 'budget',
                 'endpoint' => 'Regenerar PDF',
@@ -1498,7 +1498,7 @@ class BudgetController extends Controller
             ]);
 
             return ApiResponse::create('PDF regenerado correctamente', 200, [
-                'pdf_path' => "storage/delivery_information/budget-{$budget->id}.pdf"
+                'pdf_path' => "delivery_information/budget-{$budget->id}.pdf"
             ], [
                 'module' => 'budget',
                 'endpoint' => 'Regenerar PDF',
