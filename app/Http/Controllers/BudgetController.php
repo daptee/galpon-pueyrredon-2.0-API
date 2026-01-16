@@ -535,7 +535,11 @@ class BudgetController extends Controller
                     'pdf_path' => $pdfPath
                 ]);
 
-                \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                if ($data['id_budget_status'] == 3) {
+                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath));
+                } else {
+                    \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                }
             }
 
             // agregar auditoría
@@ -754,7 +758,11 @@ class BudgetController extends Controller
                     'pdf_path' => $pdfPath
                 ]);
 
-                \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                if ($request->id_budget_status == 3) {
+                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath));
+                } else {
+                    \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                }
             }
 
             // agregar auditoría
@@ -1003,7 +1011,11 @@ class BudgetController extends Controller
                     'pdf_path' => $pdfPath
                 ]);
 
-                \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                if ($data['id_budget_status'] == 3) {
+                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath));
+                } else {
+                    \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                }
             }
 
             // Auditoría de actualización
@@ -1539,7 +1551,11 @@ class BudgetController extends Controller
 
             // Enviar el email a cada dirección proporcionada
             foreach ($request->mails as $email) {
-                \Mail::to($email)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                if ($budget->id_budget_status == 3) {
+                    \Mail::to($email)->send(new \App\Mail\BudgetApproved($budget, $pdfPath));
+                } else {
+                    \Mail::to($email)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                }
             }
 
             // agregar auditoría
@@ -1609,7 +1625,8 @@ class BudgetController extends Controller
     {
         try {
             $budgetId = $request->query('budget_id');
-            $onlyZero = $request->query('only_zero', false);
+            $fromId = (int) $request->query('from_id', 9372);
+            $limit = (int) $request->query('limit', 100);
 
             if ($budgetId) {
                 $budgets = Budget::where('id', $budgetId)->get();
@@ -1620,21 +1637,20 @@ class BudgetController extends Controller
                         'endpoint' => 'Calcular volumen',
                     ]);
                 }
-            } elseif ($onlyZero) {
-                $budgets = Budget::where(function ($query) {
-                    $query->where('volume', 0)
-                          ->orWhere('volume', '0.00')
-                          ->orWhereNull('volume');
-                })->get();
             } else {
-                $budgets = Budget::all();
+                $budgets = Budget::where('id', '>=', $fromId)
+                    ->orderBy('id', 'asc')
+                    ->limit($limit)
+                    ->get();
             }
 
             $updated = 0;
             $results = [];
+            $lastId = null;
 
             foreach ($budgets as $budget) {
                 $totalVolume = $this->calculateBudgetVolume($budget);
+                $lastId = $budget->id;
 
                 if ($budget->volume != $totalVolume) {
                     $oldVolume = $budget->volume;
@@ -1653,6 +1669,8 @@ class BudgetController extends Controller
             return ApiResponse::create('Volumen calculado correctamente', 200, [
                 'total_processed' => $budgets->count(),
                 'total_updated' => $updated,
+                'last_id_processed' => $lastId,
+                'next_from_id' => $lastId ? $lastId + 1 : null,
                 'updates' => $results,
             ], [
                 'request' => $request,
