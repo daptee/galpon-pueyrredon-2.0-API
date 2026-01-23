@@ -103,7 +103,7 @@
                 <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="margin: 2px 0 2px 0; font-weight: bold;">{{ str_pad($budget->id, 8, '0', STR_PAD_LEFT) }}
                     </p>
-                    <p style="margin: 2px 0; font-weight: bold;">{{$budget->volume}}m<sup>3</sup></p>
+                    <p style="margin: 2px 0; font-weight: bold;">{{ number_format($budget->volume / 1000, 1) }}m<sup>3</sup></p>
                 </td>
             </tr>
         </table>
@@ -158,8 +158,27 @@
             </tr>
         </thead>
         <tbody>
+            @php $rowIndex = 0; @endphp
             @foreach($budget->budgetProducts as $item)
-                    <tr style="background-color: {{ $loop->iteration % 2 === 0 ? '#FFFFFF' : '#F6F6FF' }};">
+                @if($item->product->id_product_type == 2 && $item->product->comboItems->count() > 0)
+                    {{-- Producto combo: expandir componentes --}}
+                    @foreach($item->product->comboItems as $comboItem)
+                        @php $rowIndex++; @endphp
+                        <tr style="background-color: {{ $rowIndex % 2 === 0 ? '#FFFFFF' : '#F6F6FF' }};">
+                            <td style="width: 15%;">{{ $item->quantity * $comboItem->quantity }}</td>
+                            <td>{{ $comboItem->product->name }}</td>
+                            <td>
+                                {{ $comboItem->product->attributeValues
+                                ->filter(fn($attr) => isset($attr->attribute->id) && $attr->attribute->id == 5)
+                                ->pluck('value')
+                                ->implode(', ') }}
+                            </td>
+                        </tr>
+                    @endforeach
+                @else
+                    {{-- Producto normal --}}
+                    @php $rowIndex++; @endphp
+                    <tr style="background-color: {{ $rowIndex % 2 === 0 ? '#FFFFFF' : '#F6F6FF' }};">
                         <td style="width: 15%;">{{ $item->quantity }}</td>
                         <td>{{ $item->product->name }}</td>
                         <td>
@@ -169,6 +188,7 @@
                             ->implode(', ') }}
                         </td>
                     </tr>
+                @endif
             @endforeach
         </tbody>
     </table>

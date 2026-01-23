@@ -1474,6 +1474,7 @@ class BudgetController extends Controller
                 'transportation',
                 'client',
                 'budgetProducts.product.attributeValues',
+                'budgetProducts.product.comboItems.product.attributeValues',
                 'budgetDeliveryData'
             ])->find($id);
 

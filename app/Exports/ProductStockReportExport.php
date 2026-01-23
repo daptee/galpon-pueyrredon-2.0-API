@@ -33,6 +33,7 @@ class ProductStockReportExport extends CustomValueBinder implements FromCollecti
             $product['name'],
             $product['code'],
             $product['stock'] ?? "-",
+            $product['show_catalog'] ?? 'No',
         ];
 
         foreach ($this->dates as $date) {
@@ -47,7 +48,7 @@ class ProductStockReportExport extends CustomValueBinder implements FromCollecti
     public function headings(): array
     {
         return array_merge(
-            ['ID', 'Nombre', 'Código', 'Stock'],
+            ['ID', 'Nombre', 'Código', 'Stock', 'Catálogo'],
             $this->dates
         );
     }
@@ -59,9 +60,10 @@ class ProductStockReportExport extends CustomValueBinder implements FromCollecti
             'B' => 30,
             'C' => 15,
             'D' => 10,
+            'E' => 12,
         ];
 
-        $start = ord('E');
+        $start = ord('F');
         foreach (range(0, count($this->dates) - 1) as $i) {
             $columnLetter = chr($start + $i);
             $columns[$columnLetter] = 15;

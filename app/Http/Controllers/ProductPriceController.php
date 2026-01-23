@@ -145,6 +145,7 @@ class ProductPriceController extends Controller
                     'furniture' => $product->productFurniture->name ?? null,
                     'vigente_price' => $price ? $price->price : null,
                     'estado' => $product->productStatus->name ?? null,
+                    'catalogo' => $product->show_catalog ? 'Sí' : 'No',
                 ];
 
                 // Mapear atributos dinámicos a sus columnas
