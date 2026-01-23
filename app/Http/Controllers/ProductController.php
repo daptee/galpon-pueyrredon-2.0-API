@@ -954,6 +954,7 @@ class ProductController extends Controller
                     'name' => $representativeProduct->name,
                     'code' => $representativeProduct->code,
                     'stock' => $stock,
+                    'show_catalog' => $representativeProduct->show_catalog ? 'Sí' : 'No',
                     'used_stock_by_day' => $usedStock,
                 ]);
             }

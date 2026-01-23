@@ -27,6 +27,7 @@ class ProductPricesExport implements FromCollection, WithHeadings, WithMapping, 
         'volumen_atributo',
         'componentes',
         'estado',
+        'catalogo',
     ];
 
     public function __construct($prices)
@@ -67,6 +68,7 @@ class ProductPricesExport implements FromCollection, WithHeadings, WithMapping, 
             'Volumen',
             'Componentes',
             'Estado',
+            'Catálogo',
         ];
     }
 
@@ -87,6 +89,7 @@ class ProductPricesExport implements FromCollection, WithHeadings, WithMapping, 
             'L' => 15,  // Volumen (atributo)
             'M' => 50,  // Componentes
             'N' => 15,  // Estado
+            'O' => 12,  // Catálogo
         ];
     }
 }
