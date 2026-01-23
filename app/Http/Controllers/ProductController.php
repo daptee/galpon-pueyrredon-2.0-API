@@ -972,7 +972,7 @@ class ProductController extends Controller
             file_put_contents($filePath, $writer);
 
             return ApiResponse::create('Archivo exportado correctamente', 200, [
-                'file_url' => 'storage/reports/' . $fileName,
+                'file_url' => 'reports/' . $fileName,
             ], [
                 'request' => $request,
                 'module' => 'product stock',
