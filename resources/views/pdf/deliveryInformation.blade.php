@@ -103,7 +103,7 @@
                 <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="margin: 2px 0 2px 0; font-weight: bold;">{{ str_pad($budget->id, 8, '0', STR_PAD_LEFT) }}
                     </p>
-                    <p style="margin: 2px 0; font-weight: bold;">{{$budget->volume}}m<sup>3</sup></p>
+                    <p style="margin: 2px 0; font-weight: bold;">{{ number_format($budget->volume / 1000, 1) }}m<sup>3</sup></p>
                 </td>
             </tr>
         </table>
