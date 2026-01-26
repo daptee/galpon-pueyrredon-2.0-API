@@ -536,7 +536,8 @@ class BudgetController extends Controller
                 ]);
 
                 if ($data['id_budget_status'] == 3) {
-                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath));
+                    $replacedBudgetId = isset($toClose) && $toClose->isNotEmpty() ? $toClose->first()->id : null;
+                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
                 } else {
                     \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
@@ -759,7 +760,8 @@ class BudgetController extends Controller
                 ]);
 
                 if ($request->id_budget_status == 3) {
-                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath));
+                    $replacedBudgetId = isset($toClose) && $toClose->isNotEmpty() ? $toClose->first()->id : null;
+                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
                 } else {
                     \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
@@ -1012,7 +1014,8 @@ class BudgetController extends Controller
                 ]);
 
                 if ($data['id_budget_status'] == 3) {
-                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath));
+                    $replacedBudgetId = isset($toClose) && $toClose->isNotEmpty() ? $toClose->first()->id : null;
+                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
                 } else {
                     \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
@@ -1550,10 +1553,18 @@ class BudgetController extends Controller
                 return ApiResponse::create('PDF no encontrado', 404, ['error' => 'PDF no encontrado'], []);
             }
 
+            // Buscar presupuesto reemplazado si es confirmación
+            $replacedBudgetId = null;
+            if ($budget->id_budget_status == 3) {
+                $allBudgets = $this->getBudgetTree($budget->id);
+                $replaced = $allBudgets->filter(fn($b) => $b->id !== $budget->id && $b->id_budget_status == 5)->first();
+                $replacedBudgetId = $replaced ? $replaced->id : null;
+            }
+
             // Enviar el email a cada dirección proporcionada
             foreach ($request->mails as $email) {
                 if ($budget->id_budget_status == 3) {
-                    \Mail::to($email)->send(new \App\Mail\BudgetApproved($budget, $pdfPath));
+                    \Mail::to($email)->send(new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
                 } else {
                     \Mail::to($email)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
