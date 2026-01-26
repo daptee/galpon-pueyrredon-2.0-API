@@ -31,6 +31,7 @@ use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\TollController;
 use App\Http\Controllers\TransportationController;
 use App\Http\Controllers\UserTypeController;
+use App\Http\Controllers\BackupController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -368,4 +369,13 @@ Route::group([
     Route::get('/', [PaymentController::class, 'index'])->middleware('admin');
     Route::post('/', [PaymentController::class, 'store'])->middleware('admin');
     Route::put('/update-status/{id}', [PaymentController::class, 'updateStatus'])->middleware('admin');
+});
+
+// Backup
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'backup'
+], function () {
+    Route::get('/', [BackupController::class, 'backup']);
+    Route::get('/clean', [BackupController::class, 'cleanOldBackups']);
 });
