@@ -14,6 +14,7 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\Excel as ExcelFormat;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Exception;
 use Log;
 
@@ -23,6 +24,17 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         try {
+            // Detectar si el usuario autenticado es un cliente (tiene id_client poblado)
+            $isClient = false;
+            try {
+                $user = JWTAuth::parseToken()->authenticate();
+                if ($user && $user->id_client !== null) {
+                    $isClient = true;
+                }
+            } catch (Exception $e) {
+                // Usuario no autenticado o token inválido, no es cliente
+            }
+
             $perPage = $request->query('per_page');
             $page = $request->query('page', 1);
             $status = $request->query('status');
@@ -76,6 +88,12 @@ class ProductController extends Controller
             }
             if (!is_null($furniture)) {
                 $query->where('products.id_product_furniture', $furniture);
+            }
+
+            // Si es un usuario cliente, filtrar solo productos activos y de catálogo
+            if ($isClient) {
+                $query->where('products.show_catalog', true);
+                $query->where('products.id_product_status', 1);
             }
 
             if ($request->has('search')) {
