@@ -96,14 +96,18 @@ class MailService
             }
         }
 
-        // Renderizar el contenido del mailable
-        $html = view($mailable->markdown, $viewData)->render();
+        // Renderizar el contenido usando el sistema de markdown de Laravel con estilos
+        $markdown = app(\Illuminate\Mail\Markdown::class);
+        $html = $markdown->render($mailable->markdown, $viewData)->toHtml();
 
         $boundary = md5(time());
 
+        // Codificar el subject en UTF-8 para soportar caracteres especiales
+        $subjectEncoded = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+
         $headers = "From: {$from}\r\n";
         $headers .= "To: {$to}\r\n";
-        $headers .= "Subject: {$subject}\r\n";
+        $headers .= "Subject: {$subjectEncoded}\r\n";
         $headers .= "Date: {$date}\r\n";
         $headers .= "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: multipart/mixed; boundary=\"{$boundary}\"\r\n";
