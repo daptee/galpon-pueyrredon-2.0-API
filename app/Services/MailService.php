@@ -77,11 +77,8 @@ class MailService
      */
     private static function renderMailable($mailable)
     {
-        // Crear el mensaje symfony desde el mailable
-        $message = $mailable->build();
-
-        // Obtener el mensaje renderizado
-        $symfony = Mail::mailer()->getSymfonyTransport();
+        // Construir el mailable para obtener subject y otras propiedades
+        $mailable->build();
 
         // Construir manualmente el mensaje en formato RFC 822
         $to = $mailable->to[0]['address'] ?? '';
@@ -89,8 +86,18 @@ class MailService
         $from = env('MAIL_FROM_ADDRESS');
         $date = date('r');
 
+        // Obtener las propiedades públicas del Mailable como datos para la vista
+        $viewData = [];
+        $reflection = new \ReflectionClass($mailable);
+        foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
+            $name = $property->getName();
+            if (!in_array($name, ['to', 'cc', 'bcc', 'replyTo', 'subject', 'from', 'callbacks'])) {
+                $viewData[$name] = $property->getValue($mailable);
+            }
+        }
+
         // Renderizar el contenido del mailable
-        $html = view($mailable->markdown, $mailable->viewData ?? [])->render();
+        $html = view($mailable->markdown, $viewData)->render();
 
         $boundary = md5(time());
 
