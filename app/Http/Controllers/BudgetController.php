@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Services\MailService;
 use App\Models\Budget;
 use App\Models\BudgetAudith;
 use App\Models\BudgetDeliveryData;
@@ -537,9 +538,9 @@ class BudgetController extends Controller
 
                 if ($data['id_budget_status'] == 3) {
                     $replacedBudgetId = isset($toClose) && $toClose->isNotEmpty() ? $toClose->first()->id : null;
-                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
+                    MailService::sendAndSave($to, new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
                 } else {
-                    \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                    MailService::sendAndSave($to, new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
             }
 
@@ -761,9 +762,9 @@ class BudgetController extends Controller
 
                 if ($request->id_budget_status == 3) {
                     $replacedBudgetId = isset($toClose) && $toClose->isNotEmpty() ? $toClose->first()->id : null;
-                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
+                    MailService::sendAndSave($to, new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
                 } else {
-                    \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                    MailService::sendAndSave($to, new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
             }
 
@@ -1015,9 +1016,9 @@ class BudgetController extends Controller
 
                 if ($data['id_budget_status'] == 3) {
                     $replacedBudgetId = isset($toClose) && $toClose->isNotEmpty() ? $toClose->first()->id : null;
-                    \Mail::to($to)->send(new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
+                    MailService::sendAndSave($to, new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
                 } else {
-                    \Mail::to($to)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                    MailService::sendAndSave($to, new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
             }
 
@@ -1564,9 +1565,9 @@ class BudgetController extends Controller
             // Enviar el email a cada dirección proporcionada
             foreach ($request->mails as $email) {
                 if ($budget->id_budget_status == 3) {
-                    \Mail::to($email)->send(new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
+                    MailService::sendAndSave($email, new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
                 } else {
-                    \Mail::to($email)->send(new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                    MailService::sendAndSave($email, new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
             }
 
