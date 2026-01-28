@@ -64,9 +64,7 @@ class ProductController extends Controller
                 'productType',
                 'productFurniture',
                 'productStatus',
-                'prices' => function ($query) {
-                    $query->latest('valid_date_from')->take(1);
-                },
+                'prices',
                 'mainImage',
                 'attributeValues.attribute',
                 'productUseStock', // 🔹 necesario para calcular stock usado
@@ -140,6 +138,62 @@ class ProductController extends Controller
             } else {
                 foreach ($data as $product) {
                     $product->available_stock = optional($product->productStock)->stock ?? $product->stock ?? 0;
+                }
+            }
+
+            // 🔹 Filtrar precios según la fecha recibida
+            if ($dateStock) {
+                $targetDate = \Carbon\Carbon::parse($dateStock);
+
+                foreach ($data as $product) {
+                    $prices = $product->prices;
+
+                    if ($prices->isEmpty()) {
+                        // Sin precios: retornar array vacío
+                        $product->setRelation('prices', collect([]));
+                        continue;
+                    }
+
+                    // 1. Buscar precio donde la fecha encaje en el rango
+                    $priceInRange = $prices->first(function ($price) use ($targetDate) {
+                        $from = \Carbon\Carbon::parse($price->valid_date_from)->startOfDay();
+                        $to = \Carbon\Carbon::parse($price->valid_date_to)->endOfDay();
+                        return $targetDate->between($from, $to);
+                    });
+
+                    if ($priceInRange) {
+                        $product->setRelation('prices', collect([$priceInRange]));
+                        continue;
+                    }
+
+                    // 2. Buscar el precio más cercano ANTERIOR (valid_date_to < fecha)
+                    $previousPrices = $prices->filter(function ($price) use ($targetDate) {
+                        $to = \Carbon\Carbon::parse($price->valid_date_to)->endOfDay();
+                        return $to->lt($targetDate);
+                    })->sortByDesc(function ($price) {
+                        return \Carbon\Carbon::parse($price->valid_date_to)->timestamp;
+                    });
+
+                    if ($previousPrices->isNotEmpty()) {
+                        $product->setRelation('prices', collect([$previousPrices->first()]));
+                        continue;
+                    }
+
+                    // 3. Buscar el precio más cercano POSTERIOR (valid_date_from > fecha)
+                    $futurePrices = $prices->filter(function ($price) use ($targetDate) {
+                        $from = \Carbon\Carbon::parse($price->valid_date_from)->startOfDay();
+                        return $from->gt($targetDate);
+                    })->sortBy(function ($price) {
+                        return \Carbon\Carbon::parse($price->valid_date_from)->timestamp;
+                    });
+
+                    if ($futurePrices->isNotEmpty()) {
+                        $product->setRelation('prices', collect([$futurePrices->first()]));
+                        continue;
+                    }
+
+                    // 4. No hay precios (ya cubierto arriba, pero por seguridad)
+                    $product->setRelation('prices', collect([]));
                 }
             }
 
