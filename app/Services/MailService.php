@@ -118,7 +118,33 @@ class MailService
         $body .= "Content-Transfer-Encoding: quoted-printable\r\n";
         $body .= "\r\n";
         $body .= quoted_printable_encode($html);
-        $body .= "\r\n--{$boundary}--\r\n";
+        $body .= "\r\n";
+
+        // Agregar adjuntos si existen
+        if (!empty($mailable->attachments)) {
+            foreach ($mailable->attachments as $attachment) {
+                $filePath = $attachment['file'] ?? null;
+                $options = $attachment['options'] ?? [];
+
+                if ($filePath && file_exists($filePath)) {
+                    $fileName = $options['as'] ?? basename($filePath);
+                    $mimeType = $options['mime'] ?? mime_content_type($filePath);
+                    $fileContent = file_get_contents($filePath);
+
+                    // Codificar nombre del archivo para soportar caracteres especiales
+                    $fileNameEncoded = '=?UTF-8?B?' . base64_encode($fileName) . '?=';
+
+                    $body .= "--{$boundary}\r\n";
+                    $body .= "Content-Type: {$mimeType}; name=\"{$fileNameEncoded}\"\r\n";
+                    $body .= "Content-Disposition: attachment; filename=\"{$fileNameEncoded}\"\r\n";
+                    $body .= "Content-Transfer-Encoding: base64\r\n";
+                    $body .= "\r\n";
+                    $body .= chunk_split(base64_encode($fileContent));
+                }
+            }
+        }
+
+        $body .= "--{$boundary}--\r\n";
 
         return $headers . $body;
     }

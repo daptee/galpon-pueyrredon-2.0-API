@@ -95,7 +95,7 @@
                     <p style="margin: 2px 0; font-weight: bold;">
                         {{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }}
                     </p>
-                    <p style="margin: 2px 0; font-weight: bold;">Om3</p>
+                    <p style="margin: 2px 0; font-weight: bold;">{{ number_format($budget->volume / 1000, 1) }}m<sup>3</sup></p>
                 </td>
             </tr>
         </table>
@@ -156,16 +156,18 @@
             <td style="width: 20%; text-align: right; padding: 4px 29px 4px 8px; font-weight: bold;">
                 ${{ number_format($budget->total_price_products, 2, ',', '.') }}</td>
         </tr>
+        @if($budget->total_bonification && $budget->total_bonification != '0' && $budget->total_bonification != '0.00')
         <tr>
             <td style="width: 80%; text-align: right; padding: 4px 8px;">Total Bonificado:</td>
             <td
                 style="width: 20%; text-align: right; padding: 4px 29px 4px 8px; color:rgb(255, 77, 77); font-weight: bold;">
                 ${{ $budget->total_bonification }}</td>
         </tr>
+        @endif
         <tr>
             <td style="width: 80%; text-align: right; padding: 4px 8px;">Traslados y armado:</td>
             <td style="width: 20%; text-align: right; padding: 4px 29px 4px 8px; font-weight: bold;">
-                ${{ number_format($budget->transportation_cost_edited ?? $budget->transportation_cost, 2, ',', '.') }}
+                ${{ number_format($budget->transportation_cost_edited > 0 ? $budget->transportation_cost_edited : $budget->transportation_cost, 2, ',', '.') }}
             </td>
         </tr>
         <tr>
