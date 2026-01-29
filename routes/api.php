@@ -379,3 +379,12 @@ Route::group([
     Route::get('/', [BackupController::class, 'backup']);
     Route::get('/clean', [BackupController::class, 'cleanOldBackups']);
 });
+
+// V1 - Rutas públicas
+Route::group([
+    'prefix' => 'v1'
+], function () {
+    Route::get('/products', [ProductController::class, 'indexV1']);
+    Route::get('/product-line', [ProductLineController::class, 'indexV1']);
+    Route::get('/product-furniture', [ProductFurnitureController::class, 'indexV1']);
+});

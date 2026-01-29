@@ -59,6 +59,37 @@ class ProductLineController extends Controller
         }
     }
 
+    // V1 - Obtener todas las líneas de productos con formato legacy
+    public function indexV1()
+    {
+        try {
+            $productLines = ProductLine::orderBy('name')->get();
+
+            $data = $productLines->map(function ($line) {
+                return [
+                    'linea' => $line->name,
+                    'id' => $line->id,
+                    'state' => $line->status == 1 ? 1 : 0,
+                    'fecha_carga' => $line->created_at ? $line->created_at->format('Y-m-d') : null,
+                    'hora_carga' => $line->created_at ? $line->created_at->format('H:i:s') : null,
+                    'usuario_carga' => null,
+                ];
+            });
+
+            return response()->json([
+                'code' => 1,
+                'response' => 'Lineas de productos obtenidos correctamente',
+                'data' => $data,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'code' => 0,
+                'response' => 'Error al obtener las lineas de productos',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     // Crear una nueva línea de producto
     public function store(Request $request)
     {
