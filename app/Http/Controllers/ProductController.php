@@ -64,9 +64,7 @@ class ProductController extends Controller
                 'productType',
                 'productFurniture',
                 'productStatus',
-                'prices' => function ($query) {
-                    $query->latest('valid_date_from')->take(1);
-                },
+                'prices',
                 'mainImage',
                 'attributeValues.attribute',
                 'productUseStock', // 🔹 necesario para calcular stock usado
@@ -143,6 +141,62 @@ class ProductController extends Controller
                 }
             }
 
+            // 🔹 Filtrar precios según la fecha recibida
+            if ($dateStock) {
+                $targetDate = \Carbon\Carbon::parse($dateStock);
+
+                foreach ($data as $product) {
+                    $prices = $product->prices;
+
+                    if ($prices->isEmpty()) {
+                        // Sin precios: retornar array vacío
+                        $product->setRelation('prices', collect([]));
+                        continue;
+                    }
+
+                    // 1. Buscar precio donde la fecha encaje en el rango
+                    $priceInRange = $prices->first(function ($price) use ($targetDate) {
+                        $from = \Carbon\Carbon::parse($price->valid_date_from)->startOfDay();
+                        $to = \Carbon\Carbon::parse($price->valid_date_to)->endOfDay();
+                        return $targetDate->between($from, $to);
+                    });
+
+                    if ($priceInRange) {
+                        $product->setRelation('prices', collect([$priceInRange]));
+                        continue;
+                    }
+
+                    // 2. Buscar el precio más cercano ANTERIOR (valid_date_to < fecha)
+                    $previousPrices = $prices->filter(function ($price) use ($targetDate) {
+                        $to = \Carbon\Carbon::parse($price->valid_date_to)->endOfDay();
+                        return $to->lt($targetDate);
+                    })->sortByDesc(function ($price) {
+                        return \Carbon\Carbon::parse($price->valid_date_to)->timestamp;
+                    });
+
+                    if ($previousPrices->isNotEmpty()) {
+                        $product->setRelation('prices', collect([$previousPrices->first()]));
+                        continue;
+                    }
+
+                    // 3. Buscar el precio más cercano POSTERIOR (valid_date_from > fecha)
+                    $futurePrices = $prices->filter(function ($price) use ($targetDate) {
+                        $from = \Carbon\Carbon::parse($price->valid_date_from)->startOfDay();
+                        return $from->gt($targetDate);
+                    })->sortBy(function ($price) {
+                        return \Carbon\Carbon::parse($price->valid_date_from)->timestamp;
+                    });
+
+                    if ($futurePrices->isNotEmpty()) {
+                        $product->setRelation('prices', collect([$futurePrices->first()]));
+                        continue;
+                    }
+
+                    // 4. No hay precios (ya cubierto arriba, pero por seguridad)
+                    $product->setRelation('prices', collect([]));
+                }
+            }
+
             return ApiResponse::paginate('Listado de productos obtenido correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'product',
@@ -154,6 +208,153 @@ class ProductController extends Controller
                 'module' => 'product',
                 'endpoint' => 'Obtener todos los productos',
             ]);
+        }
+    }
+
+    // V1 - Obtener todos los productos con formato legacy
+    public function indexV1(Request $request)
+    {
+        try {
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
+
+            $query = Product::with([
+                'productLine',
+                'productType',
+                'productFurniture',
+                'productUseStock',
+                'prices',
+                'attributeValues.attribute',
+            ])
+                ->where('show_catalog', true)
+                ->where('id_product_status', 1);
+
+            $products = $query->get();
+
+            $data = $products->map(function ($product) {
+                // Extraer colores de attributeValues
+                $color1 = '';
+                $color2 = '';
+                $colorAttributes = $product->attributeValues->filter(function ($av) {
+                    return strtolower($av->attribute->name ?? '') === 'color';
+                })->values();
+
+                if ($colorAttributes->count() > 0) {
+                    $color1 = $colorAttributes[0]->value ?? '';
+                }
+                if ($colorAttributes->count() > 1) {
+                    $color2 = $colorAttributes[1]->value ?? '';
+                }
+
+                return [
+                    'volumen' => $product->volume ? (float) $product->volume : null,
+                    'stock' => $product->stock,
+                    'productoStock' => $product->product_stock,
+                    'tipoProducto' => $product->productType ? [
+                        'tipo' => $product->productType->name,
+                        'id' => $product->productType->id,
+                        'state' => $product->productType->status,
+                        'fecha_carga' => $product->productType->created_at ? $product->productType->created_at->format('Y-m-d') : null,
+                        'hora_carga' => $product->productType->created_at ? $product->productType->created_at->format('H:i:s') : null,
+                        'usuario_carga' => null,
+                    ] : null,
+                    'stocksProducto' => $product->productUseStock->map(function ($use) {
+                        return [
+                            'producto' => null,
+                            'productoStock' => null,
+                            'fechaDesde' => $use->date_from,
+                            'fechaHasta' => $use->date_to,
+                            'cantidad' => $use->quantity,
+                            'id' => $use->id,
+                            'state' => 1,
+                            'fecha_carga' => $use->created_at ? $use->created_at->format('Y-m-d') : null,
+                            'hora_carga' => $use->created_at ? $use->created_at->format('H:i:s') : null,
+                            'usuario_carga' => null,
+                        ];
+                    })->values()->toArray(),
+                    'cantidad' => null,
+                    'tieneStock' => null,
+                    'nombre' => $product->name,
+                    'codigo' => $product->code,
+                    'lineaProducto' => $product->productLine ? [
+                        'linea' => $product->productLine->name,
+                        'id' => $product->productLine->id,
+                        'state' => $product->productLine->status,
+                        'fecha_carga' => $product->productLine->created_at ? $product->productLine->created_at->format('Y-m-d') : null,
+                        'hora_carga' => $product->productLine->created_at ? $product->productLine->created_at->format('H:i:s') : null,
+                        'usuario_carga' => null,
+                    ] : null,
+                    'muebleProducto' => $product->productFurniture ? [
+                        'mueble' => $product->productFurniture->name,
+                        'id' => $product->productFurniture->id,
+                        'state' => $product->productFurniture->status,
+                        'fecha_carga' => $product->productFurniture->created_at ? $product->productFurniture->created_at->format('Y-m-d') : null,
+                        'hora_carga' => $product->productFurniture->created_at ? $product->productFurniture->created_at->format('H:i:s') : null,
+                        'usuario_carga' => null,
+                    ] : null,
+                    'descripcion' => $product->description,
+                    'cantidadPlazas' => $product->places_cant,
+                    'color1' => $color1,
+                    'color2' => $color2,
+                    'es_catalogo' => $product->show_catalog ? 1 : 0,
+                    'fotos' => null,
+                    'precios' => $product->prices->map(function ($price) {
+                        return [
+                            'producto' => null,
+                            'precio' => $price->price,
+                            'vigenciaDesde' => \Carbon\Carbon::parse($price->valid_date_from)->format('Y-m-d'),
+                            'vigenciaHasta' => \Carbon\Carbon::parse($price->valid_date_to)->format('Y-m-d'),
+                            'cantidadMinima' => $price->minimun_quantity,
+                            'clientesBonificados' => $price->client_bonification ? 1 : 0,
+                            'id' => $price->id,
+                            'state' => 1,
+                            'fecha_carga' => $price->created_at ? $price->created_at->format('Y-m-d') : null,
+                            'hora_carga' => $price->created_at ? $price->created_at->format('H:i:s') : null,
+                            'usuario_carga' => null,
+                        ];
+                    })->values()->toArray(),
+                    'id' => $product->id,
+                    'state' => 1,
+                    'fecha_carga' => $product->created_at ? $product->created_at->format('Y-m-d') : null,
+                    'hora_carga' => $product->created_at ? $product->created_at->format('H:i:s') : null,
+                    'usuario_carga' => null,
+                ];
+            });
+
+            $total = $data->count();
+
+            if ($perPage) {
+                $perPage = (int) $perPage;
+                $page = (int) $page;
+                $paged = $data->forPage($page, $perPage)->values();
+                $metaData = [
+                    'page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'last_page' => (int) ceil($total / $perPage),
+                ];
+            } else {
+                $paged = $data;
+                $metaData = [
+                    'page' => 1,
+                    'per_page' => $total,
+                    'total' => $total,
+                    'last_page' => 1,
+                ];
+            }
+
+            return response()->json([
+                'code' => 1,
+                'response' => 'Productos obtenidos correctamente',
+                'data' => $paged,
+                'meta_data' => $metaData,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'code' => 0,
+                'response' => 'Error al obtener los productos',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 

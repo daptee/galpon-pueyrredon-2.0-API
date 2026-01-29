@@ -59,6 +59,37 @@ class ProductFurnitureController extends Controller
         }
     }
 
+    // V1 - Obtener todos los muebles de productos con formato legacy
+    public function indexV1()
+    {
+        try {
+            $productFurnitures = ProductFurniture::orderBy('name')->get();
+
+            $data = $productFurnitures->map(function ($furniture) {
+                return [
+                    'mueble' => $furniture->name,
+                    'id' => $furniture->id,
+                    'state' => $furniture->status == 1 ? 1 : 0,
+                    'fecha_carga' => $furniture->created_at ? $furniture->created_at->format('Y-m-d') : null,
+                    'hora_carga' => $furniture->created_at ? $furniture->created_at->format('H:i:s') : null,
+                    'usuario_carga' => null,
+                ];
+            });
+
+            return response()->json([
+                'code' => 1,
+                'response' => 'Muebles de productos obtenidos correctamente',
+                'data' => $data,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'code' => 0,
+                'response' => 'Error al obtener los muebles de productos',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     // Crear un nuevo mueble de producto
     public function store(Request $request)
     {
