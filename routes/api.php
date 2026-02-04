@@ -32,6 +32,7 @@ use App\Http\Controllers\TollController;
 use App\Http\Controllers\TransportationController;
 use App\Http\Controllers\UserTypeController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\ContactFormController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -387,4 +388,5 @@ Route::group([
     Route::get('/products', [ProductController::class, 'indexV1']);
     Route::get('/product-line', [ProductLineController::class, 'indexV1']);
     Route::get('/product-furniture', [ProductFurnitureController::class, 'indexV1']);
+    Route::post('/contact-form', [ContactFormController::class, 'store']);
 });
