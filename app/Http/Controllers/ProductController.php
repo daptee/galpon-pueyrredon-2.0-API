@@ -225,6 +225,7 @@ class ProductController extends Controller
                 'productUseStock',
                 'prices',
                 'attributeValues.attribute',
+                'images',
             ])
                 ->where('show_catalog', true)
                 ->where('id_product_status', 1);
@@ -297,7 +298,17 @@ class ProductController extends Controller
                     'color1' => $color1,
                     'color2' => $color2,
                     'es_catalogo' => $product->show_catalog ? 1 : 0,
-                    'fotos' => null,
+                    'fotos' => $product->images->map(function ($image) {
+                        return [
+                            'producto' => null,
+                            'foto' => basename($image->image),
+                            'id' => $image->id,
+                            'state' => 1,
+                            'fecha_carga' => $image->created_at ? $image->created_at->format('Y-m-d') : null,
+                            'hora_carga' => $image->created_at ? $image->created_at->format('H:i:s') : null,
+                            'usuario_carga' => null,
+                        ];
+                    })->values()->toArray(),
                     'precios' => $product->prices->map(function ($price) {
                         return [
                             'producto' => null,

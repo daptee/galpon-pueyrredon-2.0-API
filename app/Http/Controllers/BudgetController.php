@@ -129,7 +129,7 @@ class BudgetController extends Controller
                 'place.province',
                 'transportation',
                 'client',
-                'budgetProducts.product',
+                'budgetProducts.product.prices',
                 'budgetDeliveryData'
             ])->find($id);
 
