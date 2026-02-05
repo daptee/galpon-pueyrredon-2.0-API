@@ -13,6 +13,15 @@ class AudithHelper
     public static function create($audith, $response, $status)
     {
         try {
+            // No guardar auditoría para respuestas 200 en peticiones GET
+            $method = isset($audith['request']) && $audith['request'] instanceof Request
+                ? $audith['request']->method()
+                : request()->method();
+
+            if ($status === 200 && strtoupper($method) === 'GET') {
+                return $audith;
+            }
+
             // Obtener el usuario autenticado con JWT
             $user = null;
             try {
