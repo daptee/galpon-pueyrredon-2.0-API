@@ -13,6 +13,11 @@ class AudithHelper
     public static function create($audith, $response, $status)
     {
         try {
+            // Solo guardar auditorías en producción
+            if (config('app.env') !== 'production') {
+                return $audith;
+            }
+
             // No guardar auditoría para respuestas 200 en peticiones GET
             $method = isset($audith['request']) && $audith['request'] instanceof Request
                 ? $audith['request']->method()
