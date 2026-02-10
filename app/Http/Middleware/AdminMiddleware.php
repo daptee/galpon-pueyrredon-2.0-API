@@ -29,9 +29,10 @@ class AdminMiddleware
                 return ApiResponse::create('Credenciales no válidas', 401);
             }
 
-            /* if ($user->id_user_type !== 1) {
-                return ApiResponse::create('El usuario no tiene permiso para realizar esta accion.', 403);
-            } */
+            // Verificar si el usuario está activo
+            if ($user->status !== 1) {
+                return ApiResponse::create('Usuario deshabilitado', 403, 'El usuario se encuentra inactivo');
+            }
         } catch (Exception $e) {
             return ApiResponse::create('El token fallo', 401, $e->getMessage());
         }
