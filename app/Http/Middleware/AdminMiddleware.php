@@ -33,6 +33,9 @@ class AdminMiddleware
             if ($user->status !== 1) {
                 return ApiResponse::create('Usuario deshabilitado', 403, 'El usuario se encuentra inactivo');
             }
+
+            // Registrar última actividad
+            $user->update(['last_activity' => now()]);
         } catch (Exception $e) {
             return ApiResponse::create('El token fallo', 401, $e->getMessage());
         }

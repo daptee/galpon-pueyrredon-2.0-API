@@ -10,6 +10,7 @@ use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 use Log;
 
 class UserController extends Controller
@@ -47,9 +48,23 @@ class UserController extends Controller
                 });
             }
 
+            // Filtro por estado de conexión (is_online)
+            if ($request->has('is_online')) {
+                $threshold = Carbon::now()->subMinutes(15);
+                if (filter_var($request->input('is_online'), FILTER_VALIDATE_BOOLEAN)) {
+                    $query->where('last_activity', '>=', $threshold);
+                } else {
+                    $query->where(function ($q) use ($threshold) {
+                        $q->whereNull('last_activity')
+                            ->orWhere('last_activity', '<', $threshold);
+                    });
+                }
+            }
+
             if ($isPaginated) {
                 $users = $query->paginate($perPage);
                 $data = collect($users->items())->map(function ($user) {
+                    $user->is_online = $user->last_activity && $user->last_activity >= Carbon::now()->subMinutes(15);
                     return $user->makeHidden(['password']);
                 });
                 $meta_data = [
@@ -61,6 +76,7 @@ class UserController extends Controller
             } else {
                 $users = $query->get();
                 $data = $users->map(function ($user) {
+                    $user->is_online = $user->last_activity && $user->last_activity >= Carbon::now()->subMinutes(15);
                     return $user->makeHidden(['password']);
                 });
                 $meta_data = null;
@@ -87,8 +103,6 @@ class UserController extends Controller
         try {
             $user = User::with(['userType.status', 'client.status', 'theme', 'status'])->find($id);
 
-            $user->makeHidden(['password']);
-
             if (!$user) {
                 return ApiResponse::create('Usuario no encontrado', 500, [
                     'request' => $request,
@@ -96,6 +110,9 @@ class UserController extends Controller
                     'endpoint' => 'Obtener un usuario',
                 ]);
             }
+
+            $user->is_online = $user->last_activity && $user->last_activity >= Carbon::now()->subMinutes(15);
+            $user->makeHidden(['password']);
 
             return ApiResponse::create('Usuario traido correctamente', 201, $user, [
                 'request' => $request,
