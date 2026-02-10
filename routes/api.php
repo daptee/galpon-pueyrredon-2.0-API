@@ -62,6 +62,10 @@ Route::group([
     Route::get('/{id}', [UserController::class, 'show'])->middleware('admin');
     Route::post('/', [UserController::class, 'store'])->middleware('admin');
     Route::put('/own', [UserController::class, 'updateOwn'])->middleware('admin');
+    Route::put('/disable/{id}', [UserController::class, 'disable'])->middleware('admin');
+    Route::put('/disable-by-type/{id_user_type}', [UserController::class, 'disableByUserType'])->middleware('admin');
+    Route::put('/enable/{id}', [UserController::class, 'enable'])->middleware('admin');
+    Route::put('/enable-by-type/{id_user_type}', [UserController::class, 'enableByUserType'])->middleware('admin');
     Route::put('/{id}', [UserController::class, 'update'])->middleware('admin');
 });
 

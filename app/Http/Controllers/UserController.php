@@ -6,9 +6,11 @@ use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use App\Models\UserType;
 use Exception;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 use Log;
 
 class UserController extends Controller
@@ -46,9 +48,23 @@ class UserController extends Controller
                 });
             }
 
+            // Filtro por estado de conexión (is_online)
+            if ($request->has('is_online')) {
+                $threshold = Carbon::now()->subMinutes(15);
+                if (filter_var($request->input('is_online'), FILTER_VALIDATE_BOOLEAN)) {
+                    $query->where('last_activity', '>=', $threshold);
+                } else {
+                    $query->where(function ($q) use ($threshold) {
+                        $q->whereNull('last_activity')
+                            ->orWhere('last_activity', '<', $threshold);
+                    });
+                }
+            }
+
             if ($isPaginated) {
                 $users = $query->paginate($perPage);
                 $data = collect($users->items())->map(function ($user) {
+                    $user->is_online = $user->last_activity && $user->last_activity >= Carbon::now()->subMinutes(15);
                     return $user->makeHidden(['password']);
                 });
                 $meta_data = [
@@ -60,6 +76,7 @@ class UserController extends Controller
             } else {
                 $users = $query->get();
                 $data = $users->map(function ($user) {
+                    $user->is_online = $user->last_activity && $user->last_activity >= Carbon::now()->subMinutes(15);
                     return $user->makeHidden(['password']);
                 });
                 $meta_data = null;
@@ -86,8 +103,6 @@ class UserController extends Controller
         try {
             $user = User::with(['userType.status', 'client.status', 'theme', 'status'])->find($id);
 
-            $user->makeHidden(['password']);
-
             if (!$user) {
                 return ApiResponse::create('Usuario no encontrado', 500, [
                     'request' => $request,
@@ -95,6 +110,9 @@ class UserController extends Controller
                     'endpoint' => 'Obtener un usuario',
                 ]);
             }
+
+            $user->is_online = $user->last_activity && $user->last_activity >= Carbon::now()->subMinutes(15);
+            $user->makeHidden(['password']);
 
             return ApiResponse::create('Usuario traido correctamente', 201, $user, [
                 'request' => $request,
@@ -310,6 +328,158 @@ class UserController extends Controller
                 'request' => $request,
                 'module' => 'user',
                 'endpoint' => 'Actualizar usuario propio',
+            ]);
+        }
+    }
+
+    // PUT - Deshabilitar un usuario individual (cambia status a 2 e invalida sus tokens)
+    public function disable(Request $request, $id)
+    {
+        try {
+            $user = User::find($id);
+
+            if (!$user) {
+                return ApiResponse::create('Usuario no encontrado', 404, [], [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Deshabilitar un usuario',
+                ]);
+            }
+
+            if ($user->status !== 1) {
+                return ApiResponse::create('El usuario ya se encuentra inactivo', 400, [], [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Deshabilitar un usuario',
+                ]);
+            }
+
+            $user->update(['status' => 2]);
+
+            $user->load('userType.status', 'client.status', 'theme', 'status');
+            $user->makeHidden(['password']);
+
+            return ApiResponse::create('Usuario deshabilitado correctamente', 200, $user, [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Deshabilitar un usuario',
+            ]);
+        } catch (Exception $e) {
+            return ApiResponse::create('Error al deshabilitar el usuario', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Deshabilitar un usuario',
+            ]);
+        }
+    }
+
+    // PUT - Habilitar un usuario individual (cambia status a 1)
+    public function enable(Request $request, $id)
+    {
+        try {
+            $user = User::find($id);
+
+            if (!$user) {
+                return ApiResponse::create('Usuario no encontrado', 404, [], [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Habilitar un usuario',
+                ]);
+            }
+
+            if ($user->status === 1) {
+                return ApiResponse::create('El usuario ya se encuentra activo', 400, [], [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Habilitar un usuario',
+                ]);
+            }
+
+            $user->update(['status' => 1]);
+
+            $user->load('userType.status', 'client.status', 'theme', 'status');
+            $user->makeHidden(['password']);
+
+            return ApiResponse::create('Usuario habilitado correctamente', 200, $user, [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Habilitar un usuario',
+            ]);
+        } catch (Exception $e) {
+            return ApiResponse::create('Error al habilitar el usuario', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Habilitar un usuario',
+            ]);
+        }
+    }
+
+    // PUT - Deshabilitar todos los usuarios de un tipo (por id_user_type)
+    public function disableByUserType(Request $request, $id_user_type)
+    {
+        try {
+            $userType = UserType::find($id_user_type);
+
+            if (!$userType) {
+                return ApiResponse::create('Tipo de usuario no encontrado', 404, [], [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Deshabilitar usuarios por tipo',
+                ]);
+            }
+
+            $affectedCount = User::where('id_user_type', $id_user_type)
+                ->where('status', 1)
+                ->update(['status' => 2]);
+
+            return ApiResponse::create('Usuarios deshabilitados correctamente', 200, [
+                'user_type' => $userType->name,
+                'affected_users' => $affectedCount,
+            ], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Deshabilitar usuarios por tipo',
+            ]);
+        } catch (Exception $e) {
+            return ApiResponse::create('Error al deshabilitar los usuarios', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Deshabilitar usuarios por tipo',
+            ]);
+        }
+    }
+
+    // PUT - Habilitar todos los usuarios de un tipo (por id_user_type)
+    public function enableByUserType(Request $request, $id_user_type)
+    {
+        try {
+            $userType = UserType::find($id_user_type);
+
+            if (!$userType) {
+                return ApiResponse::create('Tipo de usuario no encontrado', 404, [], [
+                    'request' => $request,
+                    'module' => 'user',
+                    'endpoint' => 'Habilitar usuarios por tipo',
+                ]);
+            }
+
+            $affectedCount = User::where('id_user_type', $id_user_type)
+                ->where('status', '!=', 1)
+                ->update(['status' => 1]);
+
+            return ApiResponse::create('Usuarios habilitados correctamente', 200, [
+                'user_type' => $userType->name,
+                'affected_users' => $affectedCount,
+            ], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Habilitar usuarios por tipo',
+            ]);
+        } catch (Exception $e) {
+            return ApiResponse::create('Error al habilitar los usuarios', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'user',
+                'endpoint' => 'Habilitar usuarios por tipo',
             ]);
         }
     }

@@ -23,6 +23,7 @@ class User extends Authenticatable implements JWTSubject
         'permissions',
         'theme',
         'status',
+        'last_activity',
     ];
 
     protected $hidden = [
@@ -33,6 +34,7 @@ class User extends Authenticatable implements JWTSubject
     protected $casts = [
         'permissions' => 'array',
         'is_internal' => 'boolean',
+        'last_activity' => 'datetime',
     ];
 
     // Métodos requeridos por la interfaz JWTSubject
