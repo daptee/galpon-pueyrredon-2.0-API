@@ -25,16 +25,26 @@ class BackupController extends Controller
             $filename = 'backup_' . $database . '_' . date('Y-m-d_H-i-s') . '.sql';
             $filePath = $backupDir . DIRECTORY_SEPARATOR . $filename;
 
-            // Construir comando para Windows con redirección directa al archivo
+            // Archivo temporal para capturar errores separados del dump
+            $errorFile = $backupDir . DIRECTORY_SEPARATOR . 'backup_error.log';
+
+            // Construir comando mysqldump optimizado:
+            // --single-transaction: backup consistente sin bloquear tablas
+            // --no-tablespaces: evita PROCESS privilege y datos de tablespace innecesarios
+            // --skip-lock-tables: no bloquear tablas (ya usa --single-transaction)
+            // --no-create-db: no incluir CREATE DATABASE (solo datos y estructura de tablas)
+            // --databases NO se usa: así solo exporta la DB específica sin extras
+            // 2> error_file: errores van a archivo separado, NO al dump SQL
             $command = sprintf(
-                '"%s" --host=%s --port=%s --user=%s --password=%s --single-transaction --routines --triggers %s > "%s" 2>&1',
+                '"%s" --host=%s --port=%s --user=%s --password=%s --single-transaction --no-tablespaces --skip-lock-tables --no-create-db --routines --triggers %s > "%s" 2> "%s"',
                 $mysqldumpPath,
                 escapeshellarg($host),
                 escapeshellarg($port),
                 escapeshellarg($username),
                 escapeshellarg($password),
                 escapeshellarg($database),
-                $filePath
+                $filePath,
+                $errorFile
             );
 
             // Ejecutar comando
@@ -42,12 +52,16 @@ class BackupController extends Controller
             $returnVar = 0;
             exec($command, $output, $returnVar);
 
+            // Leer errores del archivo separado
+            $errorOutput = file_exists($errorFile) ? trim(file_get_contents($errorFile)) : '';
+            if (file_exists($errorFile)) {
+                unlink($errorFile);
+            }
+
             // Verificar si el archivo fue creado y tiene contenido
             if (!file_exists($filePath) || filesize($filePath) === 0) {
-                $errorMessage = implode("\n", $output);
-                Log::error('Backup failed: ' . $errorMessage);
+                Log::error('Backup failed: ' . ($errorOutput ?: 'Archivo vacío'));
 
-                // Limpiar archivo vacío si existe
                 if (file_exists($filePath)) {
                     unlink($filePath);
                 }
@@ -55,11 +69,11 @@ class BackupController extends Controller
                 return ApiResponse::create(
                     'Error al crear el backup',
                     500,
-                    ['error' => $errorMessage ?: 'No se pudo crear el archivo de backup']
+                    ['error' => $errorOutput ?: 'No se pudo crear el archivo de backup']
                 );
             }
 
-            // Verificar si el archivo contiene error en lugar de datos
+            // Verificar si el archivo contiene error en lugar de datos SQL válidos
             $fileContent = file_get_contents($filePath, false, null, 0, 500);
             if (strpos($fileContent, 'mysqldump: Got error') !== false || strpos($fileContent, 'Access denied') !== false) {
                 $errorMessage = $fileContent;
@@ -74,6 +88,10 @@ class BackupController extends Controller
 
             $fileSize = filesize($filePath);
             $fileSizeFormatted = $this->formatBytes($fileSize);
+
+            if ($errorOutput) {
+                Log::warning("Backup completado con advertencias ({$fileSizeFormatted}): {$errorOutput}");
+            }
 
             return ApiResponse::create(
                 'Backup creado correctamente',
