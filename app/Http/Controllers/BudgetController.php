@@ -1563,6 +1563,164 @@ class BudgetController extends Controller
         }
     }
 
+    public function checkPriceBulk(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'id_budget' => 'required|integer|exists:budgets,id',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
+            }
+
+            $budget = Budget::with('budgetProducts')->find($request->id_budget);
+
+            if (!$budget) {
+                return ApiResponse::create('Presupuesto no encontrado', 404, ['error' => 'Presupuesto no encontrado'], []);
+            }
+
+            $date = $budget->date_event;
+            $results = [];
+            $allHavePrice = true;
+
+            foreach ($budget->budgetProducts as $budgetProduct) {
+                $product = Product::with(['prices', 'comboItems.product.prices'])
+                    ->find($budgetProduct->id_product);
+
+                if (!$product) {
+                    $results[] = [
+                        'has_price' => false,
+                        'product' => null,
+                        'id_product' => $budgetProduct->id_product,
+                        'error' => 'Producto no encontrado',
+                        'price' => null,
+                    ];
+                    $allHavePrice = false;
+                    continue;
+                }
+
+                // Buscamos precio directo del producto
+                $price = $product->prices()
+                    ->where('valid_date_from', '<=', $date)
+                    ->where('valid_date_to', '>=', $date)
+                    ->first();
+
+                // Si no tiene precio directo pero es combo
+                if (!$price && $product->id_product_type == 2) {
+                    $totalPrice = 0;
+                    $missingExactPrice = false;
+                    $hasClosestPrice = false;
+                    $comboMissingPrice = false;
+
+                    foreach ($product->comboItems as $comboItem) {
+                        $childProduct = $comboItem->product;
+
+                        $childPrice = $childProduct->prices()
+                            ->where('valid_date_from', '<=', $date)
+                            ->where('valid_date_to', '>=', $date)
+                            ->first();
+
+                        if (!$childPrice) {
+                            $missingExactPrice = true;
+
+                            $childPrice = $childProduct->prices()
+                                ->orderByRaw('ABS(DATEDIFF(valid_date_from, ?))', [$date])
+                                ->first();
+
+                            if ($childPrice) {
+                                $hasClosestPrice = true;
+                            }
+                        }
+
+                        if (!$childPrice) {
+                            $comboMissingPrice = true;
+                            break;
+                        }
+
+                        $totalPrice += $childPrice->price * $comboItem->quantity;
+                    }
+
+                    if ($comboMissingPrice) {
+                        $results[] = [
+                            'has_price' => false,
+                            'product' => $product,
+                            'error' => 'Precio no disponible para un producto del combo',
+                            'price' => null,
+                        ];
+                        $allHavePrice = false;
+                        continue;
+                    }
+
+                    $comboPrice = (object) [
+                        'id_product' => $product->id,
+                        'price' => number_format($totalPrice, 2, '.', ''),
+                    ];
+
+                    $product->makeHidden('comboItems');
+
+                    if (!$missingExactPrice) {
+                        $results[] = [
+                            'has_price' => true,
+                            'product' => $product,
+                            'error' => 'Precio disponible',
+                            'price' => $comboPrice,
+                        ];
+                    } else {
+                        $results[] = [
+                            'has_price' => false,
+                            'product' => $product,
+                            'error' => 'Precio no disponible',
+                            'price' => $comboPrice,
+                        ];
+                        $allHavePrice = false;
+                    }
+                    continue;
+                }
+
+                // Si no es combo y no tiene precio directo
+                if (!$price) {
+                    $results[] = [
+                        'has_price' => false,
+                        'product' => $product,
+                        'error' => 'Precio no disponible',
+                        'price' => null,
+                    ];
+                    $allHavePrice = false;
+                    continue;
+                }
+
+                $product->makeHidden('comboItems');
+
+                // Caso normal: tiene precio exacto
+                $results[] = [
+                    'has_price' => true,
+                    'product' => $product,
+                    'error' => 'Precio disponible',
+                    'price' => $price,
+                ];
+            }
+
+            $message = $allHavePrice
+                ? 'Precios verificados correctamente para todos los productos'
+                : 'Algunos productos no tienen precio disponible';
+
+            return ApiResponse::create($message, 200, [
+                'all_have_price' => $allHavePrice,
+                'products' => $results,
+            ], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar precios masivo del presupuesto',
+            ]);
+
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al verificar los precios', 500, ['error' => $e->getMessage()], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar precios masivo del presupuesto',
+            ]);
+        }
+    }
+
     public function updateContact(Request $request, $id)
     {
         try {

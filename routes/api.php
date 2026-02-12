@@ -278,6 +278,7 @@ Route::group([
     Route::post('/check-stock', [BudgetController::class, 'checkStock'])->middleware('admin');
     Route::post('/check-stock-bulk', [BudgetController::class, 'checkStockBulk'])->middleware('admin');
     Route::post('/check-price', [BudgetController::class, 'checkPrice'])->middleware('admin');
+    Route::post('/check-price-bulk', [BudgetController::class, 'checkPriceBulk'])->middleware('admin');
     Route::post('/check-budget', [BudgetController::class, 'checkBudget'])->middleware('admin');
     Route::post('/sendMails/{id}', [BudgetController::class, 'sendMails'])->middleware('admin');
     Route::get('/generate-pdf-delivery-information/{id}', [BudgetController::class, 'generatePdfDeliveryInformation'])->middleware('admin');
