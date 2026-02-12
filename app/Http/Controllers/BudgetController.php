@@ -1240,6 +1240,202 @@ class BudgetController extends Controller
         }
     }
 
+    public function checkStockBulk(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'id_budget' => 'required|integer|exists:budgets,id',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
+            }
+
+            $budget = Budget::with('budgetProducts')->find($request->id_budget);
+
+            if (!$budget) {
+                return ApiResponse::create('Presupuesto no encontrado', 404, ['error' => 'Presupuesto no encontrado'], []);
+            }
+
+            $dateFrom = \Carbon\Carbon::parse($budget->date_event);
+            $days = $budget->days;
+
+            // Determinar qué presupuesto ignorar (misma lógica que checkStock)
+            $idBudgetToIgnore = $budget->id;
+
+            if ($budget->id_budget_status != 3) {
+                $relatedBudgets = collect();
+
+                // Padres
+                $current = $budget;
+                while ($current && $current->id_budget) {
+                    $parent = Budget::find($current->id_budget);
+                    if ($parent) {
+                        $relatedBudgets->push($parent);
+                        $current = $parent;
+                    } else {
+                        break;
+                    }
+                }
+
+                // Hijos (recursivo)
+                $stack = collect([$budget]);
+                while ($stack->isNotEmpty()) {
+                    $node = $stack->pop();
+                    $children = Budget::where('id_budget', $node->id)->get();
+                    foreach ($children as $child) {
+                        $relatedBudgets->push($child);
+                        $stack->push($child);
+                    }
+                }
+
+                $approved = $relatedBudgets->firstWhere('id_budget_status', 3);
+                if ($approved) {
+                    $idBudgetToIgnore = $approved->id;
+                }
+            }
+
+            // Procesar cada producto del presupuesto
+            $results = [];
+            $allHaveStock = true;
+
+            foreach ($budget->budgetProducts as $budgetProduct) {
+                $product = Product::with([
+                    'productStock',
+                    'comboItems.product.productStock'
+                ])->find($budgetProduct->id_product);
+
+                if (!$product) {
+                    $results[] = [
+                        'stock' => false,
+                        'product' => null,
+                        'id_product' => $budgetProduct->id_product,
+                        'error' => 'Producto no encontrado',
+                        'available_stock' => null,
+                        'requested_quantity' => $budgetProduct->quantity,
+                        'check_stock_combo' => null,
+                    ];
+                    $allHaveStock = false;
+                    continue;
+                }
+
+                $quantity = $budgetProduct->quantity;
+                $availableStockPerDay = [];
+                $childrenDetails = [];
+                $hasInsufficientStock = false;
+
+                if ($product->id_product_type == 2) {
+                    // Caso COMBO
+                    foreach ($product->comboItems as $comboItem) {
+                        $childProduct = $comboItem->product;
+                        $requiredQuantity = $quantity * $comboItem->quantity;
+                        $childAvailablePerDay = [];
+                        $childHasStock = true;
+
+                        $stock = $childProduct->productStock
+                            ? $childProduct->productStock->stock
+                            : $childProduct->stock;
+
+                        for ($i = 0; $i < $days; $i++) {
+                            $date = $dateFrom->copy()->addDays($i)->toDateString();
+
+                            $used = ProductUseStock::when(
+                                $childProduct->productStock,
+                                function ($q) use ($childProduct, $date) {
+                                    return $q->where('id_product_stock', $childProduct->productStock->id);
+                                },
+                                function ($q) use ($childProduct, $date) {
+                                    return $q->where('id_product', $childProduct->id);
+                                }
+                            )
+                                ->where('date_from', '<=', $date)
+                                ->where('date_to', '>=', $date)
+                                ->when($idBudgetToIgnore, function ($q) use ($idBudgetToIgnore) {
+                                    return $q->where('id_budget', '<>', $idBudgetToIgnore);
+                                })
+                                ->sum('quantity');
+
+                            $available = $stock - $used;
+                            $childAvailablePerDay[$date] = $available;
+
+                            if ($available < $requiredQuantity) {
+                                $childHasStock = false;
+                                $hasInsufficientStock = true;
+                            }
+                        }
+
+                        $childrenDetails[] = [
+                            'product' => $childProduct,
+                            'required_quantity' => $requiredQuantity,
+                            'available_stock' => $childAvailablePerDay,
+                            'stock_ok' => $childHasStock
+                        ];
+                    }
+                } else {
+                    // Caso PRODUCTO INDIVIDUAL
+                    $stock = $product->productStock ? $product->productStock->stock : $product->stock;
+
+                    for ($i = 0; $i < $days; $i++) {
+                        $date = $dateFrom->copy()->addDays($i)->toDateString();
+
+                        $used = ProductUseStock::when(
+                            $product->productStock,
+                            function ($q) use ($product, $date) {
+                                return $q->where('id_product_stock', $product->productStock->id);
+                            },
+                            function ($q) use ($product, $date) {
+                                return $q->where('id_product', $product->id);
+                            }
+                        )
+                            ->where('date_from', '<=', $date)
+                            ->where('date_to', '>=', $date)
+                            ->when($idBudgetToIgnore, function ($q) use ($idBudgetToIgnore) {
+                                return $q->where('id_budget', '<>', $idBudgetToIgnore);
+                            })
+                            ->sum('quantity');
+
+                        $available = $stock - $used;
+                        $availableStockPerDay[$date] = $available;
+
+                        if ($available < $quantity) {
+                            $hasInsufficientStock = true;
+                        }
+                    }
+                }
+
+                if ($hasInsufficientStock) {
+                    $allHaveStock = false;
+                }
+
+                $results[] = [
+                    'stock' => !$hasInsufficientStock,
+                    'product' => $product,
+                    'available_stock' => $product->id_product_type == 2 ? null : $availableStockPerDay,
+                    'requested_quantity' => $quantity,
+                    'check_stock_combo' => $product->id_product_type == 2 ? $childrenDetails : null,
+                ];
+            }
+
+            $message = $allHaveStock
+                ? 'Stock verificado correctamente para todos los productos'
+                : 'Algunos productos tienen stock insuficiente';
+
+            return ApiResponse::create($message, 200, [
+                'all_have_stock' => $allHaveStock,
+                'products' => $results,
+            ], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar stock masivo del presupuesto',
+            ]);
+
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al verificar el stock masivo', 500, ['error' => $e->getMessage()], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar stock masivo del presupuesto',
+            ]);
+        }
+    }
+
     public function checkPrice(Request $request)
     {
         try {
