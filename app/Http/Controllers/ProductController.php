@@ -98,7 +98,8 @@ class ProductController extends Controller
                 $search = $request->input('search');
                 $query->where(function ($q) use ($search) {
                     $q->where('products.name', 'like', '%' . $search . '%')
-                        ->orWhere('products.description', 'like', '%' . $search . '%');
+                        ->orWhere('products.description', 'like', '%' . $search . '%')
+                        ->orWhere('products.code', 'like', '%' . $search . '%');
                 });
             }
 
@@ -1020,7 +1021,10 @@ class ProductController extends Controller
             // Filtrar por search si existe
             if ($request->has('search')) {
                 $search = strtolower($request->query('search'));
-                $result = $result->filter(fn($item) => strpos(strtolower($item['name']), $search) !== false)->values();
+                $result = $result->filter(fn($item) =>
+                    strpos(strtolower($item['name']), $search) !== false ||
+                    (isset($item['code']) && strpos(strtolower($item['code']), $search) !== false)
+                )->values();
             }
 
             $total = $result->count();
