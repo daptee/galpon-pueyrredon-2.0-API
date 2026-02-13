@@ -131,7 +131,7 @@
                 <th>Cantidad</th>
                 <th>Artículo</th>
                 <th>Valor</th>
-                <th>Días</th>
+                <th>Días cotizados</th>
                 <th>Total</th>
             </tr>
         </thead>
@@ -143,7 +143,7 @@
                     <td>${{ number_format($item->price, 2, ',', '.') }}</td>
                     <td style="width: 12%; text-align: left;">{{ $budget->quoted_days }}</td>
                     <td style="width: 18%; text-align: right; padding: 0 45px 0 0;">
-                        ${{ number_format($item->price * $item->quantity, 2, ',', '.') }}
+                        ${{ number_format($item->price * $item->quantity * $budget->quoted_days, 2, ',', '.') }}
                     </td>
                 </tr>
             @endforeach
