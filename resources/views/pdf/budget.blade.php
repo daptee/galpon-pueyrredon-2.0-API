@@ -141,7 +141,7 @@
                     <td>{{ $item->quantity }}</td>
                     <td style="width: 35%;">{{ $item->product->name }}</td>
                     <td>${{ number_format($item->price, 2, ',', '.') }}</td>
-                    <td style="width: 12%; text-align: left;">{{ $budget->days }}</td>
+                    <td style="width: 12%; text-align: left;">{{ $budget->quoted_days }}</td>
                     <td style="width: 18%; text-align: right; padding: 0 45px 0 0;">
                         ${{ number_format($item->price * $item->quantity, 2, ',', '.') }}
                     </td>
