@@ -1081,7 +1081,7 @@ class ProductController extends Controller
             $productUses = ProductUseStock::where(function ($query) use ($start, $end) {
                 $query->whereBetween('date_from', [$start, $end])
                     ->orWhereBetween('date_to', [$start, $end]);
-            })->with(['product', 'product.productStock', 'product.comboItems.product.productStock'])->get();
+            })->with(['product', 'product.productStock', 'product.comboItems.product.productStock', 'budget.client', 'budget.place'])->get();
 
             $result = [];
 
@@ -1123,8 +1123,22 @@ class ProductController extends Controller
                         }
                     }
 
+                    $firstUse = $usesInBudget->first();
+                    $budget = $firstUse?->budget;
+
                     $budgets[] = [
                         'id_budget' => $budgetId,
+                        'days' => $budget?->days,
+                        'volume' => $budget?->volume,
+                        'place' => $budget?->place ? [
+                            'id' => $budget->place->id,
+                            'name' => $budget->place->name,
+                            'distance' => $budget->place->distance,
+                        ] : null,
+                        'client' => $budget?->client ? [
+                            'id' => $budget->client->id,
+                            'name' => $budget->client->name,
+                        ] : ($budget ? ['id' => null, 'name' => $budget->client_name] : null),
                         'products' => array_values($productsMap),
                     ];
                 }

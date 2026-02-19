@@ -26,4 +26,9 @@ class ProductUseStock extends Model
     {
         return $this->belongsTo(Product::class, 'id_product');
     }
+
+    public function budget()
+    {
+        return $this->belongsTo(Budget::class, 'id_budget');
+    }
 }
