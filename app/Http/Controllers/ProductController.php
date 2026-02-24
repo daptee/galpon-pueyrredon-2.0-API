@@ -1128,6 +1128,7 @@ class ProductController extends Controller
 
                     $budgets[] = [
                         'id_budget' => $budgetId,
+                        'date_event' => $budget?->date_event,
                         'days' => $budget?->days,
                         'volume' => $budget?->volume,
                         'place' => $budget?->place ? [
