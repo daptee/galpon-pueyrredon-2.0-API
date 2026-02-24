@@ -176,6 +176,7 @@ Route::group([
     'prefix' => 'audith'
 ], function () {
     Route::get('/', [AudithController::class, 'index'])->middleware('admin');
+    Route::get('/user/{id}', [AudithController::class, 'userAudit'])->middleware('admin');
 });
 
 // Province
