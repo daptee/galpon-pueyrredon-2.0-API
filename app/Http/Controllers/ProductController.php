@@ -1165,6 +1165,154 @@ class ProductController extends Controller
     }
 
 
+    public function catalog(Request $request)
+    {
+        try {
+            // Validar parámetro date
+            $validator = Validator::make($request->all(), [
+                'date' => 'required|date',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, $validator->errors()->toArray(), [
+                    'request' => $request,
+                    'module' => 'product',
+                    'endpoint' => 'Catálogo de productos para clientes',
+                ]);
+            }
+
+            $targetDate = \Carbon\Carbon::parse($request->query('date'));
+            $dateString = $targetDate->toDateString();
+
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
+
+            $query = Product::with([
+                'productFurniture',
+                'attributeValues.attribute',
+                'productUseStock',
+                'productStock',
+                'prices',
+            ])
+                ->where('show_catalog', true)
+                ->where('id_product_status', 1);
+
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('code', 'like', '%' . $search . '%');
+                });
+            }
+
+            $query->orderBy('name', 'asc');
+
+            if ($perPage !== null) {
+                $paginated = $query->paginate($perPage, ['*'], 'page', $page);
+                $products = $paginated->items();
+                $meta_data = [
+                    'page' => $paginated->currentPage(),
+                    'per_page' => $paginated->perPage(),
+                    'total' => $paginated->total(),
+                    'last_page' => $paginated->lastPage(),
+                ];
+            } else {
+                $products = $query->get()->all();
+                $meta_data = null;
+            }
+
+            $measureAttributeNames = ['dimensiones', 'altura'];
+
+            $data = array_map(function ($product) use ($dateString, $targetDate, $measureAttributeNames) {
+                // Disponibilidad
+                $baseStock = optional($product->productStock)->stock ?? $product->stock ?? 0;
+                $usedStock = $product->productUseStock
+                    ->filter(fn($use) => $use->date_from <= $dateString && $use->date_to >= $dateString)
+                    ->sum('quantity');
+                $availability = max(0, $baseStock - $usedStock);
+
+                // Medidas (Dimensiones y Altura)
+                $dimensions = $product->attributeValues
+                    ->filter(fn($av) => in_array(strtolower($av->attribute->name ?? ''), $measureAttributeNames))
+                    ->map(fn($av) => [
+                        'attribute' => $av->attribute->name,
+                        'value' => $av->value,
+                    ])
+                    ->values()
+                    ->toArray();
+
+                // Precio y price_status
+                $price = null;
+                $priceStatus = null;
+                $prices = $product->prices;
+
+                if ($prices->isNotEmpty()) {
+                    // 1. Precio vigente en la fecha
+                    $priceInRange = $prices->first(function ($p) use ($targetDate) {
+                        $from = \Carbon\Carbon::parse($p->valid_date_from)->startOfDay();
+                        $to = \Carbon\Carbon::parse($p->valid_date_to)->endOfDay();
+                        return $targetDate->between($from, $to);
+                    });
+
+                    if ($priceInRange) {
+                        $price = (float) $priceInRange->price;
+                        $priceStatus = 'current';
+                    } else {
+                        // 2. Precio anterior más cercano
+                        $previousPrice = $prices->filter(function ($p) use ($targetDate) {
+                            return \Carbon\Carbon::parse($p->valid_date_to)->endOfDay()->lt($targetDate);
+                        })->sortByDesc(function ($p) {
+                            return \Carbon\Carbon::parse($p->valid_date_to)->timestamp;
+                        })->first();
+
+                        if ($previousPrice) {
+                            $price = (float) $previousPrice->price;
+                            $priceStatus = 'previous';
+                        } else {
+                            // 3. Precio futuro más cercano
+                            $futurePrice = $prices->filter(function ($p) use ($targetDate) {
+                                return \Carbon\Carbon::parse($p->valid_date_from)->startOfDay()->gt($targetDate);
+                            })->sortBy(function ($p) {
+                                return \Carbon\Carbon::parse($p->valid_date_from)->timestamp;
+                            })->first();
+
+                            if ($futurePrice) {
+                                $price = (float) $futurePrice->price;
+                                $priceStatus = 'future';
+                            }
+                        }
+                    }
+                }
+
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'code' => $product->code,
+                    'furniture_type' => $product->productFurniture ? [
+                        'id' => $product->productFurniture->id,
+                        'name' => $product->productFurniture->name,
+                    ] : null,
+                    'availability' => $availability,
+                    'dimensions' => $dimensions,
+                    'price' => $price,
+                    'price_status' => $priceStatus,
+                ];
+            }, $products);
+
+            return ApiResponse::paginate('Catálogo de productos obtenido correctamente', 200, $data, $meta_data, [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Catálogo de productos para clientes',
+            ]);
+        } catch (Exception $e) {
+            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+                'request' => $request,
+                'module' => 'product',
+                'endpoint' => 'Catálogo de productos para clientes',
+            ]);
+        }
+    }
+
     public function exportReport7Days(Request $request)
     {
         try {

@@ -245,6 +245,7 @@ Route::group([
     'prefix' => 'products'
 ], function () {
     Route::get('/', [ProductController::class, 'index']);
+    Route::get('/catalog', [ProductController::class, 'catalog'])->middleware('admin');
     Route::get('/{id}', [ProductController::class, 'show'])->middleware('admin');
     Route::post('/', [ProductController::class, 'store'])->middleware('admin');
     Route::post('/{id}', [ProductController::class, 'update'])->middleware('admin');
