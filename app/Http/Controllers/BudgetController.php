@@ -156,7 +156,7 @@ class BudgetController extends Controller
 
                 // Si es combo (id_product_type == 2)
                 if ($product->id_product_type == 2) {
-                    $comboRelations = ProductProducts::where('id_parent_product', $product->id)->with('product')->get();
+                    $comboRelations = ProductProducts::where('id_parent_product', $product->id)->with('product.prices')->get();
                     $comboAvailable = true;
                     $childrenDetails = [];
 
@@ -177,6 +177,7 @@ class BudgetController extends Controller
                             'required' => $requiredQty,
                             'stock' => $child->stock,
                             'available' => $hasStock,
+                            'prices' => $child->prices,
                         ];
 
                         if (!$hasStock) {
@@ -1477,12 +1478,13 @@ class BudgetController extends Controller
                         ->where('valid_date_to', '>=', $request->date)
                         ->first();
 
-                    // Si no hay precio exacto, lo marcamos pero buscamos el más cercano para estimar
+                    // Si no hay precio exacto, buscamos el más reciente anterior a la fecha
                     if (!$childPrice) {
                         $missingExactPrice = true;
 
                         $childPrice = $childProduct->prices()
-                            ->orderByRaw('ABS(DATEDIFF(valid_date_from, ?))', [$request->date])
+                            ->where('valid_date_to', '<', $request->date)
+                            ->orderBy('valid_date_to', 'desc')
                             ->first();
 
                         if ($childPrice) {
@@ -1490,7 +1492,7 @@ class BudgetController extends Controller
                         }
                     }
 
-                    // Si no hay ningún precio (ni exacto ni cercano)
+                    // Si no hay ningún precio (ni exacto ni anterior)
                     if (!$childPrice) {
                         return ApiResponse::create('Precio no disponible para un producto del combo', 200, [
                             'error' => 'Precio no disponible para un producto del combo',
@@ -1625,7 +1627,8 @@ class BudgetController extends Controller
                             $missingExactPrice = true;
 
                             $childPrice = $childProduct->prices()
-                                ->orderByRaw('ABS(DATEDIFF(valid_date_from, ?))', [$date])
+                                ->where('valid_date_to', '<', $date)
+                                ->orderBy('valid_date_to', 'desc')
                                 ->first();
 
                             if ($childPrice) {

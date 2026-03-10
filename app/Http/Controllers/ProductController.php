@@ -69,6 +69,8 @@ class ProductController extends Controller
                 'attributeValues.attribute',
                 'productUseStock', // 🔹 necesario para calcular stock usado
                 'productStock',
+                'comboItems.product.prices',
+                'comboItems.product.productStock',
             ])
                 ->join('product_lines', 'products.id_product_line', '=', 'product_lines.id')
                 ->join('product_types', 'products.id_product_type', '=', 'product_types.id')
