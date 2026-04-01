@@ -93,7 +93,7 @@
                     <p style="margin: 0 0 2px 0; font-weight: bold;">{{ str_pad($budget->id, 8, '0', STR_PAD_LEFT) }}
                     </p>
                     <p style="margin: 2px 0; font-weight: bold;">
-                        {{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }}
+                        {{ \Carbon\Carbon::parse($budget->created_at)->format('d-M-Y') }}
                     </p>
                     <p style="margin: 2px 0; font-weight: bold;">{{ number_format($budget->volume / 1000, 1) }}m<sup>3</sup></p>
                 </td>
@@ -167,7 +167,7 @@
         <tr>
             <td style="width: 80%; text-align: right; padding: 4px 8px;">Traslados y armado:</td>
             <td style="width: 20%; text-align: right; padding: 4px 29px 4px 8px; font-weight: bold;">
-                ${{ number_format($budget->transportation_cost_edited > 0 ? $budget->transportation_cost_edited : $budget->transportation_cost, 2, ',', '.') }}
+                ${{ number_format($budget->transportation_cost_edited !== null ? $budget->transportation_cost_edited : $budget->transportation_cost, 2, ',', '.') }}
             </td>
         </tr>
         <tr>
