@@ -1437,6 +1437,158 @@ class BudgetController extends Controller
         }
     }
 
+    public function checkStockBulkWithoutBudget(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'date_event'        => 'required|date',
+                'days'              => 'required|integer|min:1',
+                'products'          => 'required|array|min:1',
+                'products.*.id_product' => 'required|integer|exists:products,id',
+                'products.*.quantity'   => 'required|integer|min:1',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
+            }
+
+            $dateFrom = \Carbon\Carbon::parse($request->date_event);
+            $days = $request->days;
+
+            $results = [];
+            $allHaveStock = true;
+
+            foreach ($request->products as $productInput) {
+                $product = Product::with([
+                    'productStock',
+                    'comboItems.product.productStock'
+                ])->find($productInput['id_product']);
+
+                if (!$product) {
+                    $results[] = [
+                        'stock' => false,
+                        'product' => null,
+                        'id_product' => $productInput['id_product'],
+                        'error' => 'Producto no encontrado',
+                        'available_stock' => null,
+                        'requested_quantity' => $productInput['quantity'],
+                        'check_stock_combo' => null,
+                    ];
+                    $allHaveStock = false;
+                    continue;
+                }
+
+                $quantity = $productInput['quantity'];
+                $availableStockPerDay = [];
+                $childrenDetails = [];
+                $hasInsufficientStock = false;
+
+                if ($product->id_product_type == 2) {
+                    // Caso COMBO
+                    foreach ($product->comboItems as $comboItem) {
+                        $childProduct = $comboItem->product;
+                        $requiredQuantity = $quantity * $comboItem->quantity;
+                        $childAvailablePerDay = [];
+                        $childHasStock = true;
+
+                        $stock = $childProduct->productStock
+                            ? $childProduct->productStock->stock
+                            : $childProduct->stock;
+
+                        for ($i = 0; $i < $days; $i++) {
+                            $date = $dateFrom->copy()->addDays($i)->toDateString();
+
+                            $used = ProductUseStock::when(
+                                $childProduct->productStock,
+                                function ($q) use ($childProduct, $date) {
+                                    return $q->where('id_product_stock', $childProduct->productStock->id);
+                                },
+                                function ($q) use ($childProduct, $date) {
+                                    return $q->where('id_product', $childProduct->id);
+                                }
+                            )
+                                ->where('date_from', '<=', $date)
+                                ->where('date_to', '>=', $date)
+                                ->sum('quantity');
+
+                            $available = $stock - $used;
+                            $childAvailablePerDay[$date] = $available;
+
+                            if ($available < $requiredQuantity) {
+                                $childHasStock = false;
+                                $hasInsufficientStock = true;
+                            }
+                        }
+
+                        $childrenDetails[] = [
+                            'product' => $childProduct,
+                            'required_quantity' => $requiredQuantity,
+                            'available_stock' => $childAvailablePerDay,
+                            'stock_ok' => $childHasStock
+                        ];
+                    }
+                } else {
+                    // Caso PRODUCTO INDIVIDUAL
+                    $stock = $product->productStock ? $product->productStock->stock : $product->stock;
+
+                    for ($i = 0; $i < $days; $i++) {
+                        $date = $dateFrom->copy()->addDays($i)->toDateString();
+
+                        $used = ProductUseStock::when(
+                            $product->productStock,
+                            function ($q) use ($product, $date) {
+                                return $q->where('id_product_stock', $product->productStock->id);
+                            },
+                            function ($q) use ($product, $date) {
+                                return $q->where('id_product', $product->id);
+                            }
+                        )
+                            ->where('date_from', '<=', $date)
+                            ->where('date_to', '>=', $date)
+                            ->sum('quantity');
+
+                        $available = $stock - $used;
+                        $availableStockPerDay[$date] = $available;
+
+                        if ($available < $quantity) {
+                            $hasInsufficientStock = true;
+                        }
+                    }
+                }
+
+                if ($hasInsufficientStock) {
+                    $allHaveStock = false;
+                }
+
+                $results[] = [
+                    'stock' => !$hasInsufficientStock,
+                    'product' => $product,
+                    'available_stock' => $product->id_product_type == 2 ? null : $availableStockPerDay,
+                    'requested_quantity' => $quantity,
+                    'check_stock_combo' => $product->id_product_type == 2 ? $childrenDetails : null,
+                ];
+            }
+
+            $message = $allHaveStock
+                ? 'Stock verificado correctamente para todos los productos'
+                : 'Algunos productos tienen stock insuficiente';
+
+            return ApiResponse::create($message, 200, [
+                'all_have_stock' => $allHaveStock,
+                'products' => $results,
+            ], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar stock masivo sin presupuesto',
+            ]);
+
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al verificar el stock masivo', 500, ['error' => $e->getMessage()], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar stock masivo sin presupuesto',
+            ]);
+        }
+    }
+
     public function checkPrice(Request $request)
     {
         try {
@@ -1720,6 +1872,163 @@ class BudgetController extends Controller
             return ApiResponse::create('Error al verificar los precios', 500, ['error' => $e->getMessage()], [
                 'module' => 'budget',
                 'endpoint' => 'Verificar precios masivo del presupuesto',
+            ]);
+        }
+    }
+
+    public function checkPriceBulkWithoutBudget(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'date_event'                => 'required|date',
+                'days'                      => 'required|integer|min:1',
+                'products'                  => 'required|array|min:1',
+                'products.*.id_product'     => 'required|integer|exists:products,id',
+                'products.*.quantity'       => 'required|integer|min:1',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
+            }
+
+            $date = $request->date_event;
+            $results = [];
+            $allHavePrice = true;
+
+            foreach ($request->products as $productInput) {
+                $product = Product::with(['prices', 'comboItems.product.prices'])
+                    ->find($productInput['id_product']);
+
+                if (!$product) {
+                    $results[] = [
+                        'has_price' => false,
+                        'product' => null,
+                        'id_product' => $productInput['id_product'],
+                        'error' => 'Producto no encontrado',
+                        'price' => null,
+                    ];
+                    $allHavePrice = false;
+                    continue;
+                }
+
+                // Buscamos precio directo del producto
+                $price = $product->prices()
+                    ->where('valid_date_from', '<=', $date)
+                    ->where('valid_date_to', '>=', $date)
+                    ->first();
+
+                // Si no tiene precio directo pero es combo
+                if (!$price && $product->id_product_type == 2) {
+                    $totalPrice = 0;
+                    $missingExactPrice = false;
+                    $hasClosestPrice = false;
+                    $comboMissingPrice = false;
+
+                    foreach ($product->comboItems as $comboItem) {
+                        $childProduct = $comboItem->product;
+
+                        $childPrice = $childProduct->prices()
+                            ->where('valid_date_from', '<=', $date)
+                            ->where('valid_date_to', '>=', $date)
+                            ->first();
+
+                        if (!$childPrice) {
+                            $missingExactPrice = true;
+
+                            $childPrice = $childProduct->prices()
+                                ->where('valid_date_to', '<', $date)
+                                ->orderBy('valid_date_to', 'desc')
+                                ->first();
+
+                            if ($childPrice) {
+                                $hasClosestPrice = true;
+                            }
+                        }
+
+                        if (!$childPrice) {
+                            $comboMissingPrice = true;
+                            break;
+                        }
+
+                        $totalPrice += $childPrice->price * $comboItem->quantity;
+                    }
+
+                    if ($comboMissingPrice) {
+                        $results[] = [
+                            'has_price' => false,
+                            'product' => $product,
+                            'error' => 'Precio no disponible para un producto del combo',
+                            'price' => null,
+                        ];
+                        $allHavePrice = false;
+                        continue;
+                    }
+
+                    $comboPrice = (object) [
+                        'id_product' => $product->id,
+                        'price' => number_format($totalPrice, 2, '.', ''),
+                    ];
+
+                    $product->makeHidden('comboItems');
+
+                    if (!$missingExactPrice) {
+                        $results[] = [
+                            'has_price' => true,
+                            'product' => $product,
+                            'error' => 'Precio disponible',
+                            'price' => $comboPrice,
+                        ];
+                    } else {
+                        $results[] = [
+                            'has_price' => false,
+                            'product' => $product,
+                            'error' => 'Precio no disponible',
+                            'price' => $comboPrice,
+                        ];
+                        $allHavePrice = false;
+                    }
+                    continue;
+                }
+
+                // Si no es combo y no tiene precio directo
+                if (!$price) {
+                    $results[] = [
+                        'has_price' => false,
+                        'product' => $product,
+                        'error' => 'Precio no disponible',
+                        'price' => null,
+                    ];
+                    $allHavePrice = false;
+                    continue;
+                }
+
+                $product->makeHidden('comboItems');
+
+                // Caso normal: tiene precio exacto
+                $results[] = [
+                    'has_price' => true,
+                    'product' => $product,
+                    'error' => 'Precio disponible',
+                    'price' => $price,
+                ];
+            }
+
+            $message = $allHavePrice
+                ? 'Precios verificados correctamente para todos los productos'
+                : 'Algunos productos no tienen precio disponible';
+
+            return ApiResponse::create($message, 200, [
+                'all_have_price' => $allHavePrice,
+                'products' => $results,
+            ], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar precios masivo sin presupuesto',
+            ]);
+
+        } catch (\Exception $e) {
+            return ApiResponse::create('Error al verificar los precios', 500, ['error' => $e->getMessage()], [
+                'module' => 'budget',
+                'endpoint' => 'Verificar precios masivo sin presupuesto',
             ]);
         }
     }
