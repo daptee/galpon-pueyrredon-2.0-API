@@ -84,14 +84,11 @@
             width: 100%;
             height: 130px;
             background-color: #EBEBF5;
-            overflow: hidden;
-            text-align: center;
         }
 
         .card-image img {
-            width: 100%;
-            height: 130px;
-            object-fit: cover;
+            max-width: 100%;
+            max-height: 130px;
         }
 
         .card-body {
@@ -153,13 +150,17 @@
                     <td>
                         <div class="card">
                             <div class="card-image">
-                                @if($product->mainImage && $product->mainImage->image)
-                                    <img src="{{ public_path('storage/product/img/' . $product->mainImage->image) }}" alt="{{ $product->name }}">
-                                @else
-                                    <table style="width:100%; height:130px;">
-                                        <tr><td style="text-align:center; vertical-align:middle; color:#BBBBD0; font-size:8px;">Sin imagen</td></tr>
-                                    </table>
-                                @endif
+                                <table style="width:100%; height:130px; background-color:#EBEBF5;">
+                                    <tr>
+                                        <td style="text-align:center; vertical-align:middle;">
+                                            @if($product->mainImage && $product->mainImage->image)
+                                                <img src="{{ public_path('storage/product/img/' . $product->mainImage->image) }}" alt="{{ $product->name }}" style="max-width:100%; max-height:130px;">
+                                            @else
+                                                <span style="color:#BBBBD0; font-size:8px;">Sin imagen</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
                             <div class="card-body">
                                 <p class="card-name">{{ $product->name }}</p>
