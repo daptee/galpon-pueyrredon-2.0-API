@@ -25,6 +25,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductFurnitureController;
 use App\Http\Controllers\ProductLineController;
 use App\Http\Controllers\ProductPriceController;
+use App\Http\Controllers\ProductPriceListController;
 use App\Http\Controllers\ProductProductsController;
 use App\Http\Controllers\ProductTypeController;
 use App\Http\Controllers\ProvinceController;
@@ -253,6 +254,7 @@ Route::group([
     Route::get('/stock/report', [ProductController::class, 'report7Days'])->middleware('admin');
     Route::get('/stock/calendar', [ProductController::class, 'reportMonth'])->middleware('admin');
     Route::get('/stock/export', [ProductController::class, 'exportReport7Days'])->middleware('admin');
+    Route::get('/price-list/pdf', [ProductPriceListController::class, 'generate'])->middleware('admin');
 });
 
 // Budget
