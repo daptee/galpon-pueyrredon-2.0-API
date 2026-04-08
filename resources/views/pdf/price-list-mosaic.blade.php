@@ -56,7 +56,6 @@
             margin: 0;
         }
 
-        /* Tabla principal: 4 columnas, spacing entre celdas */
         .grid-table {
             width: 100%;
             border-collapse: separate;
@@ -66,7 +65,6 @@
         }
 
         .grid-table td {
-            width: 25%;
             vertical-align: top;
             padding: 0;
         }
@@ -75,53 +73,71 @@
             border: none;
         }
 
-        /* Card: altura fija total = imagen (100px) + body (62px) = 162px */
+        /* Modo normal: 4 cols x 3 filas */
+        .mode-normal .grid-table td { width: 25%; }
+        .mode-normal .card           { height: 162px; }
+        .mode-normal .card-image     { height: 100px; }
+        .mode-normal .card-image img { max-height: 100px; }
+        .mode-normal .card-image table { height: 100px; }
+        .mode-normal .card-body      { height: 62px; }
+        .mode-normal .card-name      { font-size: 8px; }
+        .mode-normal .card-meta      { font-size: 7px; }
+        .mode-normal .card-price     { font-size: 9px; }
+
+        /* Modo compacto: 5 cols x 4 filas */
+        .mode-compact .grid-table td { width: 20%; }
+        .mode-compact .card           { height: 120px; }
+        .mode-compact .card-image     { height: 70px; }
+        .mode-compact .card-image img { max-height: 70px; }
+        .mode-compact .card-image table { height: 70px; }
+        .mode-compact .card-body      { height: 50px; padding: 3px 5px; }
+        .mode-compact .card-name      { font-size: 7px; margin: 0 0 1px 0; }
+        .mode-compact .card-meta      { font-size: 6px; margin: 0; }
+        .mode-compact .card-price     { font-size: 8px; margin: 2px 0 0 0; }
+
         .card {
             border: 1px solid #E2E0FD;
             border-radius: 4px;
             overflow: hidden;
-            height: 162px;
             page-break-inside: avoid;
         }
 
-        /* Imagen fija en 100px, fondo gris para el espacio sobrante */
         .card-image {
             width: 100%;
-            height: 100px;
             background-color: #EBEBF5;
         }
 
-        /* Body fijo en 62px */
         .card-body {
-            height: 62px;
-            padding: 5px 7px;
             background-color: #fff;
             overflow: hidden;
         }
 
         .card-name {
             font-weight: bold;
-            font-size: 8px;
-            margin: 0 0 2px 0;
             color: #333;
+            margin: 0 0 2px 0;
         }
 
         .card-meta {
-            font-size: 7px;
             color: #666;
             margin: 0 0 1px 0;
         }
 
         .card-price {
-            font-size: 9px;
             font-weight: bold;
             color: #8076F8;
-            margin: 3px 0 0 0;
         }
     </style>
 </head>
 
-<body>
+@php
+    $total   = $products->count();
+    $compact = $total > 24;
+    $perRow  = $compact ? 5 : 4;
+    $chunks  = $products->chunk($perRow);
+@endphp
+
+<body class="{{ $compact ? 'mode-compact' : 'mode-normal' }}">
     <div class="header">
         <table class="header-inner">
             <tr>
@@ -137,8 +153,6 @@
         </table>
     </div>
 
-    @php $chunks = $products->chunk(4); @endphp
-
     <table class="grid-table">
         @foreach($chunks as $row)
             <tr>
@@ -146,11 +160,11 @@
                     <td>
                         <div class="card">
                             <div class="card-image">
-                                <table style="width:100%; height:100px; background-color:#EBEBF5;">
+                                <table style="width:100%; background-color:#EBEBF5;">
                                     <tr>
                                         <td style="text-align:center; vertical-align:middle;">
                                             @if($product->mainImage && $product->mainImage->image)
-                                                <img src="{{ public_path('storage/product/img/' . $product->mainImage->image) }}" alt="{{ $product->name }}" style="max-width:100%; max-height:100px;">
+                                                <img src="{{ public_path('storage/product/img/' . $product->mainImage->image) }}" alt="{{ $product->name }}" style="max-width:100%;">
                                             @else
                                                 <span style="color:#BBBBD0; font-size:7px;">Sin imagen</span>
                                             @endif
@@ -161,9 +175,7 @@
                             <div class="card-body">
                                 <p class="card-name">{{ $product->name }}</p>
                                 <p class="card-meta">{{ $product->productLine->name ?? '—' }} &bull; {{ $product->productFurniture->name ?? '—' }}</p>
-                                <p class="card-meta">
-                                    Dim: {{ $product->attr_dimension ?? '—' }} &nbsp; Alt: {{ $product->attr_height ?? '—' }}
-                                </p>
+                                <p class="card-meta">Dim: {{ $product->attr_dimension ?? '—' }} &nbsp; Alt: {{ $product->attr_height ?? '—' }}</p>
                                 <p class="card-meta">Stock: {{ $product->stock ?? '—' }}</p>
                                 <p class="card-price">
                                     @if($product->current_price !== null)
@@ -176,13 +188,13 @@
                         </div>
                     </td>
                 @endforeach
-                @for($i = $row->count(); $i < 4; $i++)
+                @for($i = $row->count(); $i < $perRow; $i++)
                     <td class="empty"></td>
                 @endfor
             </tr>
         @endforeach
         <tr>
-            <td colspan="4" style="padding: 4px 0 0 0; border-top: 1px solid #E2E0FD;">
+            <td colspan="{{ $perRow }}" style="padding: 4px 0 0 0; border-top: 1px solid #E2E0FD;">
                 <p style="font-size:8px; color:#999; margin:0;">Precios vigentes al {{ $generatedAt }}. Sujetos a modificación sin previo aviso.</p>
             </td>
         </tr>
