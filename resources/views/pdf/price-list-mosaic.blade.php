@@ -181,7 +181,7 @@
                                     @if($product->current_price !== null)
                                         ${{ number_format($product->current_price, 2, ',', '.') }}
                                     @else
-                                        Sin precio
+                                        —
                                     @endif
                                 </p>
                             </div>
