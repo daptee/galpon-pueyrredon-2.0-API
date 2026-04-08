@@ -125,6 +125,6 @@ class ProductPriceListController extends Controller
             'sortBy'     => $sortBy,
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->stream('lista-precios.pdf');
+        return $pdf->download('lista-precios.pdf');
     }
 }
