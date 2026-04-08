@@ -190,11 +190,12 @@
                 @endfor
             </tr>
         @endforeach
+        <tr>
+            <td colspan="4" style="padding: 6px 0 0 0; border-top: 1px solid #E2E0FD;">
+                <p style="font-size:8px; color:#999; margin:0;">Precios vigentes al {{ $generatedAt }}. Sujetos a modificación sin previo aviso.</p>
+            </td>
+        </tr>
     </table>
-
-    <div class="footer">
-        <p>Precios vigentes al {{ $generatedAt }}. Sujetos a modificación sin previo aviso.</p>
-    </div>
 </body>
 
 </html>
