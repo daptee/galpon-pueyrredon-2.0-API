@@ -32,7 +32,7 @@
 
         .header {
             background-color: #F6F6FF;
-            padding: 18px 24px 12px 24px;
+            padding: 14px 20px 10px 20px;
         }
 
         .header-inner {
@@ -56,11 +56,13 @@
             margin: 0;
         }
 
+        /* Tabla principal: 4 columnas, spacing entre celdas */
         .grid-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 10px;
-            padding: 6px 14px;
+            border-spacing: 8px;
+            padding: 4px 12px;
+            table-layout: fixed;
         }
 
         .grid-table td {
@@ -73,54 +75,48 @@
             border: none;
         }
 
+        /* Card: altura fija total = imagen (100px) + body (62px) = 162px */
         .card {
             border: 1px solid #E2E0FD;
             border-radius: 4px;
             overflow: hidden;
+            height: 162px;
             page-break-inside: avoid;
         }
 
+        /* Imagen fija en 100px, fondo gris para el espacio sobrante */
         .card-image {
             width: 100%;
-            height: 130px;
+            height: 100px;
             background-color: #EBEBF5;
         }
 
-        .card-image img {
-            max-width: 100%;
-            max-height: 130px;
-        }
-
+        /* Body fijo en 62px */
         .card-body {
-            padding: 6px 8px;
+            height: 62px;
+            padding: 5px 7px;
             background-color: #fff;
+            overflow: hidden;
         }
 
         .card-name {
             font-weight: bold;
-            font-size: 9px;
-            margin: 0 0 3px 0;
+            font-size: 8px;
+            margin: 0 0 2px 0;
             color: #333;
         }
 
         .card-meta {
-            font-size: 8px;
+            font-size: 7px;
             color: #666;
             margin: 0 0 1px 0;
         }
 
         .card-price {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
             color: #8076F8;
-            margin: 4px 0 0 0;
-        }
-
-        .footer {
-            font-size: 8px;
-            color: #999;
-            padding: 6px 24px;
-            border-top: 1px solid #E2E0FD;
+            margin: 3px 0 0 0;
         }
     </style>
 </head>
@@ -150,13 +146,13 @@
                     <td>
                         <div class="card">
                             <div class="card-image">
-                                <table style="width:100%; height:130px; background-color:#EBEBF5;">
+                                <table style="width:100%; height:100px; background-color:#EBEBF5;">
                                     <tr>
                                         <td style="text-align:center; vertical-align:middle;">
                                             @if($product->mainImage && $product->mainImage->image)
-                                                <img src="{{ public_path('storage/product/img/' . $product->mainImage->image) }}" alt="{{ $product->name }}" style="max-width:100%; max-height:130px;">
+                                                <img src="{{ public_path('storage/product/img/' . $product->mainImage->image) }}" alt="{{ $product->name }}" style="max-width:100%; max-height:100px;">
                                             @else
-                                                <span style="color:#BBBBD0; font-size:8px;">Sin imagen</span>
+                                                <span style="color:#BBBBD0; font-size:7px;">Sin imagen</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -165,13 +161,9 @@
                             <div class="card-body">
                                 <p class="card-name">{{ $product->name }}</p>
                                 <p class="card-meta">{{ $product->productLine->name ?? '—' }} &bull; {{ $product->productFurniture->name ?? '—' }}</p>
-                                @if($product->attr_dimension || $product->attr_height)
-                                    <p class="card-meta">
-                                        @if($product->attr_dimension)Dim: {{ $product->attr_dimension }}@endif
-                                        @if($product->attr_dimension && $product->attr_height) &nbsp;@endif
-                                        @if($product->attr_height)Alt: {{ $product->attr_height }}@endif
-                                    </p>
-                                @endif
+                                <p class="card-meta">
+                                    Dim: {{ $product->attr_dimension ?? '—' }} &nbsp; Alt: {{ $product->attr_height ?? '—' }}
+                                </p>
                                 <p class="card-meta">Stock: {{ $product->stock ?? '—' }}</p>
                                 <p class="card-price">
                                     @if($product->current_price !== null)
@@ -184,14 +176,13 @@
                         </div>
                     </td>
                 @endforeach
-                {{-- Rellenar celdas vacías si la última fila tiene menos de 4 --}}
                 @for($i = $row->count(); $i < 4; $i++)
                     <td class="empty"></td>
                 @endfor
             </tr>
         @endforeach
         <tr>
-            <td colspan="4" style="padding: 6px 0 0 0; border-top: 1px solid #E2E0FD;">
+            <td colspan="4" style="padding: 4px 0 0 0; border-top: 1px solid #E2E0FD;">
                 <p style="font-size:8px; color:#999; margin:0;">Precios vigentes al {{ $generatedAt }}. Sujetos a modificación sin previo aviso.</p>
             </td>
         </tr>
