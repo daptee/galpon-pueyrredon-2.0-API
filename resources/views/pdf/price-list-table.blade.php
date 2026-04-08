@@ -56,6 +56,10 @@
             margin: 0;
         }
 
+        .table-wrap {
+            padding: 0 24px;
+        }
+
         .table {
             width: 100%;
             border-collapse: collapse;
@@ -109,6 +113,7 @@
         </table>
     </div>
 
+    <div class="table-wrap">
     <table class="table">
         <thead>
             <tr>
@@ -141,6 +146,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
 
     <div class="footer">
         <p>Precios vigentes al {{ $generatedAt }}. Sujetos a modificación sin previo aviso.</p>
