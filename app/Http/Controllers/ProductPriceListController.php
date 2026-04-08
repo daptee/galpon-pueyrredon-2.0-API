@@ -7,6 +7,7 @@ use App\Models\ProductPrice;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class ProductPriceListController extends Controller
@@ -113,6 +114,15 @@ class ProductPriceListController extends Controller
             $product->current_price  = $currentPrice;
             $product->attr_dimension = $attrs['dimensiones'] ?? null;
             $product->attr_height    = $attrs['altura'] ?? null;
+
+            $imagePath = $product->mainImage?->image;
+            Log::info('PriceList imagen', [
+                'product_id'   => $product->id,
+                'product_name' => $product->name,
+                'image_value'  => $imagePath,
+                'full_path'    => $imagePath ? public_path('storage/product/img/' . $imagePath) : null,
+                'file_exists'  => $imagePath ? file_exists(public_path('storage/product/img/' . $imagePath)) : false,
+            ]);
 
             return $product;
         });
