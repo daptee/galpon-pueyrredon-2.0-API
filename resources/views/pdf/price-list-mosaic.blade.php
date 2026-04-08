@@ -154,7 +154,7 @@
                         <div class="card">
                             <div class="card-image">
                                 @if($product->mainImage && $product->mainImage->image)
-                                    <img src="{{ public_path('storage/' . $product->mainImage->image) }}" alt="{{ $product->name }}">
+                                    <img src="{{ public_path('storage/product/img/' . $product->mainImage->image) }}" alt="{{ $product->name }}">
                                 @else
                                     <table style="width:100%; height:130px;">
                                         <tr><td style="text-align:center; vertical-align:middle; color:#BBBBD0; font-size:8px;">Sin imagen</td></tr>
