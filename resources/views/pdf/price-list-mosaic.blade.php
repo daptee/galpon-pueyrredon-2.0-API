@@ -32,7 +32,7 @@
 
         .header {
             background-color: #F6F6FF;
-            padding: 18px 24px 12px 24px;
+            padding: 14px 20px 10px 20px;
         }
 
         .header-inner {
@@ -59,12 +59,12 @@
         .grid-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 10px;
-            padding: 6px 14px;
+            border-spacing: 8px;
+            padding: 4px 12px;
+            table-layout: fixed;
         }
 
         .grid-table td {
-            width: 25%;
             vertical-align: top;
             padding: 0;
         }
@@ -72,6 +72,28 @@
         .grid-table td.empty {
             border: none;
         }
+
+        /* Modo normal: 4 cols x 3 filas */
+        .mode-normal .grid-table td { width: 25%; }
+        .mode-normal .card           { height: 162px; }
+        .mode-normal .card-image     { height: 100px; }
+        .mode-normal .card-image img { max-height: 100px; }
+        .mode-normal .card-image table { height: 100px; }
+        .mode-normal .card-body      { height: 62px; }
+        .mode-normal .card-name      { font-size: 8px; }
+        .mode-normal .card-meta      { font-size: 7px; }
+        .mode-normal .card-price     { font-size: 9px; }
+
+        /* Modo compacto: 5 cols x 4 filas */
+        .mode-compact .grid-table td { width: 20%; }
+        .mode-compact .card           { height: 120px; }
+        .mode-compact .card-image     { height: 70px; }
+        .mode-compact .card-image img { max-height: 70px; }
+        .mode-compact .card-image table { height: 70px; }
+        .mode-compact .card-body      { height: 50px; padding: 3px 5px; }
+        .mode-compact .card-name      { font-size: 7px; margin: 0 0 1px 0; }
+        .mode-compact .card-meta      { font-size: 6px; margin: 0; }
+        .mode-compact .card-price     { font-size: 8px; margin: 2px 0 0 0; }
 
         .card {
             border: 1px solid #E2E0FD;
@@ -82,50 +104,40 @@
 
         .card-image {
             width: 100%;
-            height: 130px;
             background-color: #EBEBF5;
         }
 
-        .card-image img {
-            max-width: 100%;
-            max-height: 130px;
-        }
-
         .card-body {
-            padding: 6px 8px;
             background-color: #fff;
+            overflow: hidden;
         }
 
         .card-name {
             font-weight: bold;
-            font-size: 9px;
-            margin: 0 0 3px 0;
             color: #333;
+            margin: 0 0 2px 0;
         }
 
         .card-meta {
-            font-size: 8px;
             color: #666;
             margin: 0 0 1px 0;
         }
 
         .card-price {
-            font-size: 10px;
             font-weight: bold;
             color: #8076F8;
-            margin: 4px 0 0 0;
-        }
-
-        .footer {
-            font-size: 8px;
-            color: #999;
-            padding: 6px 24px;
-            border-top: 1px solid #E2E0FD;
         }
     </style>
 </head>
 
-<body>
+@php
+    $total   = $products->count();
+    $compact = $total > 24;
+    $perRow  = $compact ? 5 : 4;
+    $chunks  = $products->chunk($perRow);
+@endphp
+
+<body class="{{ $compact ? 'mode-compact' : 'mode-normal' }}">
     <div class="header">
         <table class="header-inner">
             <tr>
@@ -141,8 +153,6 @@
         </table>
     </div>
 
-    @php $chunks = $products->chunk(4); @endphp
-
     <table class="grid-table">
         @foreach($chunks as $row)
             <tr>
@@ -150,13 +160,13 @@
                     <td>
                         <div class="card">
                             <div class="card-image">
-                                <table style="width:100%; height:130px; background-color:#EBEBF5;">
+                                <table style="width:100%; background-color:#EBEBF5;">
                                     <tr>
                                         <td style="text-align:center; vertical-align:middle;">
                                             @if($product->mainImage && $product->mainImage->image)
-                                                <img src="{{ public_path('storage/product/img/' . $product->mainImage->image) }}" alt="{{ $product->name }}" style="max-width:100%; max-height:130px;">
+                                                <img src="{{ public_path('storage/product/img/' . $product->mainImage->image) }}" alt="{{ $product->name }}" style="max-width:100%;">
                                             @else
-                                                <span style="color:#BBBBD0; font-size:8px;">Sin imagen</span>
+                                                <span style="color:#BBBBD0; font-size:7px;">Sin imagen</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -165,33 +175,26 @@
                             <div class="card-body">
                                 <p class="card-name">{{ $product->name }}</p>
                                 <p class="card-meta">{{ $product->productLine->name ?? '—' }} &bull; {{ $product->productFurniture->name ?? '—' }}</p>
-                                @if($product->attr_dimension || $product->attr_height)
-                                    <p class="card-meta">
-                                        @if($product->attr_dimension)Dim: {{ $product->attr_dimension }}@endif
-                                        @if($product->attr_dimension && $product->attr_height) &nbsp;@endif
-                                        @if($product->attr_height)Alt: {{ $product->attr_height }}@endif
-                                    </p>
-                                @endif
+                                <p class="card-meta">Dim: {{ $product->attr_dimension ?? '—' }} &nbsp; Alt: {{ $product->attr_height ?? '—' }}</p>
                                 <p class="card-meta">Stock: {{ $product->stock ?? '—' }}</p>
                                 <p class="card-price">
                                     @if($product->current_price !== null)
                                         ${{ number_format($product->current_price, 2, ',', '.') }}
                                     @else
-                                        Sin precio
+                                        —
                                     @endif
                                 </p>
                             </div>
                         </div>
                     </td>
                 @endforeach
-                {{-- Rellenar celdas vacías si la última fila tiene menos de 4 --}}
-                @for($i = $row->count(); $i < 4; $i++)
+                @for($i = $row->count(); $i < $perRow; $i++)
                     <td class="empty"></td>
                 @endfor
             </tr>
         @endforeach
         <tr>
-            <td colspan="4" style="padding: 6px 0 0 0; border-top: 1px solid #E2E0FD;">
+            <td colspan="{{ $perRow }}" style="padding: 4px 0 0 0; border-top: 1px solid #E2E0FD;">
                 <p style="font-size:8px; color:#999; margin:0;">Precios vigentes al {{ $generatedAt }}. Sujetos a modificación sin previo aviso.</p>
             </td>
         </tr>
