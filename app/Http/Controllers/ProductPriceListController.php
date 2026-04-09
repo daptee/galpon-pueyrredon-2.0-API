@@ -22,6 +22,7 @@ class ProductPriceListController extends Controller
             'product_furnitures'  => 'nullable|array',
             'product_furnitures.*'=> 'integer|exists:product_furnitures,id',
             'sort_by'             => 'nullable|in:line,furniture',
+            'date'                => 'nullable|date_format:Y-m-d',
         ]);
 
         if ($validator->fails()) {
@@ -31,6 +32,7 @@ class ProductPriceListController extends Controller
         $format     = $request->input('format', 'table');
         $productType= $request->input('product_type', 'all');
         $sortBy     = $request->input('sort_by', 'line');
+        $targetDate = $request->filled('date') ? Carbon::parse($request->input('date')) : Carbon::today();
 
         $query = Product::with([
             'productLine',
@@ -70,32 +72,30 @@ class ProductPriceListController extends Controller
 
         $products = $query->get();
 
-        $today = Carbon::today();
-
-        $products = $products->map(function ($product) use ($today) {
+        $products = $products->map(function ($product) use ($targetDate) {
             $prices = $product->prices;
 
             $currentPrice = null;
 
             if ($prices->isNotEmpty()) {
-                $priceInRange = $prices->first(function ($p) use ($today) {
+                $priceInRange = $prices->first(function ($p) use ($targetDate) {
                     $from = Carbon::parse($p->valid_date_from)->startOfDay();
                     $to   = Carbon::parse($p->valid_date_to)->endOfDay();
-                    return $today->between($from, $to);
+                    return $targetDate->between($from, $to);
                 });
 
                 if ($priceInRange) {
                     $currentPrice = (float) $priceInRange->price;
                 } else {
-                    $previous = $prices->filter(function ($p) use ($today) {
-                        return Carbon::parse($p->valid_date_to)->endOfDay()->lt($today);
+                    $previous = $prices->filter(function ($p) use ($targetDate) {
+                        return Carbon::parse($p->valid_date_to)->endOfDay()->lt($targetDate);
                     })->sortByDesc(fn($p) => Carbon::parse($p->valid_date_to)->timestamp)->first();
 
                     if ($previous) {
                         $currentPrice = (float) $previous->price;
                     } else {
-                        $future = $prices->filter(function ($p) use ($today) {
-                            return Carbon::parse($p->valid_date_from)->startOfDay()->gt($today);
+                        $future = $prices->filter(function ($p) use ($targetDate) {
+                            return Carbon::parse($p->valid_date_from)->startOfDay()->gt($targetDate);
                         })->sortBy(fn($p) => Carbon::parse($p->valid_date_from)->timestamp)->first();
 
                         if ($future) {
@@ -131,7 +131,7 @@ class ProductPriceListController extends Controller
 
         $pdf = Pdf::loadView($view, [
             'products'   => $products,
-            'generatedAt'=> Carbon::now()->format('d-M-Y'),
+            'generatedAt'=> $targetDate->format('d-M-Y'),
             'sortBy'     => $sortBy,
         ])->setPaper('a4', 'landscape');
 
