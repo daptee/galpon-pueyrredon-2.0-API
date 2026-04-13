@@ -15,6 +15,7 @@ use App\Models\ProductProducts;
 use App\Models\ProductUseStock;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Log;
 
@@ -542,6 +543,21 @@ class BudgetController extends Controller
                     MailService::sendAndSave($to, new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
                 } else {
                     MailService::sendAndSave($to, new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
+                }
+
+                // Notificación interna a Galpón Pueyrredon (solo cuando se emite el presupuesto)
+                if ($data['id_budget_status'] == 2) {
+                    $notificationTo = env('MAIL_NOTIFICATION_TO', env('MAIL_FROM_ADDRESS'));
+                    if ($notificationTo) {
+                        try {
+                            Mail::to($notificationTo)->send(new \App\Mail\BudgetNotification($budget, $pdfPath));
+                        } catch (\Exception $e) {
+                            Log::warning('No se pudo enviar la notificación interna del presupuesto', [
+                                'error' => $e->getMessage(),
+                                'budget_id' => $budget->id,
+                            ]);
+                        }
+                    }
                 }
             }
 
