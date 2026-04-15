@@ -545,8 +545,8 @@ class BudgetController extends Controller
                     MailService::sendAndSave($to, new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
 
-                // Notificación interna a Galpón Pueyrredon (solo cuando se emite el presupuesto)
-                if ($data['id_budget_status'] == 2) {
+                // Notificación interna a Galpón Pueyrredon (solo cuando un cliente emite el presupuesto)
+                if ($data['id_budget_status'] == 2 && auth()->user()->id_user_type == 3) {
                     $notificationTo = env('MAIL_NOTIFICATION_TO', env('MAIL_FROM_ADDRESS'));
                     if ($notificationTo) {
                         try {
