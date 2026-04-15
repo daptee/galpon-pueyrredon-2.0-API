@@ -546,7 +546,7 @@ class BudgetController extends Controller
                 }
 
                 // Notificación interna a Galpón Pueyrredon (solo cuando un cliente emite el presupuesto)
-                /* if ($data['id_budget_status'] == 2 && auth()->user()->id_user_type == 3) {
+                if ($data['id_budget_status'] == 2 && auth()->user()->id_user_type == 3) {
                     $notificationTo = env('MAIL_NOTIFICATION_TO', env('MAIL_FROM_ADDRESS'));
                     if ($notificationTo) {
                         try {
@@ -558,7 +558,7 @@ class BudgetController extends Controller
                             ]);
                         }
                     }
-                } */
+                }
             }
 
             // agregar auditoría
