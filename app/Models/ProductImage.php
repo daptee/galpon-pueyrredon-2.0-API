@@ -21,6 +21,14 @@ class ProductImage extends Model
         'is_main' => 'boolean',
     ];
 
+    public function getImageAttribute($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        return ltrim(str_replace('/storage/product/img/', '', $value), '/');
+    }
+
     // Relación con el producto al que pertenece la imagen
     public function product()
     {
