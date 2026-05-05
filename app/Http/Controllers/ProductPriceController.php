@@ -41,6 +41,7 @@ class ProductPriceController extends Controller
                 'productLine',
                 'productType',
                 'productFurniture',
+                'productStock',
                 'prices' => function ($query) use ($date) {
                     $query->whereDate('valid_date_from', '<=', $date)
                         ->whereDate('valid_date_to', '>=', $date);
@@ -77,7 +78,7 @@ class ProductPriceController extends Controller
                     'id_product' => $product->id,
                     'name' => $product->name,
                     'code' => $product->code,
-                    'stock' => $product->stock,
+                    'stock' => $product->productStock ? $product->productStock->stock : $product->stock,
                     'volume' => $product->volume,
                     'line' => $product->productLine->name ?? null,
                     'type' => $product->productType->name ?? null,

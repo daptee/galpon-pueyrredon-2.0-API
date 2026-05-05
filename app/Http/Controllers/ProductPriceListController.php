@@ -37,6 +37,7 @@ class ProductPriceListController extends Controller
         $query = Product::with([
             'productLine',
             'productFurniture',
+            'productStock',
             'mainImage',
             'attributeValues.attribute',
             'prices',
@@ -114,6 +115,7 @@ class ProductPriceListController extends Controller
             $product->current_price  = $currentPrice;
             $product->attr_dimension = $attrs['dimensiones'] ?? null;
             $product->attr_height    = $attrs['altura'] ?? null;
+            $product->stock = $product->productStock ? $product->productStock->stock : $product->stock;
 
             $imagePath = $product->mainImage?->image;
             Log::info('PriceList imagen', [
