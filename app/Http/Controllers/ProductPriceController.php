@@ -34,6 +34,8 @@ class ProductPriceController extends Controller
                 return response()->json(['error' => 'Debe proporcionar una fecha'], 400);
             }
 
+            $isClient = auth()->user()->id_user_type == 3;
+
             // Armamos el query
             $query = Product::with([
                 'productLine',
@@ -48,6 +50,11 @@ class ProductPriceController extends Controller
                 ->join('product_types', 'products.id_product_type', '=', 'product_types.id')
                 ->join('product_furnitures', 'products.id_product_furniture', '=', 'product_furnitures.id')
                 ->select('products.*');
+
+            if ($isClient) {
+                $query->where('products.id_product_status', 1)
+                      ->where('products.show_catalog', true);
+            }
 
             // 🔹 Filtrar por nombre o código si viene ?search=
             if ($request->has('search')) {
