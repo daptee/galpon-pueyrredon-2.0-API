@@ -128,7 +128,7 @@
         .card-price {
             font-weight: bold;
             color: #8076F8;
-            margin: 1px 0 0 0;
+            margin: 0 0 0 2px;
             line-height: 1.1;
         }
     </style>
