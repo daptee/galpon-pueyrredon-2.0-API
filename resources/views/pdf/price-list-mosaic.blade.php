@@ -110,6 +110,7 @@
         .card-body {
             background-color: #fff;
             overflow: hidden;
+            padding: 3px 5px;
         }
 
         .card-name {
@@ -121,12 +122,14 @@
         .card-meta {
             color: #666;
             margin: 0;
+            line-height: 1.1;
         }
 
         .card-price {
             font-weight: bold;
             color: #8076F8;
-            margin: 2px 0 0 0;
+            margin: 1px 0 0 0;
+            line-height: 1.1;
         }
     </style>
 </head>
