@@ -123,7 +123,9 @@
                 <th>Stock</th>
                 <th>Dimensiones</th>
                 <th>Altura</th>
+                @if($showPrices)
                 <th class="right">Precio</th>
+                @endif
             </tr>
         </thead>
         <tbody>
@@ -135,6 +137,7 @@
                     <td>{{ $product->stock ?? '—' }}</td>
                     <td>{{ $product->attr_dimension ?? '—' }}</td>
                     <td>{{ $product->attr_height ?? '—' }}</td>
+                    @if($showPrices)
                     <td class="right">
                         @if($product->current_price !== null)
                             ${{ number_format($product->current_price, 2, ',', '.') }}
@@ -142,6 +145,7 @@
                             Sin precio
                         @endif
                     </td>
+                    @endif
                 </tr>
             @endforeach
         </tbody>

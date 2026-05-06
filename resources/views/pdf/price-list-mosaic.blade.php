@@ -177,13 +177,15 @@
                                 <p class="card-meta">{{ $product->productLine->name ?? '—' }} &bull; {{ $product->productFurniture->name ?? '—' }}</p>
                                 <p class="card-meta">Dim: {{ $product->attr_dimension ?? '—' }} &nbsp; Alt: {{ $product->attr_height ?? '—' }}</p>
                                 <p class="card-meta">Stock: {{ $product->stock ?? '—' }}</p>
-                                <p class="card-price">
+                                @if($showPrices)
+                                <p class="card-price" style="text-align: right;">
                                     @if($product->current_price !== null)
                                         ${{ number_format($product->current_price, 2, ',', '.') }}
                                     @else
                                         Sin precio
                                     @endif
                                 </p>
+                                @endif
                             </div>
                         </div>
                     </td>

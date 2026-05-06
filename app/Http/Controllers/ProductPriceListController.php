@@ -23,16 +23,18 @@ class ProductPriceListController extends Controller
             'product_furnitures.*'=> 'integer|exists:product_furnitures,id',
             'sort_by'             => 'nullable|in:line,furniture',
             'date'                => 'nullable|date_format:Y-m-d',
+            'show_prices'         => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $format     = $request->input('format', 'table');
-        $productType= $request->input('product_type', 'all');
-        $sortBy     = $request->input('sort_by', 'line');
-        $targetDate = $request->filled('date') ? Carbon::parse($request->input('date')) : Carbon::today();
+        $format      = $request->input('format', 'table');
+        $productType = $request->input('product_type', 'all');
+        $sortBy      = $request->input('sort_by', 'line');
+        $showPrices  = filter_var($request->input('show_prices', true), FILTER_VALIDATE_BOOLEAN);
+        $targetDate  = $request->filled('date') ? Carbon::parse($request->input('date')) : Carbon::today();
 
         $query = Product::with([
             'productLine',
@@ -132,9 +134,10 @@ class ProductPriceListController extends Controller
         $view = $format === 'mosaic' ? 'pdf.price-list-mosaic' : 'pdf.price-list-table';
 
         $pdf = Pdf::loadView($view, [
-            'products'   => $products,
-            'generatedAt'=> $targetDate->format('d-M-Y'),
-            'sortBy'     => $sortBy,
+            'products'    => $products,
+            'generatedAt' => $targetDate->format('d-M-Y'),
+            'sortBy'      => $sortBy,
+            'showPrices'  => $showPrices,
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('lista-precios.pdf');
