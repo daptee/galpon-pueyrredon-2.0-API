@@ -86,11 +86,11 @@
 
         /* Modo compacto: 5 cols x 4 filas */
         .mode-compact .grid-table td { width: 20%; }
-        .mode-compact .card           { height: 120px; }
+        .mode-compact .card           { height: 122px; }
         .mode-compact .card-image     { height: 70px; }
         .mode-compact .card-image img { max-height: 70px; }
         .mode-compact .card-image table { height: 70px; }
-        .mode-compact .card-body      { height: 50px; padding: 3px 5px; }
+        .mode-compact .card-body      { height: 52px; padding: 3px 5px; }
         .mode-compact .card-name      { font-size: 7px; margin: 0 0 1px 0; }
         .mode-compact .card-meta      { font-size: 6px; margin: 0; }
         .mode-compact .card-price     { font-size: 8px; margin: 2px 0 0 0; }
