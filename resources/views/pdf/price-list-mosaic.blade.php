@@ -115,17 +115,18 @@
         .card-name {
             font-weight: bold;
             color: #333;
-            margin: 0 0 2px 0;
+            margin: 0 0 1px 0;
         }
 
         .card-meta {
             color: #666;
-            margin: 0 0 1px 0;
+            margin: 0;
         }
 
         .card-price {
             font-weight: bold;
             color: #8076F8;
+            margin: 2px 0 0 0;
         }
     </style>
 </head>
