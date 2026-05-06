@@ -75,11 +75,11 @@
 
         /* Modo normal: 4 cols x 3 filas */
         .mode-normal .grid-table td { width: 25%; }
-        .mode-normal .card           { height: 162px; }
+        .mode-normal .card           { height: 164px; }
         .mode-normal .card-image     { height: 100px; }
         .mode-normal .card-image img { max-height: 100px; }
         .mode-normal .card-image table { height: 100px; }
-        .mode-normal .card-body      { height: 62px; }
+        .mode-normal .card-body      { height: 64px; }
         .mode-normal .card-name      { font-size: 8px; }
         .mode-normal .card-meta      { font-size: 7px; }
         .mode-normal .card-price     { font-size: 9px; margin-top: -4px !important; }
