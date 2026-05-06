@@ -82,7 +82,7 @@
         .mode-normal .card-body      { height: 62px; }
         .mode-normal .card-name      { font-size: 8px; }
         .mode-normal .card-meta      { font-size: 7px; }
-        .mode-normal .card-price     { font-size: 9px; }
+        .mode-normal .card-price     { font-size: 9px; margin-top: -4px !important; }
 
         /* Modo compacto: 5 cols x 4 filas */
         .mode-compact .grid-table td { width: 20%; }
