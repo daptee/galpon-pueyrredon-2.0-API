@@ -116,19 +116,19 @@
         .card-name {
             font-weight: bold;
             color: #333;
-            margin: 0 0 1px 0;
+            margin: 0 0 1px 0 !important;
         }
 
         .card-meta {
             color: #666;
-            margin: 0;
+            margin: 0 !important;
             line-height: 1.1;
         }
 
         .card-price {
             font-weight: bold;
             color: #8076F8;
-            margin: 0 0 0 2px;
+            margin: 0 !important;
             line-height: 1.1;
         }
     </style>
