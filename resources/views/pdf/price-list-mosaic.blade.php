@@ -75,22 +75,22 @@
 
         /* Modo normal: 4 cols x 3 filas */
         .mode-normal .grid-table td { width: 25%; }
-        .mode-normal .card           { height: 162px; }
+        .mode-normal .card           { height: 164px; }
         .mode-normal .card-image     { height: 100px; }
         .mode-normal .card-image img { max-height: 100px; }
         .mode-normal .card-image table { height: 100px; }
-        .mode-normal .card-body      { height: 62px; }
+        .mode-normal .card-body      { height: 64px; }
         .mode-normal .card-name      { font-size: 8px; }
         .mode-normal .card-meta      { font-size: 7px; }
-        .mode-normal .card-price     { font-size: 9px; }
+        .mode-normal .card-price     { font-size: 9px; margin-top: -4px !important; }
 
         /* Modo compacto: 5 cols x 4 filas */
         .mode-compact .grid-table td { width: 20%; }
-        .mode-compact .card           { height: 120px; }
+        .mode-compact .card           { height: 122px; }
         .mode-compact .card-image     { height: 70px; }
         .mode-compact .card-image img { max-height: 70px; }
         .mode-compact .card-image table { height: 70px; }
-        .mode-compact .card-body      { height: 50px; padding: 3px 5px; }
+        .mode-compact .card-body      { height: 52px; padding: 3px 5px; }
         .mode-compact .card-name      { font-size: 7px; margin: 0 0 1px 0; }
         .mode-compact .card-meta      { font-size: 6px; margin: 0; }
         .mode-compact .card-price     { font-size: 8px; margin: 2px 0 0 0; }
@@ -110,22 +110,26 @@
         .card-body {
             background-color: #fff;
             overflow: hidden;
+            padding: 2px 5px 0 5px;
         }
 
         .card-name {
             font-weight: bold;
             color: #333;
-            margin: 0 0 2px 0;
+            margin: 0 0 1px 0 !important;
         }
 
         .card-meta {
             color: #666;
-            margin: 0 0 1px 0;
+            margin: 0 !important;
+            line-height: 1.1;
         }
 
         .card-price {
             font-weight: bold;
             color: #8076F8;
+            margin: 0 !important;
+            line-height: 1.1;
         }
     </style>
 </head>
@@ -177,13 +181,15 @@
                                 <p class="card-meta">{{ $product->productLine->name ?? '—' }} &bull; {{ $product->productFurniture->name ?? '—' }}</p>
                                 <p class="card-meta">Dim: {{ $product->attr_dimension ?? '—' }} &nbsp; Alt: {{ $product->attr_height ?? '—' }}</p>
                                 <p class="card-meta">Stock: {{ $product->stock ?? '—' }}</p>
-                                <p class="card-price">
+                                @if($showPrices)
+                                <p class="card-price" style="text-align: right;">
                                     @if($product->current_price !== null)
                                         ${{ number_format($product->current_price, 2, ',', '.') }}
                                     @else
                                         Sin precio
                                     @endif
                                 </p>
+                                @endif
                             </div>
                         </div>
                     </td>
