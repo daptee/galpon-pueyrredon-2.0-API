@@ -33,6 +33,8 @@ class Budget extends Model
         'products_has_prices',
         'observations',
         'volume',
+        'id_client_place_transport_price',
+        'id_client_place_transport_price_item',
     ];
 
     public $timestamps = true;
@@ -90,6 +92,16 @@ class Budget extends Model
     public function budgets()
     {
         return $this->children()->with(['client', 'place', 'budgetStatus', 'budgets']);
+    }
+
+    public function clientPlaceTransportPrice()
+    {
+        return $this->belongsTo(ClientPlaceTransportPrice::class, 'id_client_place_transport_price');
+    }
+
+    public function clientPlaceTransportPriceItem()
+    {
+        return $this->belongsTo(ClientPlaceTransportPriceItem::class, 'id_client_place_transport_price_item');
     }
 
 }
