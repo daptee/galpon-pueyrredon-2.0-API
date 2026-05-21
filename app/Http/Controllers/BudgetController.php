@@ -9,6 +9,7 @@ use App\Models\Budget;
 use App\Models\BudgetAudith;
 use App\Models\BudgetDeliveryData;
 use App\Models\BudgetProducts;
+use App\Models\ClientPlaceTransportPrice;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductProducts;
@@ -131,7 +132,9 @@ class BudgetController extends Controller
                 'transportation',
                 'client',
                 'budgetProducts.product.prices',
-                'budgetDeliveryData'
+                'budgetDeliveryData',
+                'clientPlaceTransportPrice',
+                'clientPlaceTransportPriceItem',
             ])->find($id);
 
             if (!$budget) {
@@ -426,6 +429,16 @@ class BudgetController extends Controller
                 'client',
                 'budgetProducts.product'
             ]);
+
+            // Aplicar precio fijo de traslado si corresponde para este cliente+lugar+volumen
+            $fixedPrice = $this->applyFixedTransportPrice($budget);
+            if ($fixedPrice !== null) {
+                $budget->transportation_cost = $fixedPrice['price'];
+                $budget->transportation_cost_edited = $fixedPrice['price'];
+                $budget->id_client_place_transport_price = $fixedPrice['header_id'];
+                $budget->id_client_place_transport_price_item = $fixedPrice['item_id'];
+                $budget->save();
+            }
 
             if ($request->id_budget_status == 3) {
 
@@ -994,13 +1007,32 @@ class BudgetController extends Controller
                 ]);
             }
 
+            // Re-evaluar precio fijo de traslado con los nuevos datos
+            $fixedPrice = $this->applyFixedTransportPrice($budget);
+            if ($fixedPrice !== null) {
+                $budget->transportation_cost = $fixedPrice['price'];
+                $budget->transportation_cost_edited = $fixedPrice['price'];
+                $budget->id_client_place_transport_price = $fixedPrice['header_id'];
+                $budget->id_client_place_transport_price_item = $fixedPrice['item_id'];
+                $budget->save();
+            } else {
+                // Si ya no aplica precio fijo, limpiar referencias (mantener el costo enviado por el frontend)
+                if ($budget->id_client_place_transport_price !== null) {
+                    $budget->id_client_place_transport_price = null;
+                    $budget->id_client_place_transport_price_item = null;
+                    $budget->save();
+                }
+            }
+
             // Recargar relaciones
             $budget->load([
                 'budgetStatus',
                 'place',
                 'transportation',
                 'client',
-                'budgetProducts.product'
+                'budgetProducts.product',
+                'clientPlaceTransportPrice',
+                'clientPlaceTransportPriceItem',
             ]);
 
             // Generar PDF y enviar email en estados 2 o 3
@@ -2444,5 +2476,54 @@ class BudgetController extends Controller
         }
 
         return $totalVolume;
+    }
+
+    /**
+     * Verifica si existe un precio fijo de traslado para la combinación cliente+lugar del presupuesto
+     * y si el volumen del presupuesto califica para algún rango.
+     *
+     * La lógica de rangos usa max_volume: se aplica el precio del rango de menor max_volume
+     * que sea MAYOR al volumen del presupuesto (el primer tope que "contiene" el volumen).
+     * Ejemplo: rangos max=20($500), max=30($800), max=50($1200)
+     *   - volumen=12 → aplica max=20 ($500)
+     *   - volumen=25 → aplica max=30 ($800)
+     *   - volumen=55 → no aplica ninguno → cálculo normal
+     *
+     * Retorna un array con header_id, item_id y price si aplica, o null si no.
+     */
+    private function applyFixedTransportPrice(Budget $budget): ?array
+    {
+        // Solo aplica si el presupuesto tiene un cliente registrado (no nombre libre)
+        if (!$budget->id_client) {
+            return null;
+        }
+
+        $header = ClientPlaceTransportPrice::with('items')
+            ->where('id_client', $budget->id_client)
+            ->where('id_place', $budget->id_place)
+            ->where('status', 1)
+            ->first();
+
+        if (!$header || $header->items->isEmpty()) {
+            return null;
+        }
+
+        $volume = (float) ($budget->volume ?? 0);
+
+        // Buscar el ítem de menor max_volume que sea MAYOR al volumen del presupuesto
+        $applicableItem = $header->items
+            ->where('max_volume', '>', $volume)
+            ->sortBy('max_volume')
+            ->first();
+
+        if (!$applicableItem) {
+            return null;
+        }
+
+        return [
+            'header_id' => $header->id,
+            'item_id'   => $applicableItem->id,
+            'price'     => $applicableItem->price,
+        ];
     }
 }

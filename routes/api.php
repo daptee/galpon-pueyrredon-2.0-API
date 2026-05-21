@@ -3,6 +3,7 @@
 use App\Http\Controllers\AudithController;
 use App\Http\Controllers\BudgetAudithController;
 use App\Http\Controllers\BudgetController;
+use App\Http\Controllers\ClientPlaceTransportPriceController;
 use App\Http\Controllers\BudgetDeliveryDataController;
 use App\Http\Controllers\BudgetStatusController;
 use App\Http\Controllers\BulkPriceUpdateController;
@@ -145,6 +146,20 @@ Route::group([
     Route::get('/', [TollController::class, 'index'])->middleware('admin');
     Route::post('/', [TollController::class, 'store'])->middleware('admin');
     Route::put('/{id}', [TollController::class, 'update'])->middleware('admin');
+});
+
+// Client Place Transport Prices (precios fijos de traslado por cliente+lugar)
+
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'client-place-transport-prices'
+], function () {
+    Route::get('/', [ClientPlaceTransportPriceController::class, 'index'])->middleware('admin');
+    Route::get('/check', [ClientPlaceTransportPriceController::class, 'check'])->middleware('admin');
+    Route::get('/{id}', [ClientPlaceTransportPriceController::class, 'show'])->middleware('admin');
+    Route::post('/', [ClientPlaceTransportPriceController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [ClientPlaceTransportPriceController::class, 'update'])->middleware('admin');
+    Route::delete('/{id}', [ClientPlaceTransportPriceController::class, 'destroy'])->middleware('admin');
 });
 
 // Transportation
