@@ -9,24 +9,25 @@ class TutorialItem extends Model
     protected $table = 'tutorial_items';
 
     protected $fillable = [
+        'id_tutorial_module',
         'id_tutorial_subtopic',
         'title',
         'content',
-        'content_type',
-        'cover_image',
         'is_published',
         'order',
     ];
 
     protected $casts = [
+        'id_tutorial_module'   => 'integer',
         'id_tutorial_subtopic' => 'integer',
-        'content_type'         => 'integer',
         'is_published'         => 'boolean',
         'order'                => 'integer',
     ];
 
-    // content_type labels for reference:
-    // 1=tutorial, 2=documento, 3=guia, 4=faq, 5=video
+    public function module()
+    {
+        return $this->belongsTo(TutorialModule::class, 'id_tutorial_module');
+    }
 
     public function subtopic()
     {

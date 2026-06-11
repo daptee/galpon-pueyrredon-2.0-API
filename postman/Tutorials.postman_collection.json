@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "tutorials-col-galpon-2026",
 		"name": "Tutorials",
-		"description": "Sistema de tutoriales y ayuda para clientes. Todos los endpoints requieren JWT (Bearer token). Los endpoints de escritura (POST, PUT, DELETE) son exclusivos para usuarios administradores (is_internal=true). Los endpoints GET devuelven datos filtrados segun el tipo de usuario: admin ve todo (borradores + inactivos), cliente solo ve modulos activos / subtemas activos / items publicados. Estructura: tutorial_modules → tutorial_subtopics → tutorial_items → tutorial_attachments. content_type: 1=tutorial, 2=documento, 3=guia, 4=faq, 5=video. status: 1=activo, 2=inactivo.",
+		"description": "Sistema de tutoriales y ayuda para clientes. Todos los endpoints requieren JWT (Bearer token). Los endpoints de escritura (POST, PUT, DELETE) son exclusivos para usuarios administradores (is_internal=true). Los endpoints GET devuelven datos filtrados segun el tipo de usuario: admin ve todo (borradores + inactivos), cliente solo ve modulos activos / subtemas activos / items publicados.\n\nEstructura: tutorial_modules → tutorial_subtopics → tutorial_items → tutorial_attachments.\n\nUn tutorial_item puede pertenecer directamente a un módulo (id_tutorial_module) O a un subtema (id_tutorial_subtopic). Exactamente uno de los dos debe estar seteado.\n\nstatus módulos/subtemas: 1=activo, 2=inactivo. is_published items: false=borrador, true=publicado.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -17,8 +17,8 @@
 	},
 	"variable": [
 		{
-			"key": "baseURL",
-			"value": "http://localhost:8000/api/",
+			"key": "BASE_URL",
+			"value": "http://localhost:8000/api",
 			"type": "string"
 		},
 		{
@@ -33,70 +33,51 @@
 			"description": "CRUD de módulos (temas principales). Escritura solo admin. Lectura para cualquier usuario autenticado.",
 			"item": [
 				{
-					"name": "GET tutorial-modules",
+					"name": "GET /tutorial-modules",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
 						"url": {
-							"raw": "{{baseURL}}tutorial-modules",
-							"host": ["{{baseURL}}tutorial-modules"],
+							"raw": "{{BASE_URL}}/tutorial-modules",
+							"host": ["{{BASE_URL}}"],
+							"path": ["tutorial-modules"],
 							"query": [
-								{
-									"key": "search",
-									"value": "presupuesto",
-									"description": "Busca por nombre del módulo",
-									"disabled": true
-								},
-								{
-									"key": "status",
-									"value": "1",
-									"description": "Filtrar por estado: 1=activo, 2=inactivo (solo admin ve inactivos)",
-									"disabled": true
-								}
+								{"key": "search", "value": "presupuesto", "description": "Busca por nombre del módulo", "disabled": true},
+								{"key": "status", "value": "1", "description": "1=activo, 2=inactivo. Admin ve todos; cliente solo ve activos.", "disabled": true}
 							]
 						},
-						"description": "Retorna todos los módulos con conteo de subtemas. Admin ve todos; cliente solo ve status=1."
+						"description": "Retorna todos los módulos con conteo de subtemas. Admin ve todos incluidos los inactivos; cliente solo ve status=1."
 					},
 					"response": [
 						{
-							"name": "200 OK - Admin (todos los módulos)",
+							"name": "200 OK - Admin (incluye inactivos)",
 							"originalRequest": {
 								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-modules", "host": ["{{baseURL}}tutorial-modules"]}
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": {"raw": "{{BASE_URL}}/tutorial-modules", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules"]}
 							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Módulos traídos correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Presupuestos\",\n      \"description\": \"Todo sobre la gestión de presupuestos en el sistema\",\n      \"order\": 0,\n      \"status\": 1,\n      \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"subtopics_count\": 3\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Productos\",\n      \"description\": \"Catálogo y gestión de productos\",\n      \"order\": 1,\n      \"status\": 1,\n      \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"subtopics_count\": 2\n    },\n    {\n      \"id\": 3,\n      \"name\": \"Transporte\",\n      \"description\": \"Cálculo y configuración de traslados\",\n      \"order\": 2,\n      \"status\": 2,\n      \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"subtopics_count\": 1\n    }\n  ]\n}"
+							"body": "{\n  \"message\": \"Módulos traídos correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Presupuestos\",\n      \"description\": \"Cómo crear, gestionar y hacer seguimiento de presupuestos\",\n      \"order\": 0,\n      \"status\": 1,\n      \"created_at\": \"2026-06-11T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-11T10:00:00.000000Z\",\n      \"subtopics_count\": 5\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Catálogo de Productos\",\n      \"description\": \"Exploración del catálogo, precios y disponibilidad de productos\",\n      \"order\": 1,\n      \"status\": 1,\n      \"created_at\": \"2026-06-11T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-11T10:00:00.000000Z\",\n      \"subtopics_count\": 3\n    },\n    {\n      \"id\": 3,\n      \"name\": \"Traslados\",\n      \"description\": \"Cálculo de costos de traslado y configuración de entregas\",\n      \"order\": 2,\n      \"status\": 2,\n      \"created_at\": \"2026-06-11T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-11T10:00:00.000000Z\",\n      \"subtopics_count\": 2\n    }\n  ]\n}"
 						},
 						{
-							"name": "200 OK - Cliente (solo módulos activos)",
+							"name": "200 OK - Cliente (solo activos)",
 							"originalRequest": {
 								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-modules", "host": ["{{baseURL}}tutorial-modules"]}
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": {"raw": "{{BASE_URL}}/tutorial-modules", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules"]}
 							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Módulos traídos correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Presupuestos\",\n      \"description\": \"Todo sobre la gestión de presupuestos en el sistema\",\n      \"order\": 0,\n      \"status\": 1,\n      \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"subtopics_count\": 3\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Productos\",\n      \"description\": \"Catálogo y gestión de productos\",\n      \"order\": 1,\n      \"status\": 1,\n      \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"subtopics_count\": 2\n    }\n  ]\n}"
+							"body": "{\n  \"message\": \"Módulos traídos correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Presupuestos\",\n      \"description\": \"Cómo crear, gestionar y hacer seguimiento de presupuestos\",\n      \"order\": 0,\n      \"status\": 1,\n      \"subtopics_count\": 5\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Catálogo de Productos\",\n      \"description\": \"Exploración del catálogo, precios y disponibilidad de productos\",\n      \"order\": 1,\n      \"status\": 1,\n      \"subtopics_count\": 3\n    }\n  ]\n}"
 						},
 						{
-							"name": "401 Unauthorized - Token inválido o ausente",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-modules", "host": ["{{baseURL}}tutorial-modules"]}
-							},
+							"name": "401 Unauthorized",
+							"originalRequest": {"method": "GET", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-modules", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules"]}},
 							"status": "Unauthorized",
 							"code": 401,
 							"_postman_previewlanguage": "json",
@@ -105,57 +86,36 @@
 						},
 						{
 							"name": "500 Error interno",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-modules", "host": ["{{baseURL}}tutorial-modules"]}
-							},
+							"originalRequest": {"method": "GET", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-modules", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules"]}},
 							"status": "Internal Server Error",
 							"code": 500,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Error al obtener los módulos\",\n  \"data\": null,\n  \"error\": {\n    \"error\": \"SQLSTATE[HY000]: ...\"\n  }\n}"
+							"body": "{\n  \"message\": \"Error al obtener los módulos\",\n  \"data\": null,\n  \"error\": {\"error\": \"SQLSTATE[HY000]: ...\"}\n}"
 						}
 					]
 				},
 				{
-					"name": "GET tutorial-modules/{id}",
+					"name": "GET /tutorial-modules/{id}",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{baseURL}}tutorial-modules/1",
-							"host": ["{{baseURL}}tutorial-modules/1"]
-						},
-						"description": "Retorna un módulo con sus subtemas anidados. Cliente no puede ver módulos con status=2."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/tutorial-modules/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "1"]},
+						"description": "Retorna un módulo con sus subtemas. Cliente no puede ver módulos inactivos."
 					},
 					"response": [
 						{
 							"name": "200 OK",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-modules/1", "host": ["{{baseURL}}tutorial-modules/1"]}
-							},
+							"originalRequest": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorial-modules/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "1"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Módulo traído correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Presupuestos\",\n    \"description\": \"Todo sobre la gestión de presupuestos en el sistema\",\n    \"order\": 0,\n    \"status\": 1,\n    \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"subtopics\": [\n      {\n        \"id\": 1,\n        \"id_tutorial_module\": 1,\n        \"name\": \"Crear un presupuesto\",\n        \"description\": null,\n        \"order\": 0,\n        \"status\": 1,\n        \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n        \"updated_at\": \"2026-06-03T10:00:00.000000Z\"\n      },\n      {\n        \"id\": 2,\n        \"id_tutorial_module\": 1,\n        \"name\": \"Aprobar y enviar un presupuesto\",\n        \"description\": \"Flujo de aprobación\",\n        \"order\": 1,\n        \"status\": 1,\n        \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n        \"updated_at\": \"2026-06-03T10:00:00.000000Z\"\n      }\n    ]\n  }\n}"
+							"body": "{\n  \"message\": \"Módulo traído correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Presupuestos\",\n    \"description\": \"Cómo crear, gestionar y hacer seguimiento de presupuestos\",\n    \"order\": 0,\n    \"status\": 1,\n    \"subtopics\": [\n      {\"id\": 1, \"id_tutorial_module\": 1, \"name\": \"Crear un presupuesto\", \"order\": 0, \"status\": 1},\n      {\"id\": 2, \"id_tutorial_module\": 1, \"name\": \"Ver y gestionar presupuestos\", \"order\": 1, \"status\": 1},\n      {\"id\": 3, \"id_tutorial_module\": 1, \"name\": \"Estados del presupuesto\", \"order\": 2, \"status\": 1}\n    ]\n  }\n}"
 						},
 						{
 							"name": "404 Not Found",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-modules/999", "host": ["{{baseURL}}tutorial-modules/999"]}
-							},
+							"originalRequest": {"method": "GET", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-modules/999", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "999"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
@@ -164,11 +124,7 @@
 						},
 						{
 							"name": "401 Unauthorized",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorial-modules/1", "host": ["{{baseURL}}tutorial-modules/1"]}
-							},
+							"originalRequest": {"method": "GET", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-modules/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "1"]}},
 							"status": "Unauthorized",
 							"code": 401,
 							"_postman_previewlanguage": "json",
@@ -178,62 +134,27 @@
 					]
 				},
 				{
-					"name": "POST tutorial-modules",
+					"name": "POST /tutorial-modules",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Presupuestos\",\n  \"description\": \"Todo sobre la gestión de presupuestos en el sistema\",\n  \"order\": 0,\n  \"status\": 1\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseURL}}tutorial-modules",
-							"host": ["{{baseURL}}tutorial-modules"]
-						},
-						"description": "Crea un nuevo módulo. Solo admin (is_internal=true). Campos opcionales: description, order (default 0), status (default 1)."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\n  \"name\": \"Presupuestos\",\n  \"description\": \"Cómo crear, gestionar y hacer seguimiento de presupuestos\",\n  \"order\": 0,\n  \"status\": 1\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/tutorial-modules", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules"]},
+						"description": "Crea un módulo. Solo admin. Campos opcionales: description, order (default 0), status (default 1)."
 					},
 					"response": [
 						{
 							"name": "200 OK - Módulo creado",
-							"originalRequest": {
-								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"Presupuestos\",\n  \"description\": \"Todo sobre la gestión de presupuestos en el sistema\",\n  \"order\": 0,\n  \"status\": 1\n}",
-									"options": {"raw": {"language": "json"}}
-								},
-								"url": {"raw": "{{baseURL}}tutorial-modules", "host": ["{{baseURL}}tutorial-modules"]}
-							},
+							"originalRequest": {"method": "POST", "header": [{"key": "Accept", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Presupuestos\",\n  \"order\": 0\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{BASE_URL}}/tutorial-modules", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Módulo creado correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Presupuestos\",\n    \"description\": \"Todo sobre la gestión de presupuestos en el sistema\",\n    \"order\": 0,\n    \"status\": 1,\n    \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-03T10:00:00.000000Z\"\n  }\n}"
+							"body": "{\n  \"message\": \"Módulo creado correctamente\",\n  \"data\": {\n    \"id\": 7,\n    \"name\": \"Presupuestos\",\n    \"description\": null,\n    \"order\": 0,\n    \"status\": 1,\n    \"created_at\": \"2026-06-11T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-11T10:00:00.000000Z\"\n  }\n}"
 						},
 						{
 							"name": "403 Forbidden - Usuario no es admin",
-							"originalRequest": {
-								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"Presupuestos\"\n}",
-									"options": {"raw": {"language": "json"}}
-								},
-								"url": {"raw": "{{baseURL}}tutorial-modules", "host": ["{{baseURL}}tutorial-modules"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "body": {"mode": "raw", "raw": "{\"name\": \"Test\"}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{BASE_URL}}/tutorial-modules", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules"]}},
 							"status": "Forbidden",
 							"code": 403,
 							"_postman_previewlanguage": "json",
@@ -242,29 +163,16 @@
 						},
 						{
 							"name": "422 Validación - name requerido",
-							"originalRequest": {
-								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"description\": \"Sin nombre\"\n}",
-									"options": {"raw": {"language": "json"}}
-								},
-								"url": {"raw": "{{baseURL}}tutorial-modules", "host": ["{{baseURL}}tutorial-modules"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "body": {"mode": "raw", "raw": "{\"description\": \"Sin nombre\"}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{BASE_URL}}/tutorial-modules", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules"]}},
 							"status": "Unprocessable Entity",
 							"code": 422,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [\n    {\n      \"name\": [\"The name field is required.\"]\n    }\n  ]\n}"
+							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [{\"name\": [\"The name field is required.\"]}]\n}"
 						},
 						{
 							"name": "401 Unauthorized",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorial-modules", "host": ["{{baseURL}}tutorial-modules"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-modules", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules"]}},
 							"status": "Unauthorized",
 							"code": 401,
 							"_postman_previewlanguage": "json",
@@ -274,57 +182,27 @@
 					]
 				},
 				{
-					"name": "PUT tutorial-modules/{id}",
+					"name": "PUT /tutorial-modules/{id}",
 					"request": {
 						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Presupuestos y Cotizaciones\",\n  \"description\": \"Gestión completa de presupuestos\",\n  \"order\": 0,\n  \"status\": 1\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseURL}}tutorial-modules/1",
-							"host": ["{{baseURL}}tutorial-modules/1"]
-						},
-						"description": "Actualiza un módulo existente. Solo admin. Todos los campos son opcionales (PATCH semantics)."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\n  \"name\": \"Presupuestos y Cotizaciones\",\n  \"status\": 2\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/tutorial-modules/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "1"]},
+						"description": "Actualiza un módulo. Solo admin. Todos los campos son opcionales."
 					},
 					"response": [
 						{
-							"name": "200 OK - Módulo actualizado",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"Presupuestos y Cotizaciones\",\n  \"status\": 2\n}",
-									"options": {"raw": {"language": "json"}}
-								},
-								"url": {"raw": "{{baseURL}}tutorial-modules/1", "host": ["{{baseURL}}tutorial-modules/1"]}
-							},
+							"name": "200 OK",
+							"originalRequest": {"method": "PUT", "header": [{"key": "Accept", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Presupuestos y Cotizaciones\",\n  \"status\": 2\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{BASE_URL}}/tutorial-modules/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "1"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Módulo actualizado correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Presupuestos y Cotizaciones\",\n    \"description\": \"Todo sobre la gestión de presupuestos en el sistema\",\n    \"order\": 0,\n    \"status\": 2,\n    \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-03T11:30:00.000000Z\"\n  }\n}"
+							"body": "{\n  \"message\": \"Módulo actualizado correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Presupuestos y Cotizaciones\",\n    \"description\": \"Cómo crear, gestionar y hacer seguimiento de presupuestos\",\n    \"order\": 0,\n    \"status\": 2,\n    \"created_at\": \"2026-06-11T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-11T11:30:00.000000Z\"\n  }\n}"
 						},
 						{
 							"name": "404 Not Found",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-modules/999", "host": ["{{baseURL}}tutorial-modules/999"]}
-							},
+							"originalRequest": {"method": "PUT", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-modules/999", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "999"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
@@ -333,11 +211,7 @@
 						},
 						{
 							"name": "403 Forbidden",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorial-modules/1", "host": ["{{baseURL}}tutorial-modules/1"]}
-							},
+							"originalRequest": {"method": "PUT", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-modules/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "1"]}},
 							"status": "Forbidden",
 							"code": 403,
 							"_postman_previewlanguage": "json",
@@ -347,30 +221,17 @@
 					]
 				},
 				{
-					"name": "DELETE tutorial-modules/{id}",
+					"name": "DELETE /tutorial-modules/{id}",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{baseURL}}tutorial-modules/1",
-							"host": ["{{baseURL}}tutorial-modules/1"]
-						},
-						"description": "Elimina un módulo. Solo admin. Elimina en cascada subtemas, items y adjuntos asociados (incluye archivos físicos de adjuntos e imágenes de portada)."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/tutorial-modules/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "1"]},
+						"description": "Elimina un módulo. Solo admin. Cascade: subtemas, items, adjuntos y archivos físicos."
 					},
 					"response": [
 						{
-							"name": "200 OK - Módulo eliminado",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-modules/1", "host": ["{{baseURL}}tutorial-modules/1"]}
-							},
+							"name": "200 OK",
+							"originalRequest": {"method": "DELETE", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorial-modules/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "1"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
@@ -379,11 +240,7 @@
 						},
 						{
 							"name": "404 Not Found",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorial-modules/999", "host": ["{{baseURL}}tutorial-modules/999"]}
-							},
+							"originalRequest": {"method": "DELETE", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-modules/999", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "999"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
@@ -392,11 +249,7 @@
 						},
 						{
 							"name": "403 Forbidden",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorial-modules/1", "host": ["{{baseURL}}tutorial-modules/1"]}
-							},
+							"originalRequest": {"method": "DELETE", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-modules/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-modules", "1"]}},
 							"status": "Forbidden",
 							"code": 403,
 							"_postman_previewlanguage": "json",
@@ -409,66 +262,38 @@
 		},
 		{
 			"name": "Tutorial Subtopics",
-			"description": "CRUD de subtemas. Cada subtema pertenece a un módulo. Escritura solo admin. Lectura para cualquier usuario autenticado.",
+			"description": "CRUD de subtemas. Cada subtema pertenece a un módulo. Escritura solo admin.",
 			"item": [
 				{
-					"name": "GET tutorial-subtopics",
+					"name": "GET /tutorial-subtopics",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
 						"url": {
-							"raw": "{{baseURL}}tutorial-subtopics",
-							"host": ["{{baseURL}}tutorial-subtopics"],
+							"raw": "{{BASE_URL}}/tutorial-subtopics",
+							"host": ["{{BASE_URL}}"],
+							"path": ["tutorial-subtopics"],
 							"query": [
-								{
-									"key": "id_tutorial_module",
-									"value": "1",
-									"description": "Filtrar subtemas de un módulo específico",
-									"disabled": true
-								},
-								{
-									"key": "status",
-									"value": "1",
-									"description": "1=activo, 2=inactivo",
-									"disabled": true
-								},
-								{
-									"key": "search",
-									"value": "crear",
-									"description": "Busca por nombre del subtema",
-									"disabled": true
-								}
+								{"key": "id_tutorial_module", "value": "1", "description": "Filtrar subtemas de un módulo específico", "disabled": true},
+								{"key": "status", "value": "1", "description": "1=activo, 2=inactivo", "disabled": true},
+								{"key": "search", "value": "crear", "description": "Busca por nombre", "disabled": true}
 							]
 						},
-						"description": "Retorna subtemas con su módulo y conteo de items. Admin ve todos; cliente solo los de módulo activo con status=1."
+						"description": "Retorna subtemas con su módulo y conteo de items. Admin ve todos; cliente solo activos de módulos activos."
 					},
 					"response": [
 						{
-							"name": "200 OK",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-subtopics?id_tutorial_module=1", "host": ["{{baseURL}}tutorial-subtopics"]}
-							},
+							"name": "200 OK - Filtrado por módulo",
+							"originalRequest": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorial-subtopics?id_tutorial_module=1", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics"], "query": [{"key": "id_tutorial_module", "value": "1"}]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Subtemas traídos correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"id_tutorial_module\": 1,\n      \"name\": \"Crear un presupuesto\",\n      \"description\": null,\n      \"order\": 0,\n      \"status\": 1,\n      \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"module\": {\n        \"id\": 1,\n        \"name\": \"Presupuestos\",\n        \"description\": \"Todo sobre la gestión de presupuestos\",\n        \"order\": 0,\n        \"status\": 1\n      },\n      \"items_count\": 2\n    },\n    {\n      \"id\": 2,\n      \"id_tutorial_module\": 1,\n      \"name\": \"Aprobar y enviar un presupuesto\",\n      \"description\": \"Flujo de aprobación\",\n      \"order\": 1,\n      \"status\": 1,\n      \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"module\": {\n        \"id\": 1,\n        \"name\": \"Presupuestos\",\n        \"description\": \"Todo sobre la gestión de presupuestos\",\n        \"order\": 0,\n        \"status\": 1\n      },\n      \"items_count\": 1\n    }\n  ]\n}"
+							"body": "{\n  \"message\": \"Subtemas traídos correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"id_tutorial_module\": 1,\n      \"name\": \"Crear un presupuesto\",\n      \"description\": \"Pasos para crear un nuevo presupuesto desde cero\",\n      \"order\": 0,\n      \"status\": 1,\n      \"module\": {\"id\": 1, \"name\": \"Presupuestos\", \"status\": 1},\n      \"items_count\": 2\n    },\n    {\n      \"id\": 2,\n      \"id_tutorial_module\": 1,\n      \"name\": \"Ver y gestionar presupuestos\",\n      \"description\": \"Cómo buscar, filtrar y consultar presupuestos existentes\",\n      \"order\": 1,\n      \"status\": 1,\n      \"module\": {\"id\": 1, \"name\": \"Presupuestos\", \"status\": 1},\n      \"items_count\": 1\n    }\n  ]\n}"
 						},
 						{
 							"name": "401 Unauthorized",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorial-subtopics", "host": ["{{baseURL}}tutorial-subtopics"]}
-							},
+							"originalRequest": {"method": "GET", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-subtopics", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics"]}},
 							"status": "Unauthorized",
 							"code": 401,
 							"_postman_previewlanguage": "json",
@@ -478,43 +303,26 @@
 					]
 				},
 				{
-					"name": "GET tutorial-subtopics/{id}",
+					"name": "GET /tutorial-subtopics/{id}",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{baseURL}}tutorial-subtopics/1",
-							"host": ["{{baseURL}}tutorial-subtopics/1"]
-						},
-						"description": "Retorna un subtema con su módulo padre y todos sus items (sin contenido HTML completo)."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/tutorial-subtopics/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics", "1"]},
+						"description": "Retorna un subtema con su módulo padre y sus items."
 					},
 					"response": [
 						{
 							"name": "200 OK",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-subtopics/1", "host": ["{{baseURL}}tutorial-subtopics/1"]}
-							},
+							"originalRequest": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorial-subtopics/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics", "1"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Subtema traído correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_module\": 1,\n    \"name\": \"Crear un presupuesto\",\n    \"description\": null,\n    \"order\": 0,\n    \"status\": 1,\n    \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"module\": {\n      \"id\": 1,\n      \"name\": \"Presupuestos\",\n      \"description\": \"Todo sobre la gestión de presupuestos\",\n      \"order\": 0,\n      \"status\": 1,\n      \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T10:00:00.000000Z\"\n    },\n    \"items\": [\n      {\n        \"id\": 1,\n        \"id_tutorial_subtopic\": 1,\n        \"title\": \"Paso a paso: crear tu primer presupuesto\",\n        \"content\": \"<h2>Introducción</h2><p>Para crear un presupuesto...</p>\",\n        \"content_type\": 1,\n        \"cover_image\": \"storage/tutorials/1748123456_abc_portada.jpg\",\n        \"is_published\": true,\n        \"order\": 0,\n        \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n        \"updated_at\": \"2026-06-03T10:00:00.000000Z\"\n      }\n    ]\n  }\n}"
+							"body": "{\n  \"message\": \"Subtema traído correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_module\": 1,\n    \"name\": \"Crear un presupuesto\",\n    \"description\": \"Pasos para crear un nuevo presupuesto desde cero\",\n    \"order\": 0,\n    \"status\": 1,\n    \"module\": {\"id\": 1, \"name\": \"Presupuestos\", \"status\": 1},\n    \"items\": [\n      {\n        \"id\": 1,\n        \"id_tutorial_module\": null,\n        \"id_tutorial_subtopic\": 1,\n        \"title\": \"Paso a paso: crear tu primer presupuesto\",\n        \"is_published\": true,\n        \"order\": 0\n      }\n    ]\n  }\n}"
 						},
 						{
 							"name": "404 Not Found",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorial-subtopics/999", "host": ["{{baseURL}}tutorial-subtopics/999"]}
-							},
+							"originalRequest": {"method": "GET", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-subtopics/999", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics", "999"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
@@ -524,75 +332,36 @@
 					]
 				},
 				{
-					"name": "POST tutorial-subtopics",
+					"name": "POST /tutorial-subtopics",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"id_tutorial_module\": 1,\n  \"name\": \"Crear un presupuesto\",\n  \"description\": \"Aprende a crear presupuestos desde cero\",\n  \"order\": 0,\n  \"status\": 1\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseURL}}tutorial-subtopics",
-							"host": ["{{baseURL}}tutorial-subtopics"]
-						},
-						"description": "Crea un subtema dentro de un módulo. Solo admin. id_tutorial_module es requerido y debe existir."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\n  \"id_tutorial_module\": 1,\n  \"name\": \"Crear un presupuesto\",\n  \"description\": \"Pasos para crear un nuevo presupuesto desde cero\",\n  \"order\": 0,\n  \"status\": 1\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/tutorial-subtopics", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics"]},
+						"description": "Crea un subtema. Solo admin. id_tutorial_module requerido."
 					},
 					"response": [
 						{
 							"name": "200 OK - Subtema creado",
-							"originalRequest": {
-								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"id_tutorial_module\": 1,\n  \"name\": \"Crear un presupuesto\",\n  \"order\": 0\n}",
-									"options": {"raw": {"language": "json"}}
-								},
-								"url": {"raw": "{{baseURL}}tutorial-subtopics", "host": ["{{baseURL}}tutorial-subtopics"]}
-							},
+							"originalRequest": {"method": "POST", "header": [{"key": "Accept", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"id_tutorial_module\": 1,\n  \"name\": \"Crear un presupuesto\"\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{BASE_URL}}/tutorial-subtopics", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Subtema creado correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_module\": 1,\n    \"name\": \"Crear un presupuesto\",\n    \"description\": null,\n    \"order\": 0,\n    \"status\": 1,\n    \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"module\": {\n      \"id\": 1,\n      \"name\": \"Presupuestos\",\n      \"description\": \"Todo sobre la gestión de presupuestos\",\n      \"order\": 0,\n      \"status\": 1\n    }\n  }\n}"
+							"body": "{\n  \"message\": \"Subtema creado correctamente\",\n  \"data\": {\n    \"id\": 18,\n    \"id_tutorial_module\": 1,\n    \"name\": \"Crear un presupuesto\",\n    \"description\": null,\n    \"order\": 0,\n    \"status\": 1,\n    \"module\": {\"id\": 1, \"name\": \"Presupuestos\", \"status\": 1}\n  }\n}"
 						},
 						{
 							"name": "422 Módulo no existe",
-							"originalRequest": {
-								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"id_tutorial_module\": 999,\n  \"name\": \"Subtema inválido\"\n}",
-									"options": {"raw": {"language": "json"}}
-								},
-								"url": {"raw": "{{baseURL}}tutorial-subtopics", "host": ["{{baseURL}}tutorial-subtopics"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "body": {"mode": "raw", "raw": "{\n  \"id_tutorial_module\": 999,\n  \"name\": \"Subtema inválido\"\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{BASE_URL}}/tutorial-subtopics", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics"]}},
 							"status": "Unprocessable Entity",
 							"code": 422,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [\n    {\n      \"id_tutorial_module\": [\"The selected id tutorial module is invalid.\"]\n    }\n  ]\n}"
+							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [{\"id_tutorial_module\": [\"The selected id tutorial module is invalid.\"]}]\n}"
 						},
 						{
 							"name": "403 Forbidden",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorial-subtopics", "host": ["{{baseURL}}tutorial-subtopics"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-subtopics", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics"]}},
 							"status": "Forbidden",
 							"code": 403,
 							"_postman_previewlanguage": "json",
@@ -602,90 +371,56 @@
 					]
 				},
 				{
-					"name": "PUT tutorial-subtopics/{id}",
+					"name": "PUT /tutorial-subtopics/{id}",
 					"request": {
 						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Crear y duplicar presupuestos\",\n  \"order\": 0,\n  \"status\": 1\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseURL}}tutorial-subtopics/1",
-							"host": ["{{baseURL}}tutorial-subtopics/1"]
-						},
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"body": {"mode": "raw", "raw": "{\n  \"name\": \"Crear y duplicar presupuestos\",\n  \"status\": 1\n}", "options": {"raw": {"language": "json"}}},
+						"url": {"raw": "{{BASE_URL}}/tutorial-subtopics/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics", "1"]},
 						"description": "Actualiza un subtema. Solo admin. Puede reasignarse a otro módulo con id_tutorial_module."
 					},
 					"response": [
 						{
-							"name": "200 OK - Subtema actualizado",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"Crear y duplicar presupuestos\",\n  \"status\": 2\n}",
-									"options": {"raw": {"language": "json"}}
-								},
-								"url": {"raw": "{{baseURL}}tutorial-subtopics/1", "host": ["{{baseURL}}tutorial-subtopics/1"]}
-							},
+							"name": "200 OK",
+							"originalRequest": {"method": "PUT", "header": [{"key": "Accept", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"name\": \"Crear y duplicar presupuestos\"\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{BASE_URL}}/tutorial-subtopics/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics", "1"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Subtema actualizado correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_module\": 1,\n    \"name\": \"Crear y duplicar presupuestos\",\n    \"description\": null,\n    \"order\": 0,\n    \"status\": 2,\n    \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-03T11:00:00.000000Z\",\n    \"module\": {\n      \"id\": 1,\n      \"name\": \"Presupuestos\",\n      \"status\": 1\n    }\n  }\n}"
+							"body": "{\n  \"message\": \"Subtema actualizado correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_module\": 1,\n    \"name\": \"Crear y duplicar presupuestos\",\n    \"order\": 0,\n    \"status\": 1,\n    \"module\": {\"id\": 1, \"name\": \"Presupuestos\", \"status\": 1}\n  }\n}"
 						},
 						{
 							"name": "404 Not Found",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorial-subtopics/999", "host": ["{{baseURL}}tutorial-subtopics/999"]}
-							},
+							"originalRequest": {"method": "PUT", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-subtopics/999", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics", "999"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
 							"body": "{\n  \"message\": \"Subtema no encontrado\",\n  \"data\": null,\n  \"error\": []\n}"
+						},
+						{
+							"name": "403 Forbidden",
+							"originalRequest": {"method": "PUT", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-subtopics/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics", "1"]}},
+							"status": "Forbidden",
+							"code": 403,
+							"_postman_previewlanguage": "json",
+							"header": [{"key": "Content-Type", "value": "application/json"}],
+							"body": "{\n  \"message\": \"No autorizado\",\n  \"data\": null,\n  \"error\": []\n}"
 						}
 					]
 				},
 				{
-					"name": "DELETE tutorial-subtopics/{id}",
+					"name": "DELETE /tutorial-subtopics/{id}",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{baseURL}}tutorial-subtopics/1",
-							"host": ["{{baseURL}}tutorial-subtopics/1"]
-						},
-						"description": "Elimina un subtema. Solo admin. Elimina en cascada todos sus items y adjuntos (incluye archivos físicos)."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/tutorial-subtopics/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics", "1"]},
+						"description": "Elimina un subtema. Solo admin. Cascade: items, adjuntos y archivos físicos."
 					},
 					"response": [
 						{
-							"name": "200 OK - Subtema eliminado",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorial-subtopics/1", "host": ["{{baseURL}}tutorial-subtopics/1"]}
-							},
+							"name": "200 OK",
+							"originalRequest": {"method": "DELETE", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorial-subtopics/1", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics", "1"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
@@ -694,11 +429,7 @@
 						},
 						{
 							"name": "404 Not Found",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorial-subtopics/999", "host": ["{{baseURL}}tutorial-subtopics/999"]}
-							},
+							"originalRequest": {"method": "DELETE", "header": [], "url": {"raw": "{{BASE_URL}}/tutorial-subtopics/999", "host": ["{{BASE_URL}}"], "path": ["tutorial-subtopics", "999"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
@@ -711,46 +442,38 @@
 		},
 		{
 			"name": "Tutorials",
-			"description": "CRUD de items de tutorial. Soporta contenido HTML enriquecido, imagen de portada y archivos adjuntos (imágenes, PDFs, videos). Escritura solo admin. Lectura para cualquier usuario autenticado (cliente solo ve is_published=true).",
+			"description": "CRUD de items de tutorial. Un item puede pertenecer a un subtema (id_tutorial_subtopic) O directamente a un módulo (id_tutorial_module). Exactamente uno debe estar seteado. Escritura solo admin.",
 			"item": [
 				{
-					"name": "GET tutorials/tree",
+					"name": "GET /tutorials/tree",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{baseURL}}tutorials/tree",
-							"host": ["{{baseURL}}tutorials/tree"]
-						},
-						"description": "Retorna el árbol completo de navegación: módulos → subtemas → items (sin contenido HTML, solo metadatos). Ideal para construir el menú lateral del cliente. Admin ve todo; cliente solo ve activos y publicados."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/tutorials/tree", "host": ["{{BASE_URL}}"], "path": ["tutorials", "tree"]},
+						"description": "Árbol completo: módulos → subtemas → items. Los items directos del módulo aparecen en 'items'; los de subtema dentro de cada subtema en 'subtopics[n].items'. Admin ve todo; cliente solo activos y publicados."
 					},
 					"response": [
 						{
-							"name": "200 OK - Admin (árbol completo)",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorials/tree", "host": ["{{baseURL}}tutorials/tree"]}
-							},
+							"name": "200 OK - Admin (borradores incluidos)",
+							"originalRequest": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorials/tree", "host": ["{{BASE_URL}}"], "path": ["tutorials", "tree"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Árbol de tutoriales traído correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Presupuestos\",\n      \"description\": \"Todo sobre la gestión de presupuestos\",\n      \"order\": 0,\n      \"status\": 1,\n      \"subtopics\": [\n        {\n          \"id\": 1,\n          \"id_tutorial_module\": 1,\n          \"name\": \"Crear un presupuesto\",\n          \"order\": 0,\n          \"status\": 1,\n          \"items\": [\n            {\n              \"id\": 1,\n              \"id_tutorial_subtopic\": 1,\n              \"title\": \"Paso a paso: crear tu primer presupuesto\",\n              \"content_type\": 1,\n              \"is_published\": true,\n              \"order\": 0\n            },\n            {\n              \"id\": 2,\n              \"id_tutorial_subtopic\": 1,\n              \"title\": \"Cálculo de transporte (PDF)\",\n              \"content_type\": 2,\n              \"is_published\": false,\n              \"order\": 1\n            }\n          ]\n        },\n        {\n          \"id\": 2,\n          \"id_tutorial_module\": 1,\n          \"name\": \"Aprobar y enviar\",\n          \"order\": 1,\n          \"status\": 1,\n          \"items\": [\n            {\n              \"id\": 3,\n              \"id_tutorial_subtopic\": 2,\n              \"title\": \"Flujo de aprobación\",\n              \"content_type\": 1,\n              \"is_published\": true,\n              \"order\": 0\n            }\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Productos\",\n      \"order\": 1,\n      \"status\": 1,\n      \"subtopics\": []\n    }\n  ]\n}"
+							"body": "{\n  \"message\": \"Árbol de tutoriales traído correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Presupuestos\",\n      \"order\": 0,\n      \"status\": 1,\n      \"items\": [\n        {\n          \"id\": 5,\n          \"id_tutorial_module\": 1,\n          \"id_tutorial_subtopic\": null,\n          \"title\": \"Introducción a los presupuestos\",\n          \"is_published\": true,\n          \"order\": 0\n        }\n      ],\n      \"subtopics\": [\n        {\n          \"id\": 1,\n          \"name\": \"Crear un presupuesto\",\n          \"order\": 0,\n          \"status\": 1,\n          \"items\": [\n            {\n              \"id\": 1,\n              \"id_tutorial_module\": null,\n              \"id_tutorial_subtopic\": 1,\n              \"title\": \"Paso a paso: crear tu primer presupuesto\",\n              \"is_published\": true,\n              \"order\": 0\n            },\n            {\n              \"id\": 2,\n              \"id_tutorial_module\": null,\n              \"id_tutorial_subtopic\": 1,\n              \"title\": \"Borrador: agregar descuentos especiales\",\n              \"is_published\": false,\n              \"order\": 1\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
+						},
+						{
+							"name": "200 OK - Cliente (solo publicados y activos)",
+							"originalRequest": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorials/tree", "host": ["{{BASE_URL}}"], "path": ["tutorials", "tree"]}},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [{"key": "Content-Type", "value": "application/json"}],
+							"body": "{\n  \"message\": \"Árbol de tutoriales traído correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Presupuestos\",\n      \"order\": 0,\n      \"status\": 1,\n      \"items\": [\n        {\n          \"id\": 5,\n          \"id_tutorial_module\": 1,\n          \"id_tutorial_subtopic\": null,\n          \"title\": \"Introducción a los presupuestos\",\n          \"is_published\": true,\n          \"order\": 0\n        }\n      ],\n      \"subtopics\": [\n        {\n          \"id\": 1,\n          \"name\": \"Crear un presupuesto\",\n          \"order\": 0,\n          \"status\": 1,\n          \"items\": [\n            {\n              \"id\": 1,\n              \"id_tutorial_module\": null,\n              \"id_tutorial_subtopic\": 1,\n              \"title\": \"Paso a paso: crear tu primer presupuesto\",\n              \"is_published\": true,\n              \"order\": 0\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
 						},
 						{
 							"name": "401 Unauthorized",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/tree", "host": ["{{baseURL}}tutorials/tree"]}
-							},
+							"originalRequest": {"method": "GET", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/tree", "host": ["{{BASE_URL}}"], "path": ["tutorials", "tree"]}},
 							"status": "Unauthorized",
 							"code": 401,
 							"_postman_previewlanguage": "json",
@@ -760,100 +483,47 @@
 					]
 				},
 				{
-					"name": "GET tutorials",
+					"name": "GET /tutorials",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
 						"url": {
-							"raw": "{{baseURL}}tutorials",
-							"host": ["{{baseURL}}tutorials"],
+							"raw": "{{BASE_URL}}/tutorials",
+							"host": ["{{BASE_URL}}"],
+							"path": ["tutorials"],
 							"query": [
-								{
-									"key": "id_tutorial_module",
-									"value": "1",
-									"description": "Filtrar items de un módulo específico",
-									"disabled": true
-								},
-								{
-									"key": "id_tutorial_subtopic",
-									"value": "1",
-									"description": "Filtrar items de un subtema específico",
-									"disabled": true
-								},
-								{
-									"key": "content_type",
-									"value": "1",
-									"description": "1=tutorial, 2=documento, 3=guia, 4=faq, 5=video",
-									"disabled": true
-								},
-								{
-									"key": "is_published",
-									"value": "false",
-									"description": "Solo admin: true/false para ver borradores (sin este filtro admin ve todos)",
-									"disabled": true
-								},
-								{
-									"key": "search",
-									"value": "presupuesto",
-									"description": "Busca por título",
-									"disabled": true
-								},
-								{
-									"key": "page",
-									"value": "1",
-									"description": "Número de página (activa paginación)",
-									"disabled": true
-								},
-								{
-									"key": "per_page",
-									"value": "20",
-									"description": "Items por página (default 20)",
-									"disabled": true
-								}
+								{"key": "id_tutorial_module", "value": "1", "description": "Items directamente en este módulo (id_tutorial_module = valor)", "disabled": true},
+								{"key": "id_tutorial_subtopic", "value": "1", "description": "Items de un subtema específico", "disabled": true},
+								{"key": "is_published", "value": "false", "description": "Solo admin: filtrar borradores (false) o publicados (true)", "disabled": true},
+								{"key": "search", "value": "presupuesto", "description": "Busca por título", "disabled": true},
+								{"key": "page", "value": "1", "description": "Activa paginación", "disabled": true},
+								{"key": "per_page", "value": "20", "description": "Items por página (default 20)", "disabled": true}
 							]
 						},
-						"description": "Lista items de tutorial con adjuntos. Sin ?page devuelve todos sin paginar. Admin ve borradores e inactivos; cliente solo ve is_published=true de módulos y subtemas activos."
+						"description": "Lista items con adjuntos. Sin ?page devuelve todos. Admin ve borradores; cliente solo publicados de módulos y subtemas activos."
 					},
 					"response": [
 						{
 							"name": "200 OK - Sin paginación",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorials?id_tutorial_module=1", "host": ["{{baseURL}}tutorials"]}
-							},
+							"originalRequest": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorials?id_tutorial_module=1", "host": ["{{BASE_URL}}"], "path": ["tutorials"], "query": [{"key": "id_tutorial_module", "value": "1"}]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Tutoriales traídos correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"id_tutorial_subtopic\": 1,\n      \"title\": \"Paso a paso: crear tu primer presupuesto\",\n      \"content\": \"<h2>Introducción</h2><p>Para crear un presupuesto siga estos pasos...</p>\",\n      \"content_type\": 1,\n      \"cover_image\": \"storage/tutorials/1748123456_abc_portada.jpg\",\n      \"is_published\": true,\n      \"order\": 0,\n      \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n      \"subtopic\": {\n        \"id\": 1,\n        \"id_tutorial_module\": 1,\n        \"name\": \"Crear un presupuesto\",\n        \"status\": 1,\n        \"module\": {\n          \"id\": 1,\n          \"name\": \"Presupuestos\",\n          \"status\": 1\n        }\n      },\n      \"attachments\": [\n        {\n          \"id\": 1,\n          \"id_tutorial_item\": 1,\n          \"file_path\": \"storage/tutorials/1748123456_xyz_guia.pdf\",\n          \"original_name\": \"guia-presupuestos.pdf\",\n          \"file_type\": \"pdf\",\n          \"mime_type\": \"application/pdf\",\n          \"size\": 204800,\n          \"order\": 0,\n          \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n          \"updated_at\": \"2026-06-03T10:00:00.000000Z\"\n        }\n      ]\n    }\n  ],\n  \"meta_data\": null\n}"
+							"body": "{\n  \"message\": \"Tutoriales traídos correctamente\",\n  \"data\": [\n    {\n      \"id\": 5,\n      \"id_tutorial_module\": 1,\n      \"id_tutorial_subtopic\": null,\n      \"title\": \"Introducción a los presupuestos\",\n      \"content\": \"<h2>Bienvenido</h2><p>Este módulo explica todo sobre presupuestos.</p>\",\n      \"is_published\": true,\n      \"order\": 0,\n      \"module\": {\"id\": 1, \"name\": \"Presupuestos\", \"status\": 1},\n      \"subtopic\": null,\n      \"attachments\": []\n    },\n    {\n      \"id\": 1,\n      \"id_tutorial_module\": null,\n      \"id_tutorial_subtopic\": 1,\n      \"title\": \"Paso a paso: crear tu primer presupuesto\",\n      \"content\": \"<h2>Introducción</h2><p>Para crear un presupuesto...</p>\",\n      \"is_published\": true,\n      \"order\": 0,\n      \"module\": null,\n      \"subtopic\": {\n        \"id\": 1,\n        \"name\": \"Crear un presupuesto\",\n        \"status\": 1,\n        \"module\": {\"id\": 1, \"name\": \"Presupuestos\"}\n      },\n      \"attachments\": [\n        {\n          \"id\": 1,\n          \"file_path\": \"storage/tutorials/1748123456_xyz_guia.pdf\",\n          \"original_name\": \"guia-presupuestos.pdf\",\n          \"file_type\": \"pdf\",\n          \"mime_type\": \"application/pdf\",\n          \"size\": 204800,\n          \"order\": 0\n        }\n      ]\n    }\n  ],\n  \"meta_data\": null\n}"
 						},
 						{
 							"name": "200 OK - Con paginación",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorials?page=1&per_page=10", "host": ["{{baseURL}}tutorials"]}
-							},
+							"originalRequest": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorials?page=1&per_page=10", "host": ["{{BASE_URL}}"], "path": ["tutorials"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Tutoriales traídos correctamente\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Paso a paso: crear tu primer presupuesto\",\n      \"content_type\": 1,\n      \"cover_image\": \"storage/tutorials/1748123456_abc_portada.jpg\",\n      \"is_published\": true,\n      \"order\": 0\n    }\n  ],\n  \"meta_data\": {\n    \"page\": 1,\n    \"per_page\": 10,\n    \"total\": 15,\n    \"last_page\": 2\n  }\n}"
+							"body": "{\n  \"message\": \"Tutoriales traídos correctamente\",\n  \"data\": [{\"id\": 1, \"title\": \"Paso a paso: crear tu primer presupuesto\", \"is_published\": true}],\n  \"meta_data\": {\"page\": 1, \"per_page\": 10, \"total\": 15, \"last_page\": 2}\n}"
 						},
 						{
 							"name": "401 Unauthorized",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials", "host": ["{{baseURL}}tutorials"]}
-							},
+							"originalRequest": {"method": "GET", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials", "host": ["{{BASE_URL}}"], "path": ["tutorials"]}},
 							"status": "Unauthorized",
 							"code": 401,
 							"_postman_previewlanguage": "json",
@@ -863,43 +533,35 @@
 					]
 				},
 				{
-					"name": "GET tutorials/{id}",
+					"name": "GET /tutorials/{id}",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{baseURL}}tutorials/1",
-							"host": ["{{baseURL}}tutorials/1"]
-						},
-						"description": "Retorna un tutorial completo con contenido HTML y todos sus adjuntos. Cliente no puede ver borradores (is_published=false)."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/tutorials/1", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1"]},
+						"description": "Tutorial completo con HTML y adjuntos. Cliente no puede ver borradores (is_published=false)."
 					},
 					"response": [
 						{
-							"name": "200 OK - Tutorial publicado",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorials/1", "host": ["{{baseURL}}tutorials/1"]}
-							},
+							"name": "200 OK - Item de subtema",
+							"originalRequest": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorials/1", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Tutorial traído correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_subtopic\": 1,\n    \"title\": \"Paso a paso: crear tu primer presupuesto\",\n    \"content\": \"<h2>Introducción</h2><p>Bienvenido al sistema. En este tutorial aprenderá a crear un presupuesto desde cero.</p><h3>Paso 1: Acceder al módulo</h3><p>Desde el menú principal haga clic en <strong>Presupuestos</strong>.</p><ul><li>Complete los datos del cliente</li><li>Agregue los productos</li><li>Configure el traslado</li></ul>\",\n    \"content_type\": 1,\n    \"cover_image\": \"storage/tutorials/1748123456_abc_portada.jpg\",\n    \"is_published\": true,\n    \"order\": 0,\n    \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"subtopic\": {\n      \"id\": 1,\n      \"id_tutorial_module\": 1,\n      \"name\": \"Crear un presupuesto\",\n      \"description\": null,\n      \"order\": 0,\n      \"status\": 1,\n      \"module\": {\n        \"id\": 1,\n        \"name\": \"Presupuestos\",\n        \"description\": \"Todo sobre la gestión de presupuestos\",\n        \"order\": 0,\n        \"status\": 1\n      }\n    },\n    \"attachments\": [\n      {\n        \"id\": 1,\n        \"id_tutorial_item\": 1,\n        \"file_path\": \"storage/tutorials/1748123456_xyz_guia.pdf\",\n        \"original_name\": \"guia-presupuestos.pdf\",\n        \"file_type\": \"pdf\",\n        \"mime_type\": \"application/pdf\",\n        \"size\": 204800,\n        \"order\": 0\n      },\n      {\n        \"id\": 2,\n        \"id_tutorial_item\": 1,\n        \"file_path\": \"storage/tutorials/1748123457_img1.jpg\",\n        \"original_name\": \"pantalla-menu.jpg\",\n        \"file_type\": \"image\",\n        \"mime_type\": \"image/jpeg\",\n        \"size\": 51200,\n        \"order\": 1\n      }\n    ]\n  }\n}"
+							"body": "{\n  \"message\": \"Tutorial traído correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_module\": null,\n    \"id_tutorial_subtopic\": 1,\n    \"title\": \"Paso a paso: crear tu primer presupuesto\",\n    \"content\": \"<h2>Introducción</h2><p>Desde el menú haga clic en <strong>Presupuestos</strong>.</p><ul><li>Complete los datos del cliente</li><li>Agregue los productos</li></ul>\",\n    \"is_published\": true,\n    \"order\": 0,\n    \"module\": null,\n    \"subtopic\": {\n      \"id\": 1,\n      \"name\": \"Crear un presupuesto\",\n      \"status\": 1,\n      \"module\": {\"id\": 1, \"name\": \"Presupuestos\", \"status\": 1}\n    },\n    \"attachments\": [\n      {\n        \"id\": 1,\n        \"file_path\": \"storage/tutorials/1748123456_xyz_guia.pdf\",\n        \"original_name\": \"guia-presupuestos.pdf\",\n        \"file_type\": \"pdf\",\n        \"mime_type\": \"application/pdf\",\n        \"size\": 204800,\n        \"order\": 0\n      }\n    ]\n  }\n}"
 						},
 						{
-							"name": "404 Not Found - Borrador visto por cliente",
-							"originalRequest": {
-								"method": "GET",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorials/2", "host": ["{{baseURL}}tutorials/2"]}
-							},
+							"name": "200 OK - Item directo de módulo",
+							"originalRequest": {"method": "GET", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorials/5", "host": ["{{BASE_URL}}"], "path": ["tutorials", "5"]}},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [{"key": "Content-Type", "value": "application/json"}],
+							"body": "{\n  \"message\": \"Tutorial traído correctamente\",\n  \"data\": {\n    \"id\": 5,\n    \"id_tutorial_module\": 1,\n    \"id_tutorial_subtopic\": null,\n    \"title\": \"Introducción a los presupuestos\",\n    \"content\": \"<h2>Bienvenido</h2><p>En este módulo aprenderás todo sobre presupuestos.</p>\",\n    \"is_published\": true,\n    \"order\": 0,\n    \"module\": {\"id\": 1, \"name\": \"Presupuestos\", \"status\": 1},\n    \"subtopic\": null,\n    \"attachments\": []\n  }\n}"
+						},
+						{
+							"name": "404 Not Found - Borrador o no existe",
+							"originalRequest": {"method": "GET", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/2", "host": ["{{BASE_URL}}"], "path": ["tutorials", "2"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
@@ -908,11 +570,7 @@
 						},
 						{
 							"name": "401 Unauthorized",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/1", "host": ["{{baseURL}}tutorials/1"]}
-							},
+							"originalRequest": {"method": "GET", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/1", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1"]}},
 							"status": "Unauthorized",
 							"code": 401,
 							"_postman_previewlanguage": "json",
@@ -922,171 +580,75 @@
 					]
 				},
 				{
-					"name": "POST tutorials",
+					"name": "POST /tutorials",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
 						"body": {
 							"mode": "formdata",
 							"formdata": [
-								{
-									"key": "id_tutorial_subtopic",
-									"value": "1",
-									"description": "ID del subtema al que pertenece (requerido)",
-									"type": "text"
-								},
-								{
-									"key": "title",
-									"value": "Paso a paso: crear tu primer presupuesto",
-									"description": "Título del tutorial (requerido)",
-									"type": "text"
-								},
-								{
-									"key": "content",
-									"value": "<h2>Introducción</h2><p>En este tutorial aprenderá a crear un presupuesto.</p>",
-									"description": "Contenido HTML enriquecido (opcional)",
-									"type": "text"
-								},
-								{
-									"key": "content_type",
-									"value": "1",
-									"description": "1=tutorial, 2=documento, 3=guia, 4=faq, 5=video (default: 1)",
-									"type": "text"
-								},
-								{
-									"key": "cover_image",
-									"description": "Imagen de portada (jpeg/png/jpg/webp, max 2MB, opcional)",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "is_published",
-									"value": "false",
-									"description": "true=publicar, false=guardar como borrador (default: false)",
-									"type": "text"
-								},
-								{
-									"key": "order",
-									"value": "0",
-									"description": "Orden de aparición (default: 0)",
-									"type": "text"
-								},
-								{
-									"key": "attachments[]",
-									"description": "Archivos adjuntos: imágenes, PDFs, videos (max 50MB c/u, múltiples permitidos)",
-									"type": "file",
-									"src": []
-								}
+								{"key": "id_tutorial_subtopic", "value": "1", "description": "ID del subtema padre. Usar ESTE O id_tutorial_module, nunca ambos.", "type": "text"},
+								{"key": "id_tutorial_module", "value": "1", "description": "ID del módulo padre (item directo, sin subtema). Usar ESTE O id_tutorial_subtopic, nunca ambos.", "type": "text", "disabled": true},
+								{"key": "title", "value": "Paso a paso: crear tu primer presupuesto", "description": "Requerido.", "type": "text"},
+								{"key": "content", "value": "<h2>Introducción</h2><p>Para crear un presupuesto...</p>", "description": "HTML enriquecido. Opcional.", "type": "text"},
+								{"key": "is_published", "value": "false", "description": "true=publicado, false=borrador. Default: false.", "type": "text"},
+								{"key": "order", "value": "0", "description": "Orden de aparición. Default: 0.", "type": "text"},
+								{"key": "attachments[]", "description": "Archivos adjuntos (imágenes, PDFs, videos). Max 50MB c/u.", "type": "file", "src": []}
 							]
 						},
-						"url": {
-							"raw": "{{baseURL}}tutorials",
-							"host": ["{{baseURL}}tutorials"]
-						},
-						"description": "Crea un tutorial. Solo admin. Enviar como multipart/form-data. Se pueden subir cover_image y attachments[] en la misma petición. Los adjuntos se guardan en public/storage/tutorials/."
+						"url": {"raw": "{{BASE_URL}}/tutorials", "host": ["{{BASE_URL}}"], "path": ["tutorials"]},
+						"description": "Crea un tutorial. Solo admin. Multipart/form-data.\n\nREGLA: enviar SOLO id_tutorial_subtopic O SOLO id_tutorial_module. Si se envían ambos → 422. Si no se envía ninguno → 422."
 					},
 					"response": [
 						{
-							"name": "200 OK - Tutorial creado (con adjuntos)",
+							"name": "200 OK - Item en subtema",
 							"originalRequest": {
 								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{"key": "id_tutorial_subtopic", "value": "1", "type": "text"},
-										{"key": "title", "value": "Paso a paso: crear tu primer presupuesto", "type": "text"},
-										{"key": "content", "value": "<h2>Introducción</h2><p>...</p>", "type": "text"},
-										{"key": "content_type", "value": "1", "type": "text"},
-										{"key": "is_published", "value": "true", "type": "text"},
-										{"key": "cover_image", "type": "file", "src": []},
-										{"key": "attachments[]", "type": "file", "src": []}
-									]
-								},
-								"url": {"raw": "{{baseURL}}tutorials", "host": ["{{baseURL}}tutorials"]}
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"body": {"mode": "formdata", "formdata": [{"key": "id_tutorial_subtopic", "value": "1", "type": "text"}, {"key": "title", "value": "Paso a paso: crear tu primer presupuesto", "type": "text"}, {"key": "is_published", "value": "true", "type": "text"}, {"key": "attachments[]", "type": "file", "src": []}]},
+								"url": {"raw": "{{BASE_URL}}/tutorials", "host": ["{{BASE_URL}}"], "path": ["tutorials"]}
 							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Tutorial creado correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_subtopic\": 1,\n    \"title\": \"Paso a paso: crear tu primer presupuesto\",\n    \"content\": \"<h2>Introducción</h2><p>...</p>\",\n    \"content_type\": 1,\n    \"cover_image\": \"storage/tutorials/1748123456_a1b2c3d4_portada.jpg\",\n    \"is_published\": true,\n    \"order\": 0,\n    \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"subtopic\": {\n      \"id\": 1,\n      \"id_tutorial_module\": 1,\n      \"name\": \"Crear un presupuesto\",\n      \"status\": 1,\n      \"module\": {\n        \"id\": 1,\n        \"name\": \"Presupuestos\",\n        \"status\": 1\n      }\n    },\n    \"attachments\": [\n      {\n        \"id\": 1,\n        \"id_tutorial_item\": 1,\n        \"file_path\": \"storage/tutorials/1748123457_e5f6g7_guia.pdf\",\n        \"original_name\": \"guia-presupuestos.pdf\",\n        \"file_type\": \"pdf\",\n        \"mime_type\": \"application/pdf\",\n        \"size\": 204800,\n        \"order\": 0,\n        \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n        \"updated_at\": \"2026-06-03T10:00:00.000000Z\"\n      }\n    ]\n  }\n}"
+							"body": "{\n  \"message\": \"Tutorial creado correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_module\": null,\n    \"id_tutorial_subtopic\": 1,\n    \"title\": \"Paso a paso: crear tu primer presupuesto\",\n    \"content\": null,\n    \"is_published\": true,\n    \"order\": 0,\n    \"module\": null,\n    \"subtopic\": {\"id\": 1, \"name\": \"Crear un presupuesto\", \"module\": {\"id\": 1, \"name\": \"Presupuestos\"}},\n    \"attachments\": [\n      {\"id\": 1, \"file_path\": \"storage/tutorials/1748123456_abc_guia.pdf\", \"original_name\": \"guia.pdf\", \"file_type\": \"pdf\", \"size\": 204800, \"order\": 0}\n    ]\n  }\n}"
 						},
 						{
-							"name": "200 OK - Tutorial guardado como borrador",
+							"name": "200 OK - Item directo en módulo",
 							"originalRequest": {
 								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{"key": "id_tutorial_subtopic", "value": "1", "type": "text"},
-										{"key": "title", "value": "Borrador: Cálculo de flete", "type": "text"},
-										{"key": "content_type", "value": "2", "type": "text"},
-										{"key": "is_published", "value": "false", "type": "text"}
-									]
-								},
-								"url": {"raw": "{{baseURL}}tutorials", "host": ["{{baseURL}}tutorials"]}
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"body": {"mode": "formdata", "formdata": [{"key": "id_tutorial_module", "value": "1", "type": "text"}, {"key": "title", "value": "Introducción a los presupuestos", "type": "text"}, {"key": "is_published", "value": "true", "type": "text"}]},
+								"url": {"raw": "{{BASE_URL}}/tutorials", "host": ["{{BASE_URL}}"], "path": ["tutorials"]}
 							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Tutorial creado correctamente\",\n  \"data\": {\n    \"id\": 2,\n    \"id_tutorial_subtopic\": 1,\n    \"title\": \"Borrador: Cálculo de flete\",\n    \"content\": null,\n    \"content_type\": 2,\n    \"cover_image\": null,\n    \"is_published\": false,\n    \"order\": 0,\n    \"created_at\": \"2026-06-03T10:30:00.000000Z\",\n    \"updated_at\": \"2026-06-03T10:30:00.000000Z\",\n    \"subtopic\": {\n      \"id\": 1,\n      \"name\": \"Crear un presupuesto\",\n      \"module\": {\"id\": 1, \"name\": \"Presupuestos\"}\n    },\n    \"attachments\": []\n  }\n}"
+							"body": "{\n  \"message\": \"Tutorial creado correctamente\",\n  \"data\": {\n    \"id\": 5,\n    \"id_tutorial_module\": 1,\n    \"id_tutorial_subtopic\": null,\n    \"title\": \"Introducción a los presupuestos\",\n    \"content\": null,\n    \"is_published\": true,\n    \"order\": 0,\n    \"module\": {\"id\": 1, \"name\": \"Presupuestos\", \"status\": 1},\n    \"subtopic\": null,\n    \"attachments\": []\n  }\n}"
 						},
 						{
-							"name": "422 Subtema no existe",
-							"originalRequest": {
-								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{"key": "id_tutorial_subtopic", "value": "999", "type": "text"},
-										{"key": "title", "value": "Tutorial inválido", "type": "text"}
-									]
-								},
-								"url": {"raw": "{{baseURL}}tutorials", "host": ["{{baseURL}}tutorials"]}
-							},
+							"name": "422 Ambos padres enviados",
+							"originalRequest": {"method": "POST", "header": [], "body": {"mode": "formdata", "formdata": [{"key": "id_tutorial_module", "value": "1", "type": "text"}, {"key": "id_tutorial_subtopic", "value": "1", "type": "text"}, {"key": "title", "value": "Test", "type": "text"}]}, "url": {"raw": "{{BASE_URL}}/tutorials", "host": ["{{BASE_URL}}"], "path": ["tutorials"]}},
 							"status": "Unprocessable Entity",
 							"code": 422,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [\n    {\n      \"id_tutorial_subtopic\": [\"The selected id tutorial subtopic is invalid.\"]\n    }\n  ]\n}"
+							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [{\"parent\": [\"Debe especificar id_tutorial_module O id_tutorial_subtopic, no ambos.\"]}]\n}"
 						},
 						{
-							"name": "422 Archivo adjunto demasiado grande",
-							"originalRequest": {
-								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{"key": "id_tutorial_subtopic", "value": "1", "type": "text"},
-										{"key": "title", "value": "Tutorial con adjunto pesado", "type": "text"},
-										{"key": "attachments[]", "type": "file", "src": []}
-									]
-								},
-								"url": {"raw": "{{baseURL}}tutorials", "host": ["{{baseURL}}tutorials"]}
-							},
+							"name": "422 Ningún padre enviado",
+							"originalRequest": {"method": "POST", "header": [], "body": {"mode": "formdata", "formdata": [{"key": "title", "value": "Sin padre", "type": "text"}]}, "url": {"raw": "{{BASE_URL}}/tutorials", "host": ["{{BASE_URL}}"], "path": ["tutorials"]}},
 							"status": "Unprocessable Entity",
 							"code": 422,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [\n    {\n      \"attachments.0\": [\"The attachments.0 may not be greater than 51200 kilobytes.\"]\n    }\n  ]\n}"
+							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [{\"id_tutorial_module\": [\"The id tutorial module field is required when id tutorial subtopic is not present.\"], \"id_tutorial_subtopic\": [\"The id tutorial subtopic field is required when id tutorial module is not present.\"]}]\n}"
 						},
 						{
 							"name": "403 Forbidden",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials", "host": ["{{baseURL}}tutorials"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials", "host": ["{{BASE_URL}}"], "path": ["tutorials"]}},
 							"status": "Forbidden",
 							"code": 403,
 							"_postman_previewlanguage": "json",
@@ -1096,107 +658,53 @@
 					]
 				},
 				{
-					"name": "POST tutorials/{id} (update)",
+					"name": "POST /tutorials/{id} (update)",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
 						"body": {
 							"mode": "formdata",
 							"formdata": [
-								{
-									"key": "title",
-									"value": "Título actualizado del tutorial",
-									"description": "Actualiza el título (opcional)",
-									"type": "text"
-								},
-								{
-									"key": "content",
-									"value": "<h2>Contenido actualizado</h2><p>...</p>",
-									"description": "Contenido HTML actualizado (opcional)",
-									"type": "text"
-								},
-								{
-									"key": "is_published",
-									"value": "true",
-									"description": "Publicar borrador o despublicar (opcional)",
-									"type": "text"
-								},
-								{
-									"key": "cover_image",
-									"description": "Nueva imagen de portada. Reemplaza la anterior (opcional)",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "remove_cover_image",
-									"value": "true",
-									"description": "true = eliminar la imagen de portada existente sin reemplazar (opcional)",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "new_attachments[]",
-									"description": "Nuevos adjuntos a agregar (se suman a los existentes, opcional)",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "delete_attachments[]",
-									"value": "2",
-									"description": "IDs de adjuntos a eliminar (opcional, array de IDs)",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "order",
-									"value": "1",
-									"description": "Nuevo orden de aparición (opcional)",
-									"type": "text",
-									"disabled": true
-								}
+								{"key": "title", "value": "Título actualizado", "description": "Opcional.", "type": "text"},
+								{"key": "content", "value": "<h2>Contenido actualizado</h2>", "description": "Opcional.", "type": "text"},
+								{"key": "is_published", "value": "true", "description": "Publicar o despublicar. Opcional.", "type": "text"},
+								{"key": "id_tutorial_subtopic", "value": "2", "description": "Reasignar a otro subtema (limpia id_tutorial_module automáticamente). Opcional.", "type": "text", "disabled": true},
+								{"key": "id_tutorial_module", "value": "1", "description": "Mover a directo en módulo (limpia id_tutorial_subtopic automáticamente). Opcional.", "type": "text", "disabled": true},
+								{"key": "order", "value": "1", "description": "Nuevo orden. Opcional.", "type": "text", "disabled": true},
+								{"key": "new_attachments[]", "description": "Nuevos adjuntos a agregar. Opcional.", "type": "file", "src": []},
+								{"key": "delete_attachments[]", "value": "2", "description": "IDs de adjuntos existentes a eliminar. Opcional.", "type": "text", "disabled": true}
 							]
 						},
-						"url": {
-							"raw": "{{baseURL}}tutorials/1",
-							"host": ["{{baseURL}}tutorials/1"]
-						},
-						"description": "Actualiza un tutorial. Solo admin. Enviar como multipart/form-data. Todos los campos son opcionales. Para eliminar adjuntos específicos usar delete_attachments[]=id. Para agregar nuevos usar new_attachments[]."
+						"url": {"raw": "{{BASE_URL}}/tutorials/1", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1"]},
+						"description": "Actualiza un tutorial. Solo admin. Multipart/form-data. Todos los campos son opcionales.\n\nCambiar padre: enviar solo id_tutorial_module O solo id_tutorial_subtopic; el otro se limpia automáticamente. Nunca enviar ambos."
 					},
 					"response": [
 						{
-							"name": "200 OK - Tutorial actualizado",
+							"name": "200 OK - Actualizado y publicado",
 							"originalRequest": {
 								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{"key": "title", "value": "Tutorial actualizado", "type": "text"},
-										{"key": "is_published", "value": "true", "type": "text"},
-										{"key": "delete_attachments[]", "value": "2", "type": "text"}
-									]
-								},
-								"url": {"raw": "{{baseURL}}tutorials/1", "host": ["{{baseURL}}tutorials/1"]}
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"body": {"mode": "formdata", "formdata": [{"key": "title", "value": "Tutorial actualizado", "type": "text"}, {"key": "is_published", "value": "true", "type": "text"}, {"key": "delete_attachments[]", "value": "2", "type": "text"}]},
+								"url": {"raw": "{{BASE_URL}}/tutorials/1", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1"]}
 							},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Tutorial actualizado correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_subtopic\": 1,\n    \"title\": \"Tutorial actualizado\",\n    \"content\": \"<h2>Introducción</h2><p>...</p>\",\n    \"content_type\": 1,\n    \"cover_image\": \"storage/tutorials/1748123456_abc_portada.jpg\",\n    \"is_published\": true,\n    \"order\": 0,\n    \"created_at\": \"2026-06-03T10:00:00.000000Z\",\n    \"updated_at\": \"2026-06-03T12:00:00.000000Z\",\n    \"subtopic\": {\n      \"id\": 1,\n      \"name\": \"Crear un presupuesto\",\n      \"module\": {\"id\": 1, \"name\": \"Presupuestos\"}\n    },\n    \"attachments\": [\n      {\n        \"id\": 1,\n        \"file_path\": \"storage/tutorials/1748123456_xyz_guia.pdf\",\n        \"original_name\": \"guia-presupuestos.pdf\",\n        \"file_type\": \"pdf\",\n        \"size\": 204800,\n        \"order\": 0\n      }\n    ]\n  }\n}"
+							"body": "{\n  \"message\": \"Tutorial actualizado correctamente\",\n  \"data\": {\n    \"id\": 1,\n    \"id_tutorial_module\": null,\n    \"id_tutorial_subtopic\": 1,\n    \"title\": \"Tutorial actualizado\",\n    \"content\": \"<h2>Introducción</h2><p>...</p>\",\n    \"is_published\": true,\n    \"order\": 0,\n    \"module\": null,\n    \"subtopic\": {\"id\": 1, \"name\": \"Crear un presupuesto\"},\n    \"attachments\": [\n      {\"id\": 1, \"file_path\": \"storage/tutorials/1748123456_xyz_guia.pdf\", \"original_name\": \"guia.pdf\", \"file_type\": \"pdf\", \"size\": 204800, \"order\": 0}\n    ]\n  }\n}"
+						},
+						{
+							"name": "422 Ambos padres enviados",
+							"originalRequest": {"method": "POST", "header": [], "body": {"mode": "formdata", "formdata": [{"key": "id_tutorial_module", "value": "1", "type": "text"}, {"key": "id_tutorial_subtopic", "value": "2", "type": "text"}]}, "url": {"raw": "{{BASE_URL}}/tutorials/1", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1"]}},
+							"status": "Unprocessable Entity",
+							"code": 422,
+							"_postman_previewlanguage": "json",
+							"header": [{"key": "Content-Type", "value": "application/json"}],
+							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [{\"parent\": [\"Debe especificar id_tutorial_module O id_tutorial_subtopic, no ambos.\"]}]\n}"
 						},
 						{
 							"name": "404 Not Found",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/999", "host": ["{{baseURL}}tutorials/999"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/999", "host": ["{{BASE_URL}}"], "path": ["tutorials", "999"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
@@ -1205,11 +713,7 @@
 						},
 						{
 							"name": "403 Forbidden",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/1", "host": ["{{baseURL}}tutorials/1"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/1", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1"]}},
 							"status": "Forbidden",
 							"code": 403,
 							"_postman_previewlanguage": "json",
@@ -1219,30 +723,17 @@
 					]
 				},
 				{
-					"name": "DELETE tutorials/{id}",
+					"name": "DELETE /tutorials/{id}",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{baseURL}}tutorials/1",
-							"host": ["{{baseURL}}tutorials/1"]
-						},
-						"description": "Elimina un tutorial. Solo admin. Elimina físicamente la imagen de portada y todos los archivos adjuntos del servidor antes de borrar el registro."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/tutorials/1", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1"]},
+						"description": "Elimina un tutorial. Solo admin. Elimina físicamente todos los archivos adjuntos del servidor."
 					},
 					"response": [
 						{
-							"name": "200 OK - Tutorial eliminado",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorials/1", "host": ["{{baseURL}}tutorials/1"]}
-							},
+							"name": "200 OK",
+							"originalRequest": {"method": "DELETE", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorials/1", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
@@ -1251,11 +742,7 @@
 						},
 						{
 							"name": "404 Not Found",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/999", "host": ["{{baseURL}}tutorials/999"]}
-							},
+							"originalRequest": {"method": "DELETE", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/999", "host": ["{{BASE_URL}}"], "path": ["tutorials", "999"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
@@ -1264,11 +751,7 @@
 						},
 						{
 							"name": "403 Forbidden",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/1", "host": ["{{baseURL}}tutorials/1"]}
-							},
+							"originalRequest": {"method": "DELETE", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/1", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1"]}},
 							"status": "Forbidden",
 							"code": 403,
 							"_postman_previewlanguage": "json",
@@ -1278,78 +761,41 @@
 					]
 				},
 				{
-					"name": "POST tutorials/{id}/attachments",
+					"name": "POST /tutorials/{id}/attachments",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
 						"body": {
 							"mode": "formdata",
 							"formdata": [
-								{
-									"key": "attachments[]",
-									"description": "Archivos a subir (imágenes, PDFs, videos, docs). Max 50MB c/u. Múltiples permitidos. Tipos MIME aceptados: image/*, application/pdf, video/mp4, video/webm, video/ogg, video/quicktime, application/msword, application/vnd.openxmlformats-officedocument.*",
-									"type": "file",
-									"src": []
-								}
+								{"key": "attachments[]", "description": "Archivos a subir (imágenes, PDFs, videos, docs). Max 50MB c/u. Múltiples permitidos. Tipo detectado automáticamente: image / pdf / video / other.", "type": "file", "src": []}
 							]
 						},
-						"url": {
-							"raw": "{{baseURL}}tutorials/1/attachments",
-							"host": ["{{baseURL}}tutorials/1/attachments"]
-						},
-						"description": "Agrega adjuntos adicionales a un tutorial existente. Solo admin. Se pueden subir múltiples archivos a la vez. Los nuevos adjuntos se ordenan automáticamente después de los existentes."
+						"url": {"raw": "{{BASE_URL}}/tutorials/1/attachments", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1", "attachments"]},
+						"description": "Agrega adjuntos a un tutorial existente. Solo admin."
 					},
 					"response": [
 						{
 							"name": "200 OK - Adjuntos subidos",
-							"originalRequest": {
-								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{"key": "attachments[]", "type": "file", "src": []},
-										{"key": "attachments[]", "type": "file", "src": []}
-									]
-								},
-								"url": {"raw": "{{baseURL}}tutorials/1/attachments", "host": ["{{baseURL}}tutorials/1/attachments"]}
-							},
+							"originalRequest": {"method": "POST", "header": [{"key": "Accept", "value": "application/json"}], "body": {"mode": "formdata", "formdata": [{"key": "attachments[]", "type": "file", "src": []}, {"key": "attachments[]", "type": "file", "src": []}]}, "url": {"raw": "{{BASE_URL}}/tutorials/1/attachments", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1", "attachments"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Adjuntos subidos correctamente\",\n  \"data\": [\n    {\n      \"id\": 3,\n      \"id_tutorial_item\": 1,\n      \"file_path\": \"storage/tutorials/1748200000_h8i9_video.mp4\",\n      \"original_name\": \"demo-presupuesto.mp4\",\n      \"file_type\": \"video\",\n      \"mime_type\": \"video/mp4\",\n      \"size\": 10485760,\n      \"order\": 2,\n      \"created_at\": \"2026-06-03T14:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T14:00:00.000000Z\"\n    },\n    {\n      \"id\": 4,\n      \"id_tutorial_item\": 1,\n      \"file_path\": \"storage/tutorials/1748200001_j0k1_captura.png\",\n      \"original_name\": \"captura-pantalla.png\",\n      \"file_type\": \"image\",\n      \"mime_type\": \"image/png\",\n      \"size\": 102400,\n      \"order\": 3,\n      \"created_at\": \"2026-06-03T14:00:00.000000Z\",\n      \"updated_at\": \"2026-06-03T14:00:00.000000Z\"\n    }\n  ]\n}"
+							"body": "{\n  \"message\": \"Adjuntos subidos correctamente\",\n  \"data\": [\n    {\"id\": 3, \"id_tutorial_item\": 1, \"file_path\": \"storage/tutorials/1748200000_h8i9_video.mp4\", \"original_name\": \"demo.mp4\", \"file_type\": \"video\", \"mime_type\": \"video/mp4\", \"size\": 10485760, \"order\": 2},\n    {\"id\": 4, \"id_tutorial_item\": 1, \"file_path\": \"storage/tutorials/1748200001_j0k1_captura.png\", \"original_name\": \"captura.png\", \"file_type\": \"image\", \"mime_type\": \"image/png\", \"size\": 102400, \"order\": 3}\n  ]\n}"
 						},
 						{
 							"name": "422 Sin archivos",
-							"originalRequest": {
-								"method": "POST",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"body": {
-									"mode": "formdata",
-									"formdata": []
-								},
-								"url": {"raw": "{{baseURL}}tutorials/1/attachments", "host": ["{{baseURL}}tutorials/1/attachments"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "body": {"mode": "formdata", "formdata": []}, "url": {"raw": "{{BASE_URL}}/tutorials/1/attachments", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1", "attachments"]}},
 							"status": "Unprocessable Entity",
 							"code": 422,
 							"_postman_previewlanguage": "json",
 							"header": [{"key": "Content-Type", "value": "application/json"}],
-							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [\n    {\n      \"attachments\": [\"The attachments field is required.\"]\n    }\n  ]\n}"
+							"body": "{\n  \"message\": \"Error de validación\",\n  \"data\": null,\n  \"error\": [{\"attachments\": [\"The attachments field is required.\"]}]\n}"
 						},
 						{
 							"name": "404 Tutorial no encontrado",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/999/attachments", "host": ["{{baseURL}}tutorials/999/attachments"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/999/attachments", "host": ["{{BASE_URL}}"], "path": ["tutorials", "999", "attachments"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
@@ -1358,11 +804,7 @@
 						},
 						{
 							"name": "403 Forbidden",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/1/attachments", "host": ["{{baseURL}}tutorials/1/attachments"]}
-							},
+							"originalRequest": {"method": "POST", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/1/attachments", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1", "attachments"]}},
 							"status": "Forbidden",
 							"code": 403,
 							"_postman_previewlanguage": "json",
@@ -1372,30 +814,17 @@
 					]
 				},
 				{
-					"name": "DELETE tutorials/{id}/attachments/{attachmentId}",
+					"name": "DELETE /tutorials/{id}/attachments/{attachmentId}",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{baseURL}}tutorials/1/attachments/3",
-							"host": ["{{baseURL}}tutorials/1/attachments/3"]
-						},
-						"description": "Elimina un adjunto individual de un tutorial. Solo admin. Elimina el archivo físico del servidor y el registro de la base de datos. El ID del adjunto debe pertenecer al tutorial indicado."
+						"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+						"url": {"raw": "{{BASE_URL}}/tutorials/1/attachments/3", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1", "attachments", "3"]},
+						"description": "Elimina un adjunto individual. Solo admin. Borra el archivo físico. El adjunto debe pertenecer al tutorial indicado."
 					},
 					"response": [
 						{
-							"name": "200 OK - Adjunto eliminado",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [{"key": "Accept", "value": "application/json", "type": "text"}],
-								"url": {"raw": "{{baseURL}}tutorials/1/attachments/3", "host": ["{{baseURL}}tutorials/1/attachments/3"]}
-							},
+							"name": "200 OK",
+							"originalRequest": {"method": "DELETE", "header": [{"key": "Accept", "value": "application/json"}], "url": {"raw": "{{BASE_URL}}/tutorials/1/attachments/3", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1", "attachments", "3"]}},
 							"status": "OK",
 							"code": 200,
 							"_postman_previewlanguage": "json",
@@ -1403,12 +832,8 @@
 							"body": "{\n  \"message\": \"Adjunto eliminado correctamente\",\n  \"data\": []\n}"
 						},
 						{
-							"name": "404 Adjunto no encontrado o no pertenece al tutorial",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/1/attachments/999", "host": ["{{baseURL}}tutorials/1/attachments/999"]}
-							},
+							"name": "404 Not Found",
+							"originalRequest": {"method": "DELETE", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/1/attachments/999", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1", "attachments", "999"]}},
 							"status": "Not Found",
 							"code": 404,
 							"_postman_previewlanguage": "json",
@@ -1417,11 +842,7 @@
 						},
 						{
 							"name": "403 Forbidden",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/1/attachments/3", "host": ["{{baseURL}}tutorials/1/attachments/3"]}
-							},
+							"originalRequest": {"method": "DELETE", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/1/attachments/3", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1", "attachments", "3"]}},
 							"status": "Forbidden",
 							"code": 403,
 							"_postman_previewlanguage": "json",
@@ -1430,11 +851,7 @@
 						},
 						{
 							"name": "401 Unauthorized",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [],
-								"url": {"raw": "{{baseURL}}tutorials/1/attachments/3", "host": ["{{baseURL}}tutorials/1/attachments/3"]}
-							},
+							"originalRequest": {"method": "DELETE", "header": [], "url": {"raw": "{{BASE_URL}}/tutorials/1/attachments/3", "host": ["{{BASE_URL}}"], "path": ["tutorials", "1", "attachments", "3"]}},
 							"status": "Unauthorized",
 							"code": 401,
 							"_postman_previewlanguage": "json",

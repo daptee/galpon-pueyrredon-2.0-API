@@ -5,23 +5,67 @@ namespace App\Http\Controllers;
 use App\Http\Responses\ApiResponse;
 use App\Models\TutorialAttachment;
 use App\Models\TutorialItem;
+use App\Models\TutorialModule;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class TutorialController extends Controller
 {
-    private const STORAGE_PATH    = 'storage/tutorials/';
-    private const ALLOWED_MIME_TYPES = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
-        'application/pdf',
-        'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ];
-    private const MAX_FILE_SIZE_MB = 50; // 50 MB por archivo
+    private const STORAGE_PATH   = 'storage/tutorials/';
+    private const MAX_FILE_SIZE_MB = 50;
+
+    // GET /tree - Árbol completo módulos > subtemas > items (navegación)
+    public function tree(Request $request)
+    {
+        try {
+            $user = auth()->user();
+
+            $modulesQuery = TutorialModule::with([
+                'subtopics' => function ($q) use ($user) {
+                    if (!$user->is_internal) {
+                        $q->where('status', 1);
+                    }
+                    $q->orderBy('order')->with([
+                        'items' => function ($q2) use ($user) {
+                            if (!$user->is_internal) {
+                                $q2->where('is_published', true);
+                            }
+                            $q2->orderBy('order')
+                               ->select('id', 'id_tutorial_module', 'id_tutorial_subtopic', 'title', 'is_published', 'order');
+                        },
+                    ]);
+                },
+                'items' => function ($q) use ($user) {
+                    // Items directos del módulo (sin subtema)
+                    $q->whereNull('id_tutorial_subtopic');
+                    if (!$user->is_internal) {
+                        $q->where('is_published', true);
+                    }
+                    $q->orderBy('order')
+                      ->select('id', 'id_tutorial_module', 'id_tutorial_subtopic', 'title', 'is_published', 'order');
+                },
+            ])->orderBy('order');
+
+            if (!$user->is_internal) {
+                $modulesQuery->where('status', 1);
+            }
+
+            $tree = $modulesQuery->get();
+
+            return ApiResponse::create('Árbol de tutoriales traído correctamente', 200, $tree, [
+                'request'  => $request,
+                'module'   => 'tutorial',
+                'endpoint' => 'Árbol de tutoriales',
+            ]);
+        } catch (Exception $e) {
+            return ApiResponse::create('Error al obtener el árbol de tutoriales', 500, ['error' => $e->getMessage()], [
+                'request'  => $request,
+                'module'   => 'tutorial',
+                'endpoint' => 'Árbol de tutoriales',
+            ]);
+        }
+    }
 
     // GET / - Listar items de tutorial con filtros
     public function index(Request $request)
@@ -31,26 +75,32 @@ class TutorialController extends Controller
             $isPaginated = $request->has('page') || $request->has('per_page');
             $perPage = $request->get('per_page', 20);
 
-            $query = TutorialItem::with(['subtopic.module', 'attachments']);
+            $query = TutorialItem::with(['module', 'subtopic.module', 'attachments']);
 
             if (!$user->is_internal) {
                 $query->where('is_published', true)
-                      ->whereHas('subtopic', fn($q) => $q->where('status', 1)
-                          ->whereHas('module', fn($q2) => $q2->where('status', 1)));
+                      ->where(function ($q) {
+                          // Items de módulo activo directamente
+                          $q->where(function ($qm) {
+                              $qm->whereNotNull('id_tutorial_module')
+                                 ->whereNull('id_tutorial_subtopic')
+                                 ->whereHas('module', fn($m) => $m->where('status', 1));
+                          })
+                          // Items de subtema activo con módulo activo
+                          ->orWhere(function ($qs) {
+                              $qs->whereNotNull('id_tutorial_subtopic')
+                                 ->whereHas('subtopic', fn($s) => $s->where('status', 1)
+                                     ->whereHas('module', fn($m) => $m->where('status', 1)));
+                          });
+                      });
+            }
+
+            if ($request->has('id_tutorial_module')) {
+                $query->where('id_tutorial_module', $request->input('id_tutorial_module'));
             }
 
             if ($request->has('id_tutorial_subtopic')) {
                 $query->where('id_tutorial_subtopic', $request->input('id_tutorial_subtopic'));
-            }
-
-            if ($request->has('id_tutorial_module')) {
-                $query->whereHas('subtopic', fn($q) =>
-                    $q->where('id_tutorial_module', $request->input('id_tutorial_module'))
-                );
-            }
-
-            if ($request->has('content_type')) {
-                $query->where('content_type', $request->input('content_type'));
             }
 
             if ($request->has('is_published') && $user->is_internal) {
@@ -99,7 +149,7 @@ class TutorialController extends Controller
     {
         try {
             $user = auth()->user();
-            $item = TutorialItem::with(['subtopic.module', 'attachments'])->find($id);
+            $item = TutorialItem::with(['module', 'subtopic.module', 'attachments'])->find($id);
 
             if (!$item) {
                 return ApiResponse::create('Tutorial no encontrado', 404, [], [
@@ -144,11 +194,10 @@ class TutorialController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'id_tutorial_subtopic' => 'required|exists:tutorial_subtopics,id',
+                'id_tutorial_module'   => 'required_without:id_tutorial_subtopic|nullable|exists:tutorial_modules,id',
+                'id_tutorial_subtopic' => 'required_without:id_tutorial_module|nullable|exists:tutorial_subtopics,id',
                 'title'                => 'required|string|max:255',
                 'content'              => 'nullable|string',
-                'content_type'         => 'nullable|integer|in:1,2,3,4,5',
-                'cover_image'          => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'is_published'         => 'nullable|boolean',
                 'order'                => 'nullable|integer|min:0',
                 'attachments.*'        => 'nullable|file|max:' . (self::MAX_FILE_SIZE_MB * 1024),
@@ -162,30 +211,42 @@ class TutorialController extends Controller
                 ]);
             }
 
+            // Exactamente uno de los dos debe estar seteado
+            $hasModule   = !empty($request->input('id_tutorial_module'));
+            $hasSubtopic = !empty($request->input('id_tutorial_subtopic'));
+
+            if ($hasModule && $hasSubtopic) {
+                return ApiResponse::create('Error de validación', 422, [['parent' => ['Debe especificar id_tutorial_module O id_tutorial_subtopic, no ambos.']]], [
+                    'request'  => $request,
+                    'module'   => 'tutorial',
+                    'endpoint' => 'Crear tutorial',
+                ]);
+            }
+
             $data = $validator->validated();
-            $data['content_type'] = $data['content_type'] ?? 1;
             $data['is_published'] = $data['is_published'] ?? false;
             $data['order']        = $data['order']        ?? 0;
+
+            // Asegurar que el campo no usado quede en null
+            if ($hasModule) {
+                $data['id_tutorial_subtopic'] = null;
+            } else {
+                $data['id_tutorial_module'] = null;
+            }
 
             $storagePath = public_path(self::STORAGE_PATH);
             if (!file_exists($storagePath)) {
                 mkdir($storagePath, 0777, true);
             }
 
-            // Imagen de portada
-            if ($request->hasFile('cover_image')) {
-                $data['cover_image'] = $this->saveFile($request->file('cover_image'), $storagePath);
-            }
-
             unset($data['attachments']);
             $item = TutorialItem::create($data);
 
-            // Adjuntos
             if ($request->hasFile('attachments')) {
                 $this->saveAttachments($request->file('attachments'), $item->id, $storagePath);
             }
 
-            $item->load('subtopic.module', 'attachments');
+            $item->load('module', 'subtopic.module', 'attachments');
 
             return ApiResponse::create('Tutorial creado correctamente', 200, $item, [
                 'request'  => $request,
@@ -223,12 +284,10 @@ class TutorialController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'id_tutorial_subtopic' => 'sometimes|exists:tutorial_subtopics,id',
+                'id_tutorial_module'   => 'sometimes|nullable|exists:tutorial_modules,id',
+                'id_tutorial_subtopic' => 'sometimes|nullable|exists:tutorial_subtopics,id',
                 'title'                => 'sometimes|string|max:255',
                 'content'              => 'nullable|string',
-                'content_type'         => 'sometimes|integer|in:1,2,3,4,5',
-                'cover_image'          => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-                'remove_cover_image'   => 'nullable|boolean',
                 'is_published'         => 'sometimes|boolean',
                 'order'                => 'nullable|integer|min:0',
                 'new_attachments.*'    => 'nullable|file|max:' . (self::MAX_FILE_SIZE_MB * 1024),
@@ -245,9 +304,28 @@ class TutorialController extends Controller
             }
 
             $data = $validator->validated();
+
+            // Validar que no se envíen ambos padres al mismo tiempo
+            $sendingModule   = array_key_exists('id_tutorial_module', $data)   && !is_null($data['id_tutorial_module']);
+            $sendingSubtopic = array_key_exists('id_tutorial_subtopic', $data) && !is_null($data['id_tutorial_subtopic']);
+
+            if ($sendingModule && $sendingSubtopic) {
+                return ApiResponse::create('Error de validación', 422, [['parent' => ['Debe especificar id_tutorial_module O id_tutorial_subtopic, no ambos.']]], [
+                    'request'  => $request,
+                    'module'   => 'tutorial',
+                    'endpoint' => 'Actualizar tutorial',
+                ]);
+            }
+
+            // Si se cambia el padre, limpiar el otro
+            if ($sendingModule) {
+                $data['id_tutorial_subtopic'] = null;
+            } elseif ($sendingSubtopic) {
+                $data['id_tutorial_module'] = null;
+            }
+
             $storagePath = public_path(self::STORAGE_PATH);
 
-            // Eliminar adjuntos marcados para borrar
             if (!empty($data['delete_attachments'])) {
                 $toDelete = TutorialAttachment::where('id_tutorial_item', $item->id)
                     ->whereIn('id', $data['delete_attachments'])
@@ -258,23 +336,6 @@ class TutorialController extends Controller
                 }
             }
 
-            // Imagen de portada nueva
-            if ($request->hasFile('cover_image')) {
-                if ($item->cover_image) {
-                    @unlink(public_path($item->cover_image));
-                }
-                if (!file_exists($storagePath)) {
-                    mkdir($storagePath, 0777, true);
-                }
-                $data['cover_image'] = $this->saveFile($request->file('cover_image'), $storagePath);
-            } elseif (!empty($data['remove_cover_image'])) {
-                if ($item->cover_image) {
-                    @unlink(public_path($item->cover_image));
-                }
-                $data['cover_image'] = null;
-            }
-
-            // Nuevos adjuntos adicionales
             if ($request->hasFile('new_attachments')) {
                 if (!file_exists($storagePath)) {
                     mkdir($storagePath, 0777, true);
@@ -282,9 +343,9 @@ class TutorialController extends Controller
                 $this->saveAttachments($request->file('new_attachments'), $item->id, $storagePath);
             }
 
-            unset($data['delete_attachments'], $data['new_attachments'], $data['remove_cover_image']);
+            unset($data['delete_attachments'], $data['new_attachments']);
             $item->update($data);
-            $item->load('subtopic.module', 'attachments');
+            $item->load('module', 'subtopic.module', 'attachments');
 
             return ApiResponse::create('Tutorial actualizado correctamente', 200, $item, [
                 'request'  => $request,
@@ -321,15 +382,11 @@ class TutorialController extends Controller
                 ]);
             }
 
-            // Eliminar archivos físicos antes de borrar el registro
             foreach ($item->attachments as $attachment) {
                 @unlink(public_path($attachment->file_path));
             }
-            if ($item->cover_image) {
-                @unlink(public_path($item->cover_image));
-            }
 
-            $item->delete(); // cascade elimina attachments en DB
+            $item->delete();
 
             return ApiResponse::create('Tutorial eliminado correctamente', 200, [], [
                 'request'  => $request,
@@ -345,7 +402,7 @@ class TutorialController extends Controller
         }
     }
 
-    // POST /{id}/attachments - Subir adjuntos adicionales a un tutorial existente (solo admin)
+    // POST /{id}/attachments - Subir adjuntos adicionales (solo admin)
     public function storeAttachments(Request $request, $id)
     {
         try {
@@ -401,7 +458,7 @@ class TutorialController extends Controller
         }
     }
 
-    // DELETE /{id}/attachments/{attachmentId} - Eliminar un adjunto individual (solo admin)
+    // DELETE /{id}/attachments/{attachmentId} - Eliminar un adjunto (solo admin)
     public function destroyAttachment(Request $request, $id, $attachmentId)
     {
         try {
@@ -442,48 +499,6 @@ class TutorialController extends Controller
         }
     }
 
-    // GET /tree - Árbol completo módulos > subtemas > items (navegación)
-    public function tree(Request $request)
-    {
-        try {
-            $user = auth()->user();
-
-            $modulesQuery = \App\Models\TutorialModule::with([
-                'subtopics' => function ($q) use ($user) {
-                    if (!$user->is_internal) {
-                        $q->where('status', 1);
-                    }
-                    $q->orderBy('order')->with([
-                        'items' => function ($q2) use ($user) {
-                            if (!$user->is_internal) {
-                                $q2->where('is_published', true);
-                            }
-                            $q2->orderBy('order')->select('id', 'id_tutorial_subtopic', 'title', 'content_type', 'is_published', 'order');
-                        },
-                    ]);
-                },
-            ])->orderBy('order');
-
-            if (!$user->is_internal) {
-                $modulesQuery->where('status', 1);
-            }
-
-            $tree = $modulesQuery->get();
-
-            return ApiResponse::create('Árbol de tutoriales traído correctamente', 200, $tree, [
-                'request'  => $request,
-                'module'   => 'tutorial',
-                'endpoint' => 'Árbol de tutoriales',
-            ]);
-        } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener el árbol de tutoriales', 500, ['error' => $e->getMessage()], [
-                'request'  => $request,
-                'module'   => 'tutorial',
-                'endpoint' => 'Árbol de tutoriales',
-            ]);
-        }
-    }
-
     // -------------------------------------------------------------------------
     // Helpers privados
     // -------------------------------------------------------------------------
@@ -497,15 +512,9 @@ class TutorialController extends Controller
 
     private function resolveFileType(string $mimeType): string
     {
-        if (str_starts_with($mimeType, 'image/')) {
-            return 'image';
-        }
-        if ($mimeType === 'application/pdf') {
-            return 'pdf';
-        }
-        if (str_starts_with($mimeType, 'video/')) {
-            return 'video';
-        }
+        if (str_starts_with($mimeType, 'image/')) return 'image';
+        if ($mimeType === 'application/pdf')       return 'pdf';
+        if (str_starts_with($mimeType, 'video/')) return 'video';
         return 'other';
     }
 
@@ -516,11 +525,10 @@ class TutorialController extends Controller
         foreach ($files as $file) {
             $order++;
             $mimeType = $file->getMimeType();
-            $filePath = $this->saveFile($file, $storagePath);
 
             TutorialAttachment::create([
                 'id_tutorial_item' => $itemId,
-                'file_path'        => $filePath,
+                'file_path'        => $this->saveFile($file, $storagePath),
                 'original_name'    => $file->getClientOriginalName(),
                 'file_type'        => $this->resolveFileType($mimeType),
                 'mime_type'        => $mimeType,
