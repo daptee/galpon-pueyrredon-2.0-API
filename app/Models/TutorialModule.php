@@ -24,4 +24,9 @@ class TutorialModule extends Model
     {
         return $this->hasMany(TutorialSubtopic::class, 'id_tutorial_module')->orderBy('order');
     }
+
+    public function items()
+    {
+        return $this->hasMany(TutorialItem::class, 'id_tutorial_module')->orderBy('order');
+    }
 }
