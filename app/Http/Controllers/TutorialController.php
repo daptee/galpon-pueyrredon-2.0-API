@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Validator;
 
 class TutorialController extends Controller
 {
-    private const STORAGE_PATH   = 'storage/tutorials/';
     private const MAX_FILE_SIZE_MB = 50;
 
     // GET /tree - Árbol completo módulos > subtemas > items (navegación)
@@ -234,16 +233,11 @@ class TutorialController extends Controller
                 $data['id_tutorial_module'] = null;
             }
 
-            $storagePath = public_path(self::STORAGE_PATH);
-            if (!file_exists($storagePath)) {
-                mkdir($storagePath, 0777, true);
-            }
-
             unset($data['attachments']);
             $item = TutorialItem::create($data);
 
             if ($request->hasFile('attachments')) {
-                $this->saveAttachments($request->file('attachments'), $item->id, $storagePath);
+                $this->saveAttachments($request->file('attachments'), $item->id);
             }
 
             $item->load('module', 'subtopic.module', 'attachments');
@@ -324,8 +318,6 @@ class TutorialController extends Controller
                 $data['id_tutorial_module'] = null;
             }
 
-            $storagePath = public_path(self::STORAGE_PATH);
-
             if (!empty($data['delete_attachments'])) {
                 $toDelete = TutorialAttachment::where('id_tutorial_item', $item->id)
                     ->whereIn('id', $data['delete_attachments'])
@@ -337,10 +329,7 @@ class TutorialController extends Controller
             }
 
             if ($request->hasFile('new_attachments')) {
-                if (!file_exists($storagePath)) {
-                    mkdir($storagePath, 0777, true);
-                }
-                $this->saveAttachments($request->file('new_attachments'), $item->id, $storagePath);
+                $this->saveAttachments($request->file('new_attachments'), $item->id);
             }
 
             unset($data['delete_attachments'], $data['new_attachments']);
@@ -436,12 +425,7 @@ class TutorialController extends Controller
                 ]);
             }
 
-            $storagePath = public_path(self::STORAGE_PATH);
-            if (!file_exists($storagePath)) {
-                mkdir($storagePath, 0777, true);
-            }
-
-            $this->saveAttachments($request->file('attachments'), $item->id, $storagePath);
+            $this->saveAttachments($request->file('attachments'), $item->id);
             $item->load('attachments');
 
             return ApiResponse::create('Adjuntos subidos correctamente', 200, $item->attachments, [
@@ -503,11 +487,14 @@ class TutorialController extends Controller
     // Helpers privados
     // -------------------------------------------------------------------------
 
-    private function saveFile($file, string $storagePath): string
+    private function itemStoragePath(int $itemId): string
     {
-        $filename = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
-        $file->move($storagePath, $filename);
-        return self::STORAGE_PATH . $filename;
+        return public_path("storage/tutorials/{$itemId}/");
+    }
+
+    private function itemStorageUrl(int $itemId, string $filename): string
+    {
+        return "storage/tutorials/{$itemId}/{$filename}";
     }
 
     private function resolveFileType(string $mimeType): string
@@ -518,21 +505,33 @@ class TutorialController extends Controller
         return 'other';
     }
 
-    private function saveAttachments(array $files, int $itemId, string $storagePath): void
+    private function saveAttachments(array $files, int $itemId): void
     {
+        $storagePath = $this->itemStoragePath($itemId);
+        if (!file_exists($storagePath)) {
+            mkdir($storagePath, 0777, true);
+        }
+
         $order = TutorialAttachment::where('id_tutorial_item', $itemId)->max('order') ?? -1;
 
         foreach ($files as $file) {
             $order++;
-            $mimeType = $file->getMimeType();
+
+            // Capturar metadatos ANTES de mover el archivo
+            $mimeType     = $file->getMimeType();
+            $size         = $file->getSize();
+            $originalName = $file->getClientOriginalName();
+            $filename     = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
+
+            $file->move($storagePath, $filename);
 
             TutorialAttachment::create([
                 'id_tutorial_item' => $itemId,
-                'file_path'        => $this->saveFile($file, $storagePath),
-                'original_name'    => $file->getClientOriginalName(),
+                'file_path'        => $this->itemStorageUrl($itemId, $filename),
+                'original_name'    => $originalName,
                 'file_type'        => $this->resolveFileType($mimeType),
                 'mime_type'        => $mimeType,
-                'size'             => $file->getSize(),
+                'size'             => $size,
                 'order'            => $order,
             ]);
         }
