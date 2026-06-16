@@ -35,6 +35,9 @@ use App\Http\Controllers\TransportationController;
 use App\Http\Controllers\UserTypeController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\ContactFormController;
+use App\Http\Controllers\TutorialController;
+use App\Http\Controllers\TutorialModuleController;
+use App\Http\Controllers\TutorialSubtopicController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
@@ -416,4 +419,43 @@ Route::group([
     Route::get('/product-line', [ProductLineController::class, 'indexV1']);
     Route::get('/product-furniture', [ProductFurnitureController::class, 'indexV1']);
     Route::post('/contact-form', [ContactFormController::class, 'store']);
+});
+
+// Tutorial Modules (admin CRUD + lectura para clientes autenticados)
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'tutorial-modules'
+], function () {
+    Route::get('/', [TutorialModuleController::class, 'index'])->middleware('admin');
+    Route::get('/{id}', [TutorialModuleController::class, 'show'])->middleware('admin');
+    Route::post('/', [TutorialModuleController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [TutorialModuleController::class, 'update'])->middleware('admin');
+    Route::delete('/{id}', [TutorialModuleController::class, 'destroy'])->middleware('admin');
+});
+
+// Tutorial Subtopics (admin CRUD + lectura para clientes autenticados)
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'tutorial-subtopics'
+], function () {
+    Route::get('/', [TutorialSubtopicController::class, 'index'])->middleware('admin');
+    Route::get('/{id}', [TutorialSubtopicController::class, 'show'])->middleware('admin');
+    Route::post('/', [TutorialSubtopicController::class, 'store'])->middleware('admin');
+    Route::put('/{id}', [TutorialSubtopicController::class, 'update'])->middleware('admin');
+    Route::delete('/{id}', [TutorialSubtopicController::class, 'destroy'])->middleware('admin');
+});
+
+// Tutorials (admin CRUD + lectura para clientes autenticados)
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'tutorials'
+], function () {
+    Route::get('/tree', [TutorialController::class, 'tree'])->middleware('admin');
+    Route::get('/', [TutorialController::class, 'index'])->middleware('admin');
+    Route::get('/{id}', [TutorialController::class, 'show'])->middleware('admin');
+    Route::post('/', [TutorialController::class, 'store'])->middleware('admin');
+    Route::post('/{id}', [TutorialController::class, 'update'])->middleware('admin');
+    Route::delete('/{id}', [TutorialController::class, 'destroy'])->middleware('admin');
+    Route::post('/{id}/attachments', [TutorialController::class, 'storeAttachments'])->middleware('admin');
+    Route::delete('/{id}/attachments/{attachmentId}', [TutorialController::class, 'destroyAttachment'])->middleware('admin');
 });
