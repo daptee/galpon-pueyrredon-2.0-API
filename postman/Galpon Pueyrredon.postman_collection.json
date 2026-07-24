@@ -6410,7 +6410,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{BASE_URL}}/products/stock/export?date=2025-06-09",
+              "raw": "{{BASE_URL}}/products/stock/export?date_from=2025-06-01&date_to=2025-06-30",
               "host": [
                 "{{BASE_URL}}"
               ],
@@ -6421,8 +6421,12 @@
               ],
               "query": [
                 {
-                  "key": "date",
-                  "value": "2025-06-09"
+                  "key": "date_from",
+                  "value": "2025-06-01"
+                },
+                {
+                  "key": "date_to",
+                  "value": "2025-06-30"
                 }
               ]
             }
@@ -6434,7 +6438,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{BASE_URL}}/products/stock/export?date=2025-06-09",
+                  "raw": "{{BASE_URL}}/products/stock/export?date_from=2025-06-01&date_to=2025-06-30",
                   "host": [
                     "{{BASE_URL}}"
                   ],
@@ -6445,8 +6449,12 @@
                   ],
                   "query": [
                     {
-                      "key": "date",
-                      "value": "2025-06-09"
+                      "key": "date_from",
+                      "value": "2025-06-01"
+                    },
+                    {
+                      "key": "date_to",
+                      "value": "2025-06-30"
                     }
                   ]
                 }

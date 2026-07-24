@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use App\Exports\CustomValueBinder;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class ProductStockReportExport extends CustomValueBinder implements FromCollection, WithHeadings, WithColumnWidths, WithMapping, WithCustomValueBinder
 {
@@ -63,9 +64,9 @@ class ProductStockReportExport extends CustomValueBinder implements FromCollecti
             'E' => 12,
         ];
 
-        $start = ord('F');
         foreach (range(0, count($this->dates) - 1) as $i) {
-            $columnLetter = chr($start + $i);
+            // Columna F (índice 6) en adelante, una por fecha
+            $columnLetter = Coordinate::stringFromColumnIndex(6 + $i);
             $columns[$columnLetter] = 15;
         }
 
