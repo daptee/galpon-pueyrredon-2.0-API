@@ -1318,13 +1318,18 @@ class ProductController extends Controller
     public function exportReport7Days(Request $request)
     {
         try {
-            $date = $request->query('date');
-            if (!$date) {
-                return response()->json(['error' => 'Debe proporcionar una fecha'], 400);
-            }
+            $request->validate([
+                'date_from' => 'required|date',
+                'date_to' => 'required|date|after_or_equal:date_from',
+            ]);
 
-            $startDate = \Carbon\Carbon::parse($date);
-            $dates = collect(range(0, 6))->map(fn($i) => $startDate->copy()->addDays($i)->toDateString());
+            $startDate = \Carbon\Carbon::parse($request->date_from)->startOfDay();
+            $endDate = \Carbon\Carbon::parse($request->date_to)->startOfDay();
+
+            $dates = collect();
+            for ($d = $startDate->copy(); $d->lte($endDate); $d->addDay()) {
+                $dates->push($d->toDateString());
+            }
 
             $usedProductIds = ProductUseStock::distinct()->pluck('id_product')->toArray();
 
