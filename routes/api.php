@@ -12,6 +12,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventTypeController;
 use App\Http\Controllers\LocalityController;
+use App\Http\Controllers\LogisticsCapacityController;
 use App\Http\Controllers\PawnHourPriceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentMethodController;
@@ -307,6 +308,19 @@ Route::group([
     Route::post('/sendMails/{id}', [BudgetController::class, 'sendMails'])->middleware('admin');
     Route::get('/generate-pdf-delivery-information/{id}', [BudgetController::class, 'generatePdfDeliveryInformation'])->middleware('admin');
     Route::post('/calculate-volume', [BudgetController::class, 'calculateVolume'])->middleware('admin');
+});
+
+// Logistics Capacity
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'logistics-capacity'
+], function () {
+    Route::get('/config', [LogisticsCapacityController::class, 'getConfig'])->middleware('admin');
+    Route::put('/config', [LogisticsCapacityController::class, 'updateConfig'])->middleware('admin');
+    Route::get('/blocked-dates', [LogisticsCapacityController::class, 'listBlockedDates'])->middleware('admin');
+    Route::post('/blocked-dates', [LogisticsCapacityController::class, 'blockDate'])->middleware('admin');
+    Route::delete('/blocked-dates/{id}', [LogisticsCapacityController::class, 'unblockDate'])->middleware('admin');
+    Route::post('/check', [LogisticsCapacityController::class, 'check'])->middleware('admin');
 });
 
 Route::group([

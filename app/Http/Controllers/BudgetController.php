@@ -14,6 +14,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductProducts;
 use App\Models\ProductUseStock;
+use App\Services\LogisticsCapacityService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -406,6 +407,15 @@ class BudgetController extends Controller
 
             $data = $request->all();
 
+            $logisticsBlock = $this->evaluateLogisticsCapacity($data['date_event'], $data['volume'] ?? null, $data['id_budget'] ?? null);
+            if ($logisticsBlock) {
+                return ApiResponse::create($logisticsBlock['message'], 422, ['logistics_capacity' => $logisticsBlock['result']], [
+                    'request' => $request,
+                    'module' => 'budget',
+                    'endpoint' => 'Crear presupuesto',
+                ]);
+            }
+
             $budget = Budget::create($data);
 
             foreach ($data['product'] as $item) {
@@ -662,6 +672,17 @@ class BudgetController extends Controller
                 return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], []);
             }
 
+            if ($request->id_budget_status == 3) {
+                $logisticsBlock = $this->evaluateLogisticsCapacity($budget->date_event, $budget->volume, $budget->id);
+                if ($logisticsBlock) {
+                    return ApiResponse::create($logisticsBlock['message'], 422, ['logistics_capacity' => $logisticsBlock['result']], [
+                        'request' => $request,
+                        'module' => 'budget',
+                        'endpoint' => 'Actualizar estado del presupuesto',
+                    ]);
+                }
+            }
+
             $budget->id_budget_status = $request->id_budget_status;
             $budget->save();
 
@@ -895,6 +916,15 @@ class BudgetController extends Controller
             }
 
             $data = $request->all();
+
+            $logisticsBlock = $this->evaluateLogisticsCapacity($data['date_event'], $data['volume'] ?? null, $budget->id);
+            if ($logisticsBlock) {
+                return ApiResponse::create($logisticsBlock['message'], 422, ['logistics_capacity' => $logisticsBlock['result']], [
+                    'request' => $request,
+                    'module' => 'budget',
+                    'endpoint' => 'Editar presupuesto',
+                ]);
+            }
 
             if ($request->id_budget_status == 3) {
 
@@ -2346,6 +2376,43 @@ class BudgetController extends Controller
 
         // Todos
         return $parents->reverse()->merge([$budget])->merge($children);
+    }
+
+    /**
+     * Chequea la capacidad logística de la fecha del evento antes de persistir.
+     * Devuelve null si se puede proseguir, o un array ['message', 'result'] si hay
+     * que bloquear la operación (fecha cerrada para cualquier rol, o disponibilidad
+     * excedida para un cliente BtoB). Se omite por completo si la familia de
+     * versiones del presupuesto ya tiene una versión Aprobada.
+     */
+    private function evaluateLogisticsCapacity($dateEvent, $volume, $familyMemberId)
+    {
+        $isClient = auth()->user()->id_user_type == 3;
+        $service = new LogisticsCapacityService();
+
+        if ($service->familyHasApprovedVersion($familyMemberId)) {
+            return null;
+        }
+
+        $result = $service->evaluate($dateEvent, $isClient, (float) ($volume ?? 0));
+
+        $blocked = $result['status'] === 'fecha_cerrada' || ($isClient && $result['status'] === 'excedida');
+
+        if (!$blocked) {
+            return null;
+        }
+
+        if ($result['status'] === 'fecha_cerrada') {
+            $reason = $result['blocked_date']['reason'] ?? null;
+            $message = 'La fecha seleccionada se encuentra cerrada para nuevos eventos.' . ($reason ? " Motivo: {$reason}" : '');
+        } else {
+            $message = 'Nuestro stock y la capacidad logística se encuentra altamente limitada para esta fecha, por favor comuníquese con nosotros para ver si es posible tomar el pedido.';
+        }
+
+        return [
+            'message' => $message,
+            'result' => $result,
+        ];
     }
 
     public function calculateVolume(Request $request)

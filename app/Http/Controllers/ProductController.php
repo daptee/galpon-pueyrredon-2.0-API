@@ -9,6 +9,7 @@ use App\Models\ProductImage;
 use App\Models\ProductPrice;
 use App\Models\ProductProducts;
 use App\Models\ProductUseStock;
+use App\Services\LogisticsCapacityService;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
@@ -1085,6 +1086,8 @@ class ProductController extends Controller
                     ->orWhereBetween('date_to', [$start, $end]);
             })->with(['product', 'product.productStock', 'product.comboItems.product.productStock', 'budget.client', 'budget.place'])->get();
 
+            $logisticsService = new LogisticsCapacityService();
+
             $result = [];
 
             for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
@@ -1146,9 +1149,14 @@ class ProductController extends Controller
                     ];
                 }
 
+                $logisticsDay = $logisticsService->evaluate($currentDate, false, 0, true);
+
                 $result[] = [
                     'date' => $currentDate,
                     'budgets' => $budgets,
+                    'blocked' => $logisticsDay['status'] === 'fecha_cerrada',
+                    'blocked_reason' => $logisticsDay['blocked_date']['reason'] ?? null,
+                    'logistics_status' => $logisticsDay['status'],
                 ];
             }
 
