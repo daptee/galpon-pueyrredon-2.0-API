@@ -9,6 +9,7 @@ use App\Models\ProductImage;
 use App\Models\ProductPrice;
 use App\Models\ProductProducts;
 use App\Models\ProductUseStock;
+use App\Services\BudgetVolumeService;
 use App\Services\LogisticsCapacityService;
 use Illuminate\Http\Request;
 use App\Models\Product;
@@ -1087,8 +1088,10 @@ class ProductController extends Controller
             })->with(['product', 'product.productStock', 'product.comboItems.product.productStock', 'budget.client', 'budget.place'])->get();
 
             $logisticsService = new LogisticsCapacityService();
+            $volumeService = new BudgetVolumeService();
 
             $result = [];
+            $recalculatedBudgetIds = [];
 
             for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
                 $currentDate = $date->toDateString();
@@ -1130,6 +1133,11 @@ class ProductController extends Controller
 
                     $firstUse = $usesInBudget->first();
                     $budget = $firstUse?->budget;
+
+                    if ($budget && !$budget->volume && !in_array($budget->id, $recalculatedBudgetIds)) {
+                        $volumeService->recalculateAndSave($budget);
+                        $recalculatedBudgetIds[] = $budget->id;
+                    }
 
                     $budgets[] = [
                         'id_budget' => $budgetId,

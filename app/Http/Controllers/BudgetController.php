@@ -14,6 +14,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductProducts;
 use App\Models\ProductUseStock;
+use App\Services\BudgetVolumeService;
 use App\Services\LogisticsCapacityService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -2438,12 +2439,14 @@ class BudgetController extends Controller
                     ->get();
             }
 
+            $volumeService = new BudgetVolumeService();
+
             $updated = 0;
             $results = [];
             $lastId = null;
 
             foreach ($budgets as $budget) {
-                $totalVolume = $this->calculateBudgetVolume($budget);
+                $totalVolume = $volumeService->calculateBudgetVolume($budget);
                 $lastId = $budget->id;
 
                 if ($budget->volume != $totalVolume) {
@@ -2478,71 +2481,6 @@ class BudgetController extends Controller
                 'endpoint' => 'Calcular volumen',
             ]);
         }
-    }
-
-    private function calculateBudgetVolume(Budget $budget): float
-    {
-        $budgetProducts = BudgetProducts::where('id_budget', $budget->id)->get();
-
-        if ($budgetProducts->isEmpty()) {
-            return 0;
-        }
-
-        $totalVolume = 0;
-
-        foreach ($budgetProducts as $budgetProduct) {
-            $product = Product::with(['comboItems.product'])->find($budgetProduct->id_product);
-
-            if (!$product) {
-                continue;
-            }
-
-            $productVolume = $this->getProductVolume($product);
-            $totalVolume += $productVolume * $budgetProduct->quantity;
-        }
-
-        return round($totalVolume, 2);
-    }
-
-    private function getProductVolume(Product $product): float
-    {
-        // Si es un combo (id_product_type == 2)
-        if ($product->id_product_type == 2) {
-            return $this->getComboVolume($product);
-        }
-
-        return $product->volume ?? 0;
-    }
-
-    private function getComboVolume(Product $comboProduct): float
-    {
-        $comboItems = ProductProducts::where('id_parent_product', $comboProduct->id)
-            ->with('product')
-            ->get();
-
-        if ($comboItems->isEmpty()) {
-            return 0;
-        }
-
-        $totalVolume = 0;
-
-        foreach ($comboItems as $item) {
-            $childProduct = $item->product;
-
-            if (!$childProduct) {
-                continue;
-            }
-
-            if ($childProduct->id_product_type == 2) {
-                $childVolume = $this->getComboVolume($childProduct);
-            } else {
-                $childVolume = $childProduct->volume ?? 0;
-            }
-
-            $totalVolume += $childVolume * $item->quantity;
-        }
-
-        return $totalVolume;
     }
 
     /**
