@@ -74,6 +74,11 @@ class Budget extends Model
         return $this->hasOne(BudgetDeliveryData::class, 'id_budget')->latest('id');
     }
 
+    public function logisticsSheet()
+    {
+        return $this->hasOne(LogisticsSheet::class, 'id_budget');
+    }
+
     public function payments()
     {
         return $this->hasMany(Payment::class, 'id_budget');

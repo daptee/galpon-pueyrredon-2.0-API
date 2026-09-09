@@ -13,6 +13,8 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventTypeController;
 use App\Http\Controllers\LocalityController;
 use App\Http\Controllers\LogisticsCapacityController;
+use App\Http\Controllers\LogisticsSheetController;
+use App\Http\Controllers\LogisticsSheetPublicController;
 use App\Http\Controllers\PawnHourPriceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentMethodController;
@@ -379,6 +381,14 @@ Route::group([
     Route::put('/{id}', [BudgetDeliveryDataController::class, 'update'])->middleware('admin');
 });
 
+// Logistics Sheet (ficha logística)
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'logistics-sheet'
+], function () {
+    Route::get('/budget/{idBudget}', [LogisticsSheetController::class, 'getOrCreate'])->middleware('admin');
+});
+
 // Payment
 Route::group([
     'middleware' => 'api',
@@ -433,6 +443,8 @@ Route::group([
     Route::get('/product-line', [ProductLineController::class, 'indexV1']);
     Route::get('/product-furniture', [ProductFurnitureController::class, 'indexV1']);
     Route::post('/contact-form', [ContactFormController::class, 'store']);
+    Route::get('/logistics-sheet/{token}', [LogisticsSheetPublicController::class, 'show']);
+    Route::post('/logistics-sheet/{token}', [LogisticsSheetPublicController::class, 'update']);
 });
 
 // Tutorial Modules (admin CRUD + lectura para clientes autenticados)
