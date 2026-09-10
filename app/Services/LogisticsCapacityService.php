@@ -9,6 +9,15 @@ use Carbon\Carbon;
 
 class LogisticsCapacityService
 {
+    /**
+     * `budget.volume` / `product.volume` se guardan en litros (así lo espera el
+     * resto del sistema, p.ej. el cálculo de BudgetVolumeService). Los máximos de
+     * volumen de la configuración (max_daily_volume, max_successive_volume) están
+     * en metros cúbicos para que tengan sentido físico al calibrarlos, así que acá
+     * se convierte litros -> m3 antes de comparar.
+     */
+    private const LITERS_PER_CUBIC_METER = 1000;
+
     public function getConfig(): LogisticsCapacityConfig
     {
         $config = LogisticsCapacityConfig::first();
@@ -116,7 +125,7 @@ class LogisticsCapacityService
             'daily_volume' => [
                 'variable' => 'daily_volume',
                 'period' => 'day',
-                'current' => round($existingVolumeDay + $volumeDelta, 2),
+                'current' => round(($existingVolumeDay + $volumeDelta) / self::LITERS_PER_CUBIC_METER, 2),
                 'max' => (float) $config->max_daily_volume,
             ],
             'successive_events_prev' => [
@@ -134,13 +143,13 @@ class LogisticsCapacityService
             'successive_volume_prev' => [
                 'variable' => 'successive_volume',
                 'period' => 'previous_pair',
-                'current' => round($existingVolumePrev + $existingVolumeDay + $volumeDelta, 2),
+                'current' => round(($existingVolumePrev + $existingVolumeDay + $volumeDelta) / self::LITERS_PER_CUBIC_METER, 2),
                 'max' => (float) $config->max_successive_volume,
             ],
             'successive_volume_next' => [
                 'variable' => 'successive_volume',
                 'period' => 'next_pair',
-                'current' => round($existingVolumeDay + $existingVolumeNext + $volumeDelta, 2),
+                'current' => round(($existingVolumeDay + $existingVolumeNext + $volumeDelta) / self::LITERS_PER_CUBIC_METER, 2),
                 'max' => (float) $config->max_successive_volume,
             ],
         ];
