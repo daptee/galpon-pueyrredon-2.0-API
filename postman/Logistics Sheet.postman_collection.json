@@ -1,0 +1,490 @@
+{
+  "info": {
+    "_postman_id": "a3d7e5f0-1b2c-4d6e-8f9a-0c1b2a3d4e5f",
+    "name": "Logistics Sheet",
+    "description": "Endpoints de la \"Ficha Logística\": el formulario que reemplaza el intercambio manual por mail/WhatsApp para obtener del cliente la información logística de un evento (datos básicos, armado/desarme, seguros y planos).\n\nHay dos grupos de endpoints:\n\n1. **Admin** (`/logistics-sheet/...`, requiere JWT + middleware `admin`): permite obtener (o crear, si todavía no existe) la ficha asociada a un presupuesto, para copiar el link público y enviarlo manualmente al cliente por mail o WhatsApp.\n2. **Público** (`/v1/logistics-sheet/{token}`, sin autenticación): es el link que recibe el cliente. Permite ver los datos ya cargados (precarga) y guardar/actualizar de forma **incremental** — solo se pisan los campos que se envían en cada request, el resto queda como estaba.\n\nCada campo puede resolverse de 3 formas: completándolo con su valor real, marcándolo `later` (\"se completará más tarde\") o `not_applicable` (\"no aplica\"), usando el array `field_status` del body (ver ejemplos del endpoint \"Marcar campos...\"). La ficha se considera completa (`is_completed: true`) cuando todos los campos mandatorios tienen valor o están en `not_applicable`, y ningún campo quedó en `later`.\n\nPasado el límite de edición (`LOGISTICS_SHEET_EDIT_CUTOFF_DAYS` días antes de `event_start_datetime`, default 2), el POST público devuelve 403 y la ficha pasa a ser de solo lectura (`read_only: true` en el GET).\n\nNota de alcance: estos endpoints solo cubren la carga/lectura de la ficha. El envío automático programado de recordatorios (al aprobar el presupuesto, 15/10/7/5 días antes) y la integración con TEAM UP se resuelven en otra tarea.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Obtener o crear ficha (admin)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{BASE_URL}}/logistics-sheet/budget/12",
+          "host": ["{{BASE_URL}}"],
+          "path": ["logistics-sheet", "budget", "12"]
+        },
+        "description": "Solo admin. Si el presupuesto todavía no tiene ficha logística, la crea con un token nuevo. Devuelve `public_url` (armada con `FRONTEND_URL` + el token) para copiar y enviar manualmente por mail o WhatsApp."
+      },
+      "response": [
+        {
+          "name": "200 OK - Ficha creada por primera vez",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-sheet/budget/12",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-sheet", "budget", "12"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"message\":\"Ficha logística obtenida correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":false,\"id_event_type\":null,\"event_type_other\":null,\"event_start_datetime\":null,\"event_end_datetime\":null,\"address\":null,\"address_maps_link\":null,\"accessibility_comments\":null,\"order_contact_name\":null,\"order_contact_phone\":null,\"delivery_windows\":null,\"pickup_windows\":null,\"reception_contact_name\":null,\"reception_contact_phone\":null,\"cushion_color\":null,\"additional_order_details\":null,\"insurance_required\":null,\"insurance_document_path\":null,\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"is_completed\":false,\"completed_at\":null,\"created_at\":\"2026-09-08T13:00:00.000000Z\",\"updated_at\":\"2026-09-08T13:00:00.000000Z\",\"budget\":{\"id\":12,\"id_client\":218,\"client_mail\":\"cliente@correo.com\",\"client_phone\":\"+5491123456789\",\"date_event\":\"2026-11-20\",\"time_event\":\"18:00:00\",\"id_budget_status\":3,\"client_name\":null},\"event_type\":null,\"public_url\":\"https://app.galponpueyrredon.com/ficha-logistica/3f2504e0-4f89-11ee-be56-0242ac120002\"}}"
+        },
+        {
+          "name": "200 OK - Ficha ya existente (parcialmente completa)",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-sheet/budget/12",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-sheet", "budget", "12"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"message\":\"Ficha logística obtenida correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":true,\"id_event_type\":2,\"event_type_other\":null,\"event_start_datetime\":\"2026-11-20T18:00:00.000000Z\",\"event_end_datetime\":\"2026-11-20T23:00:00.000000Z\",\"address\":\"Av. Siempre Viva 742, Mar del Plata\",\"address_maps_link\":\"https://maps.app.goo.gl/abc123\",\"accessibility_comments\":null,\"order_contact_name\":\"Juan Pérez\",\"order_contact_phone\":\"+5491123456789\",\"delivery_windows\":null,\"pickup_windows\":null,\"reception_contact_name\":null,\"reception_contact_phone\":null,\"cushion_color\":null,\"additional_order_details\":null,\"insurance_required\":null,\"insurance_document_path\":null,\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"is_completed\":false,\"completed_at\":null,\"created_at\":\"2026-09-01T13:00:00.000000Z\",\"updated_at\":\"2026-09-08T10:15:00.000000Z\",\"budget\":{\"id\":12,\"id_client\":218,\"client_mail\":\"cliente@correo.com\",\"client_phone\":\"+5491123456789\",\"date_event\":\"2026-11-20\",\"time_event\":\"18:00:00\",\"id_budget_status\":3,\"client_name\":null},\"event_type\":{\"id\":2,\"name\":\"Corporativo\",\"status\":1},\"public_url\":\"https://app.galponpueyrredon.com/ficha-logistica/3f2504e0-4f89-11ee-be56-0242ac120002\"}}"
+        },
+        {
+          "name": "404 Presupuesto no encontrado",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-sheet/budget/9999",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-sheet", "budget", "9999"]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"message\":\"Presupuesto no encontrado\",\"data\":null,\"error\":{\"error\":\"Presupuesto no encontrado\"}}"
+        }
+      ]
+    },
+    {
+      "name": "Ver ficha (público, por token)",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+          "host": ["{{BASE_URL}}"],
+          "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+        },
+        "description": "Sin autenticación. Es la pantalla que abre el cliente al hacer clic en el link. Devuelve la ficha precargada, datos de solo lectura del presupuesto (incluyendo el link al PDF ya generado, para que el cliente lo ratifique), el catálogo de tipos de evento para el combo, y si la ficha ya pasó a modo solo-lectura (`read_only`)."
+      },
+      "response": [
+        {
+          "name": "200 OK - Ficha recién creada (vacía)",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":1,\"response\":\"ok\",\"data\":{\"logistics_sheet\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":false,\"id_event_type\":null,\"event_type_other\":null,\"event_start_datetime\":null,\"event_end_datetime\":null,\"address\":null,\"address_maps_link\":null,\"accessibility_comments\":null,\"order_contact_name\":null,\"order_contact_phone\":null,\"delivery_windows\":null,\"pickup_windows\":null,\"reception_contact_name\":null,\"reception_contact_phone\":null,\"cushion_color\":null,\"additional_order_details\":null,\"insurance_required\":null,\"insurance_document_path\":null,\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"is_completed\":false,\"completed_at\":null},\"read_only\":false,\"budget\":{\"id\":12,\"client_name\":\"Empresa Ejemplo S.A.\",\"date_event\":\"2026-11-20\",\"time_event\":\"18:00:00\",\"pdf_url\":\"http://127.0.0.1:8000/storage/budgets/budget-12.pdf\"},\"event_types\":[{\"id\":1,\"name\":\"Casamiento\"},{\"id\":2,\"name\":\"Corporativo\"},{\"id\":3,\"name\":\"Cumpleaños\"}]}}"
+        },
+        {
+          "name": "200 OK - Ficha en modo solo lectura (fuera de plazo)",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":1,\"response\":\"ok\",\"data\":{\"logistics_sheet\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"event_start_datetime\":\"2026-09-09T18:00:00.000000Z\",\"is_completed\":false},\"read_only\":true,\"budget\":{\"id\":12,\"client_name\":\"Empresa Ejemplo S.A.\",\"date_event\":\"2026-09-09\",\"time_event\":\"18:00:00\",\"pdf_url\":\"http://127.0.0.1:8000/storage/budgets/budget-12.pdf\"},\"event_types\":[{\"id\":1,\"name\":\"Casamiento\"},{\"id\":2,\"name\":\"Corporativo\"},{\"id\":3,\"name\":\"Cumpleaños\"}]}}"
+        },
+        {
+          "name": "404 Token inválido",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/token-que-no-existe",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "token-que-no-existe"]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":0,\"response\":\"Ficha logística no encontrada\"}"
+        }
+      ]
+    },
+    {
+      "name": "Guardar datos básicos del evento",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"budget_ratified\": true,\r\n    \"id_event_type\": 2,\r\n    \"event_start_datetime\": \"2026-11-20 18:00:00\",\r\n    \"event_end_datetime\": \"2026-11-20 23:00:00\",\r\n    \"address\": \"Av. Siempre Viva 742, Mar del Plata\",\r\n    \"address_maps_link\": \"https://maps.app.goo.gl/abc123\",\r\n    \"order_contact_name\": \"Juan Pérez\",\r\n    \"order_contact_phone\": \"+5491123456789\"\r\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+          "host": ["{{BASE_URL}}"],
+          "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+        },
+        "description": "Sin autenticación. Carga incremental: se pueden mandar solo los campos de la sección \"Datos básicos\" que ya se conocen; el resto de la ficha no se modifica. Si se usa `id_event_type` no hace falta mandar `event_type_other` (y viceversa)."
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"budget_ratified\": true,\r\n    \"id_event_type\": 2,\r\n    \"event_start_datetime\": \"2026-11-20 18:00:00\",\r\n    \"event_end_datetime\": \"2026-11-20 23:00:00\",\r\n    \"address\": \"Av. Siempre Viva 742, Mar del Plata\",\r\n    \"address_maps_link\": \"https://maps.app.goo.gl/abc123\",\r\n    \"order_contact_name\": \"Juan Pérez\",\r\n    \"order_contact_phone\": \"+5491123456789\"\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":1,\"response\":\"Ficha logística actualizada correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":true,\"id_event_type\":2,\"event_type_other\":null,\"event_start_datetime\":\"2026-11-20T18:00:00.000000Z\",\"event_end_datetime\":\"2026-11-20T23:00:00.000000Z\",\"address\":\"Av. Siempre Viva 742, Mar del Plata\",\"address_maps_link\":\"https://maps.app.goo.gl/abc123\",\"accessibility_comments\":null,\"order_contact_name\":\"Juan Pérez\",\"order_contact_phone\":\"+5491123456789\",\"delivery_windows\":null,\"pickup_windows\":null,\"reception_contact_name\":null,\"reception_contact_phone\":null,\"cushion_color\":null,\"additional_order_details\":null,\"insurance_required\":null,\"insurance_document_path\":null,\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"is_completed\":false,\"completed_at\":null,\"created_at\":\"2026-09-01T13:00:00.000000Z\",\"updated_at\":\"2026-09-08T13:10:00.000000Z\"}}"
+        },
+        {
+          "name": "422 Error de validación",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"id_event_type\": 9999\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+            }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":0,\"response\":\"Error de validación\",\"errors\":{\"id_event_type\":[\"El id event type seleccionado no es válido.\"]}}"
+        },
+        {
+          "name": "403 Ficha fuera de plazo de edición",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"address\": \"Nueva dirección\"\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+            }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":0,\"response\":\"La ficha ya no admite modificaciones\"}"
+        },
+        {
+          "name": "404 Token inválido",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"address\": \"Nueva dirección\"\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/token-que-no-existe",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "token-que-no-existe"]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":0,\"response\":\"Ficha logística no encontrada\"}"
+        }
+      ]
+    },
+    {
+      "name": "Guardar armado/desarme y seguros (con adjuntos)",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "delivery_windows[0][date]", "value": "2026-11-19", "type": "text" },
+            { "key": "delivery_windows[0][time_from]", "value": "09:00", "type": "text" },
+            { "key": "delivery_windows[0][time_to]", "value": "12:00", "type": "text" },
+            { "key": "delivery_windows[1][date]", "value": "2026-11-19", "description": "Opcional: hasta 3 opciones, solo la [0] es mandatoria", "type": "text", "disabled": true },
+            { "key": "pickup_windows[0][date]", "value": "2026-11-21", "type": "text" },
+            { "key": "pickup_windows[0][time_from]", "value": "09:00", "type": "text" },
+            { "key": "pickup_windows[0][time_to]", "value": "12:00", "type": "text" },
+            { "key": "reception_contact_name", "value": "María López", "type": "text" },
+            { "key": "reception_contact_phone", "value": "+5491187654321", "type": "text" },
+            { "key": "cushion_color", "value": "Verde botella", "description": "Opcional", "type": "text" },
+            { "key": "additional_order_details", "value": "Dejar el armado listo antes de las 14hs por protocolo del salón.", "type": "text" },
+            { "key": "insurance_required", "value": "yes", "description": "yes | not_applicable | later", "type": "text" },
+            { "key": "insurance_document", "description": "Póliza o certificado de cobertura (PDF/imagen). Requerido si insurance_required=yes.", "type": "file", "src": [] },
+            { "key": "additional_requirements", "value": "El predio exige ingreso de camiones antes de las 8am.", "description": "Opcional", "type": "text" },
+            { "key": "assembly_plan_document", "description": "Plano de armado. Opcional.", "type": "file", "src": [], "disabled": true }
+          ]
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+          "host": ["{{BASE_URL}}"],
+          "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+        },
+        "description": "Sin autenticación. Multipart/form-data (necesario para los adjuntos). Cubre las secciones \"Armado y Desarme\", \"Requerimientos\" y \"Planos\". `delivery_windows`/`pickup_windows` son arrays de hasta 3 objetos `{date, time_from, time_to}`; solo la primera opción de cada uno es mandatoria."
+      },
+      "response": [
+        {
+          "name": "200 OK - Ficha aún incompleta (faltan datos básicos)",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "delivery_windows[0][date]", "value": "2026-11-19", "type": "text" },
+                { "key": "delivery_windows[0][time_from]", "value": "09:00", "type": "text" },
+                { "key": "delivery_windows[0][time_to]", "value": "12:00", "type": "text" },
+                { "key": "pickup_windows[0][date]", "value": "2026-11-21", "type": "text" },
+                { "key": "pickup_windows[0][time_from]", "value": "09:00", "type": "text" },
+                { "key": "pickup_windows[0][time_to]", "value": "12:00", "type": "text" },
+                { "key": "reception_contact_name", "value": "María López", "type": "text" },
+                { "key": "reception_contact_phone", "value": "+5491187654321", "type": "text" },
+                { "key": "additional_order_details", "value": "Dejar el armado listo antes de las 14hs.", "type": "text" },
+                { "key": "insurance_required", "value": "yes", "type": "text" },
+                { "key": "insurance_document", "type": "file", "src": [] }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":1,\"response\":\"Ficha logística actualizada correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":false,\"id_event_type\":null,\"event_start_datetime\":null,\"event_end_datetime\":null,\"address\":null,\"delivery_windows\":[{\"date\":\"2026-11-19\",\"time_from\":\"09:00\",\"time_to\":\"12:00\"}],\"pickup_windows\":[{\"date\":\"2026-11-21\",\"time_from\":\"09:00\",\"time_to\":\"12:00\"}],\"reception_contact_name\":\"María López\",\"reception_contact_phone\":\"+5491187654321\",\"cushion_color\":null,\"additional_order_details\":\"Dejar el armado listo antes de las 14hs.\",\"insurance_required\":\"yes\",\"insurance_document_path\":\"storage/logistics_sheets/12/1757337000_65123abc_poliza.pdf\",\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"is_completed\":false,\"completed_at\":null,\"updated_at\":\"2026-09-08T13:15:00.000000Z\"}}"
+        },
+        {
+          "name": "200 OK - Última carga: ficha queda completa",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "budget_ratified", "value": "true", "type": "text" },
+                { "key": "id_event_type", "value": "2", "type": "text" },
+                { "key": "event_start_datetime", "value": "2026-11-20 18:00:00", "type": "text" },
+                { "key": "event_end_datetime", "value": "2026-11-20 23:00:00", "type": "text" },
+                { "key": "address", "value": "Av. Siempre Viva 742, Mar del Plata", "type": "text" },
+                { "key": "order_contact_name", "value": "Juan Pérez", "type": "text" },
+                { "key": "order_contact_phone", "value": "+5491123456789", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":1,\"response\":\"Ficha logística actualizada correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":true,\"id_event_type\":2,\"event_start_datetime\":\"2026-11-20T18:00:00.000000Z\",\"event_end_datetime\":\"2026-11-20T23:00:00.000000Z\",\"address\":\"Av. Siempre Viva 742, Mar del Plata\",\"order_contact_name\":\"Juan Pérez\",\"order_contact_phone\":\"+5491123456789\",\"delivery_windows\":[{\"date\":\"2026-11-19\",\"time_from\":\"09:00\",\"time_to\":\"12:00\"}],\"pickup_windows\":[{\"date\":\"2026-11-21\",\"time_from\":\"09:00\",\"time_to\":\"12:00\"}],\"reception_contact_name\":\"María López\",\"reception_contact_phone\":\"+5491187654321\",\"additional_order_details\":\"Dejar el armado listo antes de las 14hs.\",\"insurance_required\":\"yes\",\"insurance_document_path\":\"storage/logistics_sheets/12/1757337000_65123abc_poliza.pdf\",\"field_status\":null,\"is_completed\":true,\"completed_at\":\"2026-09-08T13:20:00.000000Z\",\"updated_at\":\"2026-09-08T13:20:00.000000Z\"}}"
+        },
+        {
+          "name": "422 Error de validación (4ta opción de armado)",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "delivery_windows[0][date]", "value": "2026-11-19", "type": "text" },
+                { "key": "delivery_windows[1][date]", "value": "2026-11-19", "type": "text" },
+                { "key": "delivery_windows[2][date]", "value": "2026-11-19", "type": "text" },
+                { "key": "delivery_windows[3][date]", "value": "2026-11-19", "description": "Máximo 3 opciones", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+            }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":0,\"response\":\"Error de validación\",\"errors\":{\"delivery_windows\":[\"El campo delivery windows no debe tener más de 3 elementos.\"]}}"
+        }
+      ]
+    },
+    {
+      "name": "Marcar campos como \"no aplica\" o \"se completará más tarde\"",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"field_status\": [\r\n        { \"field\": \"insurance_document\", \"status\": \"not_applicable\" },\r\n        { \"field\": \"cushion_color\", \"status\": \"later\" }\r\n    ]\r\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+          "host": ["{{BASE_URL}}"],
+          "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+        },
+        "description": "Sin autenticación. `field` debe ser uno de los nombres de grupo aceptados (ver `LogisticsSheet::GROUP_FIELDS` en el backend: budget_ratified, event_type, event_start_datetime, event_end_datetime, address, accessibility_comments, order_contact, delivery_windows, pickup_windows, reception_contact, cushion_color, additional_order_details, insurance_required, insurance_document, additional_requirements, assembly_plan). Si más adelante el cliente manda un valor real para un campo marcado, la marca se limpia automáticamente. Si un campo mandatorio queda marcado `later`, la ficha no se considera completa; si queda `not_applicable`, sí se considera resuelto."
+      },
+      "response": [
+        {
+          "name": "200 OK",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"field_status\": [\r\n        { \"field\": \"insurance_document\", \"status\": \"not_applicable\" },\r\n        { \"field\": \"cushion_color\", \"status\": \"later\" }\r\n    ]\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":1,\"response\":\"Ficha logística actualizada correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"insurance_required\":\"not_applicable\",\"insurance_document_path\":null,\"cushion_color\":null,\"field_status\":{\"insurance_document\":\"not_applicable\",\"cushion_color\":\"later\"},\"is_completed\":false,\"completed_at\":null,\"updated_at\":\"2026-09-08T13:25:00.000000Z\"}}"
+        },
+        {
+          "name": "422 Nombre de campo inválido",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"field_status\": [\r\n        { \"field\": \"campo_que_no_existe\", \"status\": \"later\" }\r\n    ]\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/v1/logistics-sheet/3f2504e0-4f89-11ee-be56-0242ac120002",
+              "host": ["{{BASE_URL}}"],
+              "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
+            }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"code\":0,\"response\":\"Error de validación\",\"errors\":{\"field_status.0.field\":[\"El campo field_status.0.field seleccionado no es válido.\"]}}"
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://127.0.0.1:8000/api"
+    }
+  ]
+}

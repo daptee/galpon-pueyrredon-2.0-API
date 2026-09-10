@@ -1,0 +1,480 @@
+{
+  "info": {
+    "_postman_id": "8f1e2c4a-6b3d-4e7f-9a2b-1c3d5e7f9a0b",
+    "name": "Logistics Capacity",
+    "description": "Endpoints de \"Límites por Capacidad Logística\": configuración de las variables de capacidad, cierre/apertura de fechas (\"Fecha Cerrada\"), y el chequeo interactivo de semáforo que se llama al informar la fecha de un evento (tanto desde el panel admin como desde el cliente BtoB) al crear/versionar/aprobar un presupuesto.\n\nEstados posibles del semáforo (`status`): `fecha_cerrada`, `sin_eventos` (solo en el calendario de disponibilidad), `amplia`, `alta_demanda`, `restringida`, `excedida`, y `skipped` (cuando la familia de versiones del presupuesto ya tiene una versión Aprobada, y por lo tanto no hace falta re-chequear).\n\nLos endpoints de configuración y de fechas cerradas son solo para staff (devuelven 403 si el usuario autenticado es un cliente BtoB, `id_user_type = 3`). El endpoint `check` es el único pensado para ser llamado por ambos roles.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get config",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{BASE_URL}}/logistics-capacity/config",
+          "host": ["{{BASE_URL}}"],
+          "path": ["logistics-capacity", "config"]
+        }
+      },
+      "response": [
+        {
+          "name": "Get config 200",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/config",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "config"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Configuración de capacidad logística obtenida correctamente\",\"data\":{\"id\":1,\"max_daily_events\":6,\"max_daily_volume\":\"60.00\",\"max_successive_events\":10,\"max_successive_volume\":\"100.00\",\"high_demand_threshold\":\"60.00\",\"restricted_threshold\":\"80.00\",\"created_at\":\"2026-08-01T12:00:00.000000Z\",\"updated_at\":\"2026-08-10T09:30:00.000000Z\"}}"
+        },
+        {
+          "name": "Get config 403 (cliente)",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/config",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "config"]
+            }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"No autorizado\",\"data\":null,\"error\":{\"error\":\"Los clientes no tienen acceso a este recurso\"}}"
+        }
+      ]
+    },
+    {
+      "name": "Update config",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"max_daily_events\": 6,\r\n    \"max_daily_volume\": 60,\r\n    \"max_successive_events\": 10,\r\n    \"max_successive_volume\": 100,\r\n    \"high_demand_threshold\": 60,\r\n    \"restricted_threshold\": 80\r\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/logistics-capacity/config",
+          "host": ["{{BASE_URL}}"],
+          "path": ["logistics-capacity", "config"]
+        },
+        "description": "Todos los campos son opcionales (se actualizan solo los que se envíen). `high_demand_threshold` y `restricted_threshold` son porcentajes (0-100); `restricted_threshold` debe ser mayor o igual a `high_demand_threshold`."
+      },
+      "response": [
+        {
+          "name": "Update config 200",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"max_daily_events\": 6,\r\n    \"max_daily_volume\": 60,\r\n    \"max_successive_events\": 10,\r\n    \"max_successive_volume\": 100,\r\n    \"high_demand_threshold\": 60,\r\n    \"restricted_threshold\": 80\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/config",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "config"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Configuración de capacidad logística actualizada correctamente\",\"data\":{\"id\":1,\"max_daily_events\":6,\"max_daily_volume\":\"60.00\",\"max_successive_events\":10,\"max_successive_volume\":\"100.00\",\"high_demand_threshold\":\"60.00\",\"restricted_threshold\":\"80.00\",\"created_at\":\"2026-08-01T12:00:00.000000Z\",\"updated_at\":\"2026-08-14T15:02:00.000000Z\"}}"
+        },
+        {
+          "name": "Update config 422 (umbral inválido)",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"high_demand_threshold\": 80,\r\n    \"restricted_threshold\": 60\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/config",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "config"]
+            }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Error de validación\",\"data\":null,\"error\":[{\"restricted_threshold\":[\"El umbral de disponibilidad restringida debe ser mayor o igual al de alta demanda.\"]}]}"
+        }
+      ]
+    },
+    {
+      "name": "List blocked dates",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{BASE_URL}}/logistics-capacity/blocked-dates?month=12&year=2026",
+          "host": ["{{BASE_URL}}"],
+          "path": ["logistics-capacity", "blocked-dates"],
+          "query": [
+            { "key": "month", "value": "12", "description": "Filtra por mes (1-12), usar junto con year", "disabled": true },
+            { "key": "year", "value": "2026", "description": "Filtra por año, usar junto con month", "disabled": true },
+            { "key": "from", "value": "2026-12-01", "description": "Filtra desde una fecha (alternativa a month/year)", "disabled": true },
+            { "key": "to", "value": "2026-12-31", "description": "Filtra hasta una fecha (alternativa a month/year)", "disabled": true }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "List blocked dates 200",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/blocked-dates?month=12&year=2026",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "blocked-dates"],
+              "query": [
+                { "key": "month", "value": "12" },
+                { "key": "year", "value": "2026" }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Fechas cerradas obtenidas correctamente\",\"data\":[{\"id\":3,\"date\":\"2026-12-25\",\"reason\":\"Feriado - depósito cerrado\",\"id_user\":1,\"created_at\":\"2026-08-01T12:00:00.000000Z\",\"updated_at\":\"2026-08-01T12:00:00.000000Z\"},{\"id\":4,\"date\":\"2026-12-31\",\"reason\":\"Feriado - depósito cerrado\",\"id_user\":1,\"created_at\":\"2026-08-01T12:00:00.000000Z\",\"updated_at\":\"2026-08-01T12:00:00.000000Z\"}]}"
+        }
+      ]
+    },
+    {
+      "name": "Block date",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"date\": \"2026-12-25\",\r\n    \"reason\": \"Feriado - depósito cerrado\"\r\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/logistics-capacity/blocked-dates",
+          "host": ["{{BASE_URL}}"],
+          "path": ["logistics-capacity", "blocked-dates"]
+        }
+      },
+      "response": [
+        {
+          "name": "Block date 201",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"date\": \"2026-12-25\",\r\n    \"reason\": \"Feriado - depósito cerrado\"\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/blocked-dates",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "blocked-dates"]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Fecha cerrada correctamente\",\"data\":{\"id\":3,\"date\":\"2026-12-25\",\"reason\":\"Feriado - depósito cerrado\",\"id_user\":1,\"updated_at\":\"2026-08-14T15:02:00.000000Z\",\"created_at\":\"2026-08-14T15:02:00.000000Z\"}}"
+        },
+        {
+          "name": "Block date 409 (ya cerrada)",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"date\": \"2026-12-25\",\r\n    \"reason\": \"Feriado - depósito cerrado\"\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/blocked-dates",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "blocked-dates"]
+            }
+          },
+          "status": "Conflict",
+          "code": 409,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"La fecha ya se encuentra cerrada\",\"data\":null,\"error\":{\"error\":\"La fecha ya se encuentra cerrada\"}}"
+        }
+      ]
+    },
+    {
+      "name": "Unblock date",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{BASE_URL}}/logistics-capacity/blocked-dates/3",
+          "host": ["{{BASE_URL}}"],
+          "path": ["logistics-capacity", "blocked-dates", "3"]
+        }
+      },
+      "response": [
+        {
+          "name": "Unblock date 200",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/blocked-dates/3",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "blocked-dates", "3"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Fecha reabierta correctamente\",\"data\":{\"id\":3}}"
+        },
+        {
+          "name": "Unblock date 404",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/blocked-dates/999",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "blocked-dates", "999"]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Fecha cerrada no encontrada\",\"data\":null,\"error\":{\"error\":\"Fecha cerrada no encontrada\"}}"
+        }
+      ]
+    },
+    {
+      "name": "Check logistics capacity",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"date_event\": \"2026-08-20\",\r\n    \"volume\": 15,\r\n    \"id_budget\": null\r\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/logistics-capacity/check",
+          "host": ["{{BASE_URL}}"],
+          "path": ["logistics-capacity", "check"]
+        },
+        "description": "date_event: requerida. volume: opcional, solo la usa el rol admin (el cliente la excluye del cálculo, tal cual el criterio original). id_budget: opcional, id de la versión previa/padre del presupuesto que se está creando/editando — si esa familia de versiones ya tiene una versión Aprobada, se devuelve status=skipped sin evaluar nada (la fecha ya estaba reservada). Responde siempre 200; el campo `blocked` es el que el frontend debe usar para impedir avanzar (fecha cerrada para ambos roles, o disponibilidad excedida solo para el cliente BtoB)."
+      },
+      "response": [
+        {
+          "name": "Check 200 - Admin, Disponibilidad Amplia",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"date_event\": \"2026-08-16\",\r\n    \"volume\": 5,\r\n    \"id_budget\": null\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/check",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "check"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Chequeo de capacidad logística realizado\",\"data\":{\"date\":\"2026-08-16\",\"status\":\"amplia\",\"blocked_date\":null,\"metrics\":{\"daily_events\":{\"variable\":\"daily_events\",\"period\":\"day\",\"current\":1,\"max\":6,\"percentage\":16.67},\"daily_volume\":{\"variable\":\"daily_volume\",\"period\":\"day\",\"current\":5,\"max\":60,\"percentage\":8.33},\"successive_events_prev\":{\"variable\":\"successive_events\",\"period\":\"previous_pair\",\"current\":1,\"max\":10,\"percentage\":10},\"successive_events_next\":{\"variable\":\"successive_events\",\"period\":\"next_pair\",\"current\":1,\"max\":10,\"percentage\":10},\"successive_volume_prev\":{\"variable\":\"successive_volume\",\"period\":\"previous_pair\",\"current\":5,\"max\":100,\"percentage\":5},\"successive_volume_next\":{\"variable\":\"successive_volume\",\"period\":\"next_pair\",\"current\":5,\"max\":100,\"percentage\":5}},\"violated\":[],\"blocked\":false,\"message\":null}}"
+        },
+        {
+          "name": "Check 200 - Admin, Alta Demanda",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"date_event\": \"2026-08-20\",\r\n    \"volume\": 15,\r\n    \"id_budget\": null\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/check",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "check"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Chequeo de capacidad logística realizado\",\"data\":{\"date\":\"2026-08-20\",\"status\":\"alta_demanda\",\"blocked_date\":null,\"metrics\":{\"daily_events\":{\"variable\":\"daily_events\",\"period\":\"day\",\"current\":4,\"max\":6,\"percentage\":66.67},\"daily_volume\":{\"variable\":\"daily_volume\",\"period\":\"day\",\"current\":42.5,\"max\":60,\"percentage\":70.83},\"successive_events_prev\":{\"variable\":\"successive_events\",\"period\":\"previous_pair\",\"current\":5,\"max\":10,\"percentage\":50},\"successive_events_next\":{\"variable\":\"successive_events\",\"period\":\"next_pair\",\"current\":6,\"max\":10,\"percentage\":60},\"successive_volume_prev\":{\"variable\":\"successive_volume\",\"period\":\"previous_pair\",\"current\":55,\"max\":100,\"percentage\":55},\"successive_volume_next\":{\"variable\":\"successive_volume\",\"period\":\"next_pair\",\"current\":60,\"max\":100,\"percentage\":60}},\"violated\":[{\"variable\":\"daily_events\",\"period\":\"day\",\"current\":4,\"max\":6,\"percentage\":66.67},{\"variable\":\"daily_volume\",\"period\":\"day\",\"current\":42.5,\"max\":60,\"percentage\":70.83},{\"variable\":\"successive_events\",\"period\":\"next_pair\",\"current\":6,\"max\":10,\"percentage\":60},{\"variable\":\"successive_volume\",\"period\":\"next_pair\",\"current\":60,\"max\":100,\"percentage\":60}],\"blocked\":false,\"message\":\"Situación: Alta Demanda. Variables que determinan esta situación: Capacidad máxima de eventos diarios (66.67%), Volumen máximo diario (70.83%), Capacidad de eventos x jornadas sucesivas (60%), Volumen x jornadas sucesivas (60%).\"}}"
+        },
+        {
+          "name": "Check 200 - Cliente, Disponibilidad Excedida (bloqueado)",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"date_event\": \"2026-08-20\",\r\n    \"id_budget\": null\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/check",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "check"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Chequeo de capacidad logística realizado\",\"data\":{\"date\":\"2026-08-20\",\"status\":\"excedida\",\"blocked_date\":null,\"blocked\":true,\"message\":\"Nuestro stock y la capacidad logística se encuentra altamente limitada para esta fecha, por favor comuníquese con nosotros para ver si es posible tomar el pedido.\"}}"
+        },
+        {
+          "name": "Check 200 - Fecha Cerrada (bloqueado, ambos roles)",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"date_event\": \"2026-12-25\",\r\n    \"id_budget\": null\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/check",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "check"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Chequeo de capacidad logística realizado\",\"data\":{\"date\":\"2026-12-25\",\"status\":\"fecha_cerrada\",\"blocked_date\":{\"id\":3,\"reason\":\"Feriado - depósito cerrado\"},\"metrics\":{\"daily_events\":{\"variable\":\"daily_events\",\"period\":\"day\",\"current\":1,\"max\":6,\"percentage\":16.67},\"daily_volume\":{\"variable\":\"daily_volume\",\"period\":\"day\",\"current\":0,\"max\":60,\"percentage\":0},\"successive_events_prev\":{\"variable\":\"successive_events\",\"period\":\"previous_pair\",\"current\":1,\"max\":10,\"percentage\":10},\"successive_events_next\":{\"variable\":\"successive_events\",\"period\":\"next_pair\",\"current\":1,\"max\":10,\"percentage\":10},\"successive_volume_prev\":{\"variable\":\"successive_volume\",\"period\":\"previous_pair\",\"current\":0,\"max\":100,\"percentage\":0},\"successive_volume_next\":{\"variable\":\"successive_volume\",\"period\":\"next_pair\",\"current\":0,\"max\":100,\"percentage\":0}},\"violated\":[],\"blocked\":true,\"message\":\"La fecha seleccionada se encuentra cerrada para nuevos eventos. Motivo: Feriado - depósito cerrado\"}}"
+        },
+        {
+          "name": "Check 200 - Skipped (ya existe versión aprobada)",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"date_event\": \"2026-08-20\",\r\n    \"volume\": 15,\r\n    \"id_budget\": 45\r\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-capacity/check",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-capacity", "check"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "cookie": [],
+          "body": "{\"message\":\"Chequeo omitido: la fecha ya fue reservada por una versión aprobada previamente\",\"data\":{\"status\":\"skipped\",\"blocked\":false,\"message\":null}}"
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://127.0.0.1:8000/api"
+    }
+  ]
+}
