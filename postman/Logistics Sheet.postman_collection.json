@@ -2,12 +2,12 @@
   "info": {
     "_postman_id": "a3d7e5f0-1b2c-4d6e-8f9a-0c1b2a3d4e5f",
     "name": "Logistics Sheet",
-    "description": "Endpoints de la \"Ficha Logística\": el formulario que reemplaza el intercambio manual por mail/WhatsApp para obtener del cliente la información logística de un evento (datos básicos, armado/desarme, seguros y planos).\n\nHay dos grupos de endpoints:\n\n1. **Admin** (`/logistics-sheet/...`, requiere JWT + middleware `admin`): permite obtener (o crear, si todavía no existe) la ficha asociada a un presupuesto, para copiar el link público y enviarlo manualmente al cliente por mail o WhatsApp.\n2. **Público** (`/v1/logistics-sheet/{token}`, sin autenticación): es el link que recibe el cliente. Permite ver los datos ya cargados (precarga) y guardar/actualizar de forma **incremental** — solo se pisan los campos que se envían en cada request, el resto queda como estaba.\n\nCada campo puede resolverse de 3 formas: completándolo con su valor real, marcándolo `later` (\"se completará más tarde\") o `not_applicable` (\"no aplica\"), usando el array `field_status` del body (ver ejemplos del endpoint \"Marcar campos...\"). La ficha se considera completa (`is_completed: true`) cuando todos los campos mandatorios tienen valor o están en `not_applicable`, y ningún campo quedó en `later`.\n\nPasado el límite de edición (`LOGISTICS_SHEET_EDIT_CUTOFF_DAYS` días antes de `event_start_datetime`, default 2), el POST público devuelve 403 y la ficha pasa a ser de solo lectura (`read_only: true` en el GET).\n\nNota de alcance: estos endpoints solo cubren la carga/lectura de la ficha. El envío automático programado de recordatorios (al aprobar el presupuesto, 15/10/7/5 días antes) y la integración con TEAM UP se resuelven en otra tarea.",
+    "description": "Endpoints de la \"Ficha Logística\": el formulario que reemplaza el intercambio manual por mail/WhatsApp para obtener del cliente la información logística de un evento (datos básicos, armado/desarme, seguros y planos).\n\nHay dos grupos de endpoints:\n\n1. **Admin** (`/logistics-sheet/...`, requiere JWT + middleware `admin`): obtiene (o crea, si todavía no existe) la ficha asociada a un presupuesto y **le envía por mail al cliente** el link público para que la complete. Llamarlo de nuevo más adelante reenvía el mismo link (sirve como \"reenvío\"/reclamo manual).\n2. **Público** (`/v1/logistics-sheet/{token}`, sin autenticación): es el link que recibe el cliente por mail. Permite ver los datos ya cargados (precarga) y guardar/actualizar de forma **incremental** — solo se pisan los campos que se envían en cada request, el resto queda como estaba.\n\nCada campo puede resolverse de 3 formas: completándolo con su valor real, marcándolo `later` (\"se completará más tarde\") o `not_applicable` (\"no aplica\"), usando el array `field_status` del body (ver ejemplos del endpoint \"Marcar campos...\"). La ficha se considera completa (`is_completed: true`) cuando todos los campos mandatorios tienen valor o están en `not_applicable`, y ningún campo quedó en `later`.\n\nPasado el límite de edición (`LOGISTICS_SHEET_EDIT_CUTOFF_DAYS` días antes de `event_start_datetime`, default 2), el POST público devuelve 403 y la ficha pasa a ser de solo lectura (`read_only: true` en el GET).\n\nNota de alcance: el envío del link es manual (lo dispara el admin al llamar al endpoint), no hay todavía un envío automático programado por fecha (al aprobar el presupuesto, 15/10/7/5 días antes) ni integración con WhatsApp o TEAM UP — eso se resuelve en otra tarea.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Obtener o crear ficha (admin)",
+      "name": "Obtener/crear ficha y enviar link al cliente (admin)",
       "request": {
         "method": "GET",
         "header": [],
@@ -16,11 +16,11 @@
           "host": ["{{BASE_URL}}"],
           "path": ["logistics-sheet", "budget", "12"]
         },
-        "description": "Solo admin. Si el presupuesto todavía no tiene ficha logística, la crea con un token nuevo. Devuelve `public_url` (armada con `FRONTEND_URL` + el token) para copiar y enviar manualmente por mail o WhatsApp."
+        "description": "Solo admin. Si el presupuesto todavía no tiene ficha logística, la crea con un token nuevo. En todos los casos le envía un mail al cliente (a `budget.client_mail`) con el link (`public_url`) para completar el formulario — llamarlo de nuevo más adelante reenvía el mismo link. Si el presupuesto no tiene mail cargado, devuelve 422 sin enviar nada."
       },
       "response": [
         {
-          "name": "200 OK - Ficha creada por primera vez",
+          "name": "200 OK - Ficha creada por primera vez y mail enviado",
           "originalRequest": {
             "method": "GET",
             "header": [],
@@ -35,10 +35,10 @@
           "_postman_previewlanguage": "json",
           "header": [{ "key": "Content-Type", "value": "application/json" }],
           "cookie": [],
-          "body": "{\"message\":\"Ficha logística obtenida correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":false,\"id_event_type\":null,\"event_type_other\":null,\"event_start_datetime\":null,\"event_end_datetime\":null,\"address\":null,\"address_maps_link\":null,\"accessibility_comments\":null,\"order_contact_name\":null,\"order_contact_phone\":null,\"delivery_windows\":null,\"pickup_windows\":null,\"reception_contact_name\":null,\"reception_contact_phone\":null,\"cushion_color\":null,\"additional_order_details\":null,\"insurance_required\":null,\"insurance_document_path\":null,\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"is_completed\":false,\"completed_at\":null,\"created_at\":\"2026-09-08T13:00:00.000000Z\",\"updated_at\":\"2026-09-08T13:00:00.000000Z\",\"budget\":{\"id\":12,\"id_client\":218,\"client_mail\":\"cliente@correo.com\",\"client_phone\":\"+5491123456789\",\"date_event\":\"2026-11-20\",\"time_event\":\"18:00:00\",\"id_budget_status\":3,\"client_name\":null},\"event_type\":null,\"public_url\":\"https://app.galponpueyrredon.com/ficha-logistica/3f2504e0-4f89-11ee-be56-0242ac120002\"}}"
+          "body": "{\"message\":\"Ficha logística enviada al cliente correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":false,\"id_event_type\":null,\"event_type_other\":null,\"event_start_datetime\":null,\"event_end_datetime\":null,\"address\":null,\"address_maps_link\":null,\"accessibility_comments\":null,\"order_contact_name\":null,\"order_contact_phone\":null,\"delivery_windows\":null,\"pickup_windows\":null,\"reception_contact_name\":null,\"reception_contact_phone\":null,\"cushion_color\":null,\"additional_order_details\":null,\"insurance_required\":null,\"insurance_document_path\":null,\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"is_completed\":false,\"completed_at\":null,\"created_at\":\"2026-09-08T13:00:00.000000Z\",\"updated_at\":\"2026-09-08T13:00:00.000000Z\",\"budget\":{\"id\":12,\"id_client\":218,\"client_mail\":\"cliente@correo.com\",\"client_phone\":\"+5491123456789\",\"date_event\":\"2026-11-20\",\"time_event\":\"18:00:00\",\"id_budget_status\":3,\"client_name\":null},\"event_type\":null,\"public_url\":\"https://app.galponpueyrredon.com/ficha-logistica/3f2504e0-4f89-11ee-be56-0242ac120002\",\"mail_sent_to\":\"cliente@correo.com\"}}"
         },
         {
-          "name": "200 OK - Ficha ya existente (parcialmente completa)",
+          "name": "200 OK - Ficha ya existente, se reenvía el mismo link",
           "originalRequest": {
             "method": "GET",
             "header": [],
@@ -53,7 +53,7 @@
           "_postman_previewlanguage": "json",
           "header": [{ "key": "Content-Type", "value": "application/json" }],
           "cookie": [],
-          "body": "{\"message\":\"Ficha logística obtenida correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":true,\"id_event_type\":2,\"event_type_other\":null,\"event_start_datetime\":\"2026-11-20T18:00:00.000000Z\",\"event_end_datetime\":\"2026-11-20T23:00:00.000000Z\",\"address\":\"Av. Siempre Viva 742, Mar del Plata\",\"address_maps_link\":\"https://maps.app.goo.gl/abc123\",\"accessibility_comments\":null,\"order_contact_name\":\"Juan Pérez\",\"order_contact_phone\":\"+5491123456789\",\"delivery_windows\":null,\"pickup_windows\":null,\"reception_contact_name\":null,\"reception_contact_phone\":null,\"cushion_color\":null,\"additional_order_details\":null,\"insurance_required\":null,\"insurance_document_path\":null,\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"is_completed\":false,\"completed_at\":null,\"created_at\":\"2026-09-01T13:00:00.000000Z\",\"updated_at\":\"2026-09-08T10:15:00.000000Z\",\"budget\":{\"id\":12,\"id_client\":218,\"client_mail\":\"cliente@correo.com\",\"client_phone\":\"+5491123456789\",\"date_event\":\"2026-11-20\",\"time_event\":\"18:00:00\",\"id_budget_status\":3,\"client_name\":null},\"event_type\":{\"id\":2,\"name\":\"Corporativo\",\"status\":1},\"public_url\":\"https://app.galponpueyrredon.com/ficha-logistica/3f2504e0-4f89-11ee-be56-0242ac120002\"}}"
+          "body": "{\"message\":\"Ficha logística enviada al cliente correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":true,\"id_event_type\":2,\"event_type_other\":null,\"event_start_datetime\":\"2026-11-20T18:00:00.000000Z\",\"event_end_datetime\":\"2026-11-20T23:00:00.000000Z\",\"address\":\"Av. Siempre Viva 742, Mar del Plata\",\"address_maps_link\":\"https://maps.app.goo.gl/abc123\",\"accessibility_comments\":null,\"order_contact_name\":\"Juan Pérez\",\"order_contact_phone\":\"+5491123456789\",\"delivery_windows\":null,\"pickup_windows\":null,\"reception_contact_name\":null,\"reception_contact_phone\":null,\"cushion_color\":null,\"additional_order_details\":null,\"insurance_required\":null,\"insurance_document_path\":null,\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"is_completed\":false,\"completed_at\":null,\"created_at\":\"2026-09-01T13:00:00.000000Z\",\"updated_at\":\"2026-09-08T10:15:00.000000Z\",\"budget\":{\"id\":12,\"id_client\":218,\"client_mail\":\"cliente@correo.com\",\"client_phone\":\"+5491123456789\",\"date_event\":\"2026-11-20\",\"time_event\":\"18:00:00\",\"id_budget_status\":3,\"client_name\":null},\"event_type\":{\"id\":2,\"name\":\"Corporativo\",\"status\":1},\"public_url\":\"https://app.galponpueyrredon.com/ficha-logistica/3f2504e0-4f89-11ee-be56-0242ac120002\",\"mail_sent_to\":\"cliente@correo.com\"}}"
         },
         {
           "name": "404 Presupuesto no encontrado",
@@ -72,6 +72,24 @@
           "header": [{ "key": "Content-Type", "value": "application/json" }],
           "cookie": [],
           "body": "{\"message\":\"Presupuesto no encontrado\",\"data\":null,\"error\":{\"error\":\"Presupuesto no encontrado\"}}"
+        },
+        {
+          "name": "422 El presupuesto no tiene mail cargado",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-sheet/budget/7",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-sheet", "budget", "7"]
+            }
+          },
+          "status": "Unprocessable Entity",
+          "code": 422,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"message\":\"El presupuesto no tiene un email de cliente cargado\",\"data\":null,\"error\":{\"error\":\"El presupuesto no tiene un email de cliente cargado\"}}"
         }
       ]
     },

@@ -16,8 +16,10 @@ Colección de Postman con ejemplos reales de cada request/response:
 Hay dos superficies distintas:
 
 1. **Panel admin** (requiere login): un botón/acción en la pantalla del
-   presupuesto que llama a un endpoint para obtener (o generar) el link de la
-   ficha y poder copiarlo/enviarlo al cliente.
+   presupuesto que llama a un endpoint que arma (o genera, si no existía) el
+   link de la ficha y **le manda un mail al cliente** con ese link. Se puede
+   volver a llamar más adelante para reenviárselo (por ejemplo si no
+   respondió).
 2. **Pantalla pública del cliente** (sin login): la página que abre el
    cliente al hacer clic en ese link. Esta es la pantalla que probablemente
    le interese más al frontend, porque hay que construirla.
@@ -43,28 +45,36 @@ crear el frontend** — es la pantalla del formulario.
 
 ## Endpoints
 
-### 1. Admin — obtener o crear la ficha de un presupuesto
+### 1. Admin — obtener/crear la ficha y enviarle el link al cliente por mail
 
 ```
 GET /api/logistics-sheet/budget/{idBudget}
 ```
 
 Requiere JWT admin. Si el presupuesto todavía no tiene ficha, la crea con un
-token nuevo. Devuelve la ficha (con lo que ya esté cargado) más un
-`public_url` ya armado, listo para copiar y enviar:
+token nuevo. **En todos los casos le envía un mail al cliente** (a
+`budget.client_mail`) con el link para completar el formulario — llamarlo de
+nuevo más adelante reenvía el mismo link, así que sirve tanto para el primer
+envío como para un reenvío manual. Devuelve la ficha (con lo que ya esté
+cargado) más `public_url` (el link que se mandó) y `mail_sent_to` (a qué
+dirección se envió):
 
 ```json
 {
-  "message": "Ficha logística obtenida correctamente",
+  "message": "Ficha logística enviada al cliente correctamente",
   "data": {
     "id": 9,
     "id_budget": 12,
     "token": "3f2504e0-4f89-11ee-be56-0242ac120002",
     "...": "resto de los campos de la ficha",
-    "public_url": "https://app.galponpueyrredon.com/ficha-logistica/3f2504e0-4f89-11ee-be56-0242ac120002"
+    "public_url": "https://app.galponpueyrredon.com/ficha-logistica/3f2504e0-4f89-11ee-be56-0242ac120002",
+    "mail_sent_to": "cliente@correo.com"
   }
 }
 ```
+
+Si el presupuesto no tiene `client_mail` cargado, responde `422` sin enviar
+nada (no hay a quién mandarle el mail).
 
 ### 2. Público — ver la ficha (precarga del formulario)
 
@@ -216,9 +226,9 @@ inputs) en vez de esperar a que el guardado falle con 403.
 ## Flujo típico
 
 1. Admin abre el presupuesto en el panel → llama a
-   `GET /logistics-sheet/budget/{id}` → copia `public_url` y se lo manda al
-   cliente por mail/WhatsApp (esto lo hace a mano, no está automatizado).
-2. Cliente abre el link → frontend llama a
+   `GET /logistics-sheet/budget/{id}` → el backend le manda automáticamente
+   un mail al cliente con el link del formulario (`public_url`).
+2. Cliente abre el link desde su casilla de mail → frontend llama a
    `GET /v1/logistics-sheet/{token}` → precarga el formulario con lo que ya
    haya.
 3. Cliente completa la primera pantalla ("Datos básicos") → frontend hace
@@ -230,7 +240,9 @@ inputs) en vez de esperar a que el guardado falle con 403.
 
 ## Fuera de alcance de esta funcionalidad
 
-No están implementados (se resuelven en otra tarea): el envío automático
-programado de los mails/recordatorios (al aprobar el presupuesto, 15/10/7/5
-días antes del evento) ni la integración con WhatsApp o TEAM UP. Hoy el envío
-del link es manual, copiando el `public_url`.
+El envío del mail al llamar al endpoint admin es manual (lo dispara el admin
+a demanda, no hay todavía un disparador automático por fecha). No están
+implementados (se resuelven en otra tarea): el envío programado según la
+cadencia del documento original (al aprobar el presupuesto, 15/10/7/5 días
+antes del evento, diario desde los 5 días) ni la integración con WhatsApp o
+TEAM UP.
