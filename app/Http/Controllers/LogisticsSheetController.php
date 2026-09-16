@@ -44,7 +44,7 @@ class LogisticsSheetController extends Controller
                 ['token' => (string) Str::uuid()]
             );
 
-            $logisticsSheet->load('budget', 'eventType');
+            $logisticsSheet->load('budget.place', 'budget.budgetDeliveryData.eventType');
 
             $publicUrl = rtrim(env('LOGISTICS_SHEET_FRONTEND_URL', ''), '/') . '/ficha-logistica/' . $logisticsSheet->token;
 
@@ -54,7 +54,7 @@ class LogisticsSheetController extends Controller
 
             MailService::sendAndSave($mailTo, new LogisticsSheetRequest($budget, $publicUrl));
 
-            $result = $logisticsSheet->toArray();
+            $result = $logisticsSheet->toPresentedArray();
             $result['public_url'] = $publicUrl;
             $result['mail_sent_to'] = $mailTo;
 

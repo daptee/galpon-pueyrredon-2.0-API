@@ -90,8 +90,9 @@ autenticación. Devuelve:
 - `read_only`: `true` si ya se pasó el plazo de edición (ver más abajo) — en
   ese caso el frontend debería mostrar el formulario deshabilitado.
 - `budget`: datos de solo lectura del presupuesto (`client_name`,
-  `date_event`, `time_event`, `pdf_url` con el link al PDF del presupuesto
-  para que el cliente lo pueda ver/ratificar).
+  `date_event`, `time_event`, `address` — la dirección del lugar del evento,
+  sacada del `place` del presupuesto —, `pdf_url` con el link al PDF del
+  presupuesto para que el cliente lo pueda ver/ratificar).
 - `event_types`: catálogo `[{id, name}]` para el combo de "Tipo de evento".
 
 Si el token no existe, responde `404`.
@@ -137,14 +138,26 @@ Se agrupan en las mismas 4 secciones/pantallas sugeridas para el form. **M**
 | `budget_ratified` | M | boolean — el cliente confirma que ratifica el presupuesto (mostrar el link `budget.pdf_url` antes de este check) |
 | `id_event_type` | M* | int — id de `event_types` (combo) |
 | `event_type_other` | M* | string — texto libre si el cliente elige "otra opción" en vez de un tipo del combo |
-| `event_start_datetime` | M | datetime |
+| ~~`event_start_datetime`~~ | M | **no se manda**: se toma de `budget.date_event` + `budget.time_event` (solo lectura, ver endpoint 2) |
 | `event_end_datetime` | M | datetime |
-| `address` | M | string |
-| `address_maps_link` | O | string — link a Google Maps |
+| ~~`address`~~ | M | **no se manda**: se toma de `budget.address` (la dirección del `place` del presupuesto, solo lectura) |
+| `address_maps_link` | O | string — link a Google Maps (esto sí lo carga el cliente, es un adicional a la dirección del presupuesto) |
 | `accessibility_comments` | O | string |
 | `order_contact_name` / `order_contact_phone` | M | string — contacto del pedido |
 
 \* Se manda `id_event_type` **o** `event_type_other`, no hace falta ambos.
+
+`event_start_datetime` y `address` **ya no son campos editables de la
+ficha**: se calculan en vivo a partir del presupuesto (`budgets.date_event` +
+`budgets.time_event`, y la dirección del `place` asociado al presupuesto).
+Así, si un admin edita la fecha/hora o el lugar del evento en el presupuesto,
+el cambio se refleja automáticamente en la ficha logística sin que el
+cliente tenga que volver a cargar nada. El frontend los debe mostrar como
+solo lectura usando los valores que vienen en `budget` (endpoint 2). Por lo
+mismo, `event_start_datetime`/`address` **no son válidos** en `field_status`
+(no tiene sentido marcarlos "later"/"not_applicable" si no los completa el
+cliente) — igual la ficha no se considera completa hasta que el presupuesto
+tenga `date_event` y un `place` con dirección cargados.
 
 ### b) Armado y desarme
 | Campo | M/O | Tipo |
@@ -193,12 +206,14 @@ aplica). Los nombres válidos de `field` (uno por grupo de campos, no por
 columna individual) son:
 
 ```
-budget_ratified, event_type, event_start_datetime, event_end_datetime,
-address, accessibility_comments, order_contact, delivery_windows,
-pickup_windows, reception_contact, cushion_color, additional_order_details,
-insurance_required, insurance_document, additional_requirements,
-assembly_plan
+budget_ratified, event_type, event_end_datetime, accessibility_comments,
+order_contact, delivery_windows, pickup_windows, reception_contact,
+cushion_color, additional_order_details, insurance_required,
+insurance_document, additional_requirements, assembly_plan
 ```
+
+(`event_start_datetime` y `address` no están en esta lista — ver la nota en
+"Datos básicos del evento" más arriba.)
 
 Si en un guardado posterior el cliente manda un valor real para alguno de
 esos campos, la marca se limpia sola — no hace falta que el frontend la
@@ -217,10 +232,9 @@ un mensaje de "ficha completa" al cliente.
 ## Plazo de edición
 
 Pasado un número de días configurable antes de la fecha del evento
-(`date_event` + `time_event` del presupuesto en la tabla `budgets` — no el
-`event_start_datetime` que carga el cliente en la ficha, ya que ese campo
-puede no estar completado todavía) (`LOGISTICS_SHEET_EDIT_CUTOFF_DAYS`,
-default 2), la ficha pasa a ser de solo lectura:
+(`date_event` + `time_event` del presupuesto en la tabla `budgets`,
+`LOGISTICS_SHEET_EDIT_CUTOFF_DAYS`, default 2), la ficha pasa a ser de solo
+lectura:
 
 - El `GET` devuelve `read_only: true`.
 - El `POST` devuelve `403`.
@@ -228,6 +242,59 @@ default 2), la ficha pasa a ser de solo lectura:
 El frontend debería chequear `read_only` al cargar la pantalla y, si es
 `true`, deshabilitar el formulario (mostrar los datos como texto, sin
 inputs) en vez de esperar a que el guardado falle con 403.
+
+## Sincronización con la Ficha de Entrega (`budget_delivery_data`)
+
+Esto sí es relevante para el frontend por los errores que puede devolver
+(ver más abajo), aunque el **nombre y la forma de los campos en la API no
+cambian** — `id_event_type`, `order_contact_name`/`order_contact_phone`,
+`reception_contact_name`/`reception_contact_phone` y
+`additional_order_details` se siguen mandando y recibiendo igual que
+cualquier otro campo de la ficha. Lo que cambia es dónde se guardan: como
+esos 6 campos son literalmente los mismos datos que ya existían en
+`budget_delivery_data` (la "Ficha de Entrega" que usa el panel admin para
+armar/cargar los camiones — modelo `BudgetDeliveryData`, gestionada aparte
+por `BudgetDeliveryDataController`), **no se duplican en `logistics_sheets`**:
+se leen y escriben directo en `budget_delivery_data`. Mapeo:
+
+| Campo en la API de la ficha | Columna real en `budget_delivery_data` |
+|---|---|
+| `id_event_type` | `id_event_type` |
+| `order_contact_name` / `order_contact_phone` | `coordination_contact` / `cellphone_coordination` |
+| `reception_contact_name` / `reception_contact_phone` | `reception_contact` / `cellphone_reception` |
+| `additional_order_details` | `additional_order_details` |
+
+Además, como mirror best-effort (no bloquean nada si fallan):
+
+| Ficha logística | `budget_delivery_data` |
+|---|---|
+| `additional_requirements` | `additional_delivery_details` |
+| `delivery_windows` (formateado a texto) | `delivery_datetime` |
+| `pickup_windows` (formateado a texto) | `widthdrawal_datetime` |
+| `budget.place.address` | `address` |
+| `budget.place.id_locality` | `id_locality` |
+| `budget.time_event` | `event_time` |
+
+Solo se pisan los campos para los que hay un valor nuevo en el request (no
+se borran datos existentes en `budget_delivery_data` sin equivalente en la
+ficha, como `delivery_options`/`widthdrawal_options`, que se siguen
+cargando a mano desde el panel).
+
+**Importante — nuevo caso de error**: `id_event_type` e `id_locality` son
+obligatorios (`NOT NULL`) en `budget_delivery_data`. Si todavía no existe el
+registro para ese presupuesto y el request manda alguno de los 6 campos de
+la tabla de arriba, pero no se puede resolver un `id_event_type` (el cliente
+eligió "otra opción" en vez de un tipo del listado) o un `id_locality` (el
+presupuesto no tiene `place` asignado), el `POST` devuelve **422** con un
+mensaje explicando el motivo, **sin guardar nada de ese request** (ni
+siquiera los campos que sí viven en `logistics_sheets`, para no dejar un
+estado a medias). El frontend debería mostrar ese mensaje tal cual y, en el
+caso de "otra opción", explicarle al cliente que ese dato en particular
+(tipo de evento + contactos) queda pendiente hasta que Galpón Pueyrredón
+cargue el tipo de evento definitivo. Una vez que exista el registro en
+`budget_delivery_data` (aunque sea creado a mano desde el panel admin),
+este problema desaparece: las siguientes actualizaciones son un `UPDATE`
+normal, sin la restricción de creación.
 
 ## Flujo típico
 

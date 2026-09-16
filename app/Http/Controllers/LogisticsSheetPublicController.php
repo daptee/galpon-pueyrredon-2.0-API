@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BudgetDeliveryData;
 use App\Models\EventType;
 use App\Models\LogisticsSheet;
 use Illuminate\Http\Request;
@@ -10,6 +11,17 @@ use Throwable;
 
 class LogisticsSheetPublicController extends Controller
 {
+    // Campos que en realidad viven en budget_delivery_data (duplicados con
+    // esa tabla), no en logistics_sheets. Ver LogisticsSheet::GROUP_FIELDS.
+    private const DELIVERY_DATA_BOUND_FIELDS = [
+        'id_event_type',
+        'order_contact_name',
+        'order_contact_phone',
+        'reception_contact_name',
+        'reception_contact_phone',
+        'additional_order_details',
+    ];
+
     private function editCutoffDate(LogisticsSheet $logisticsSheet): ?\Illuminate\Support\Carbon
     {
         $budget = $logisticsSheet->budget;
@@ -29,7 +41,11 @@ class LogisticsSheetPublicController extends Controller
 
     public function show(Request $request, $token)
     {
-        $logisticsSheet = LogisticsSheet::with('budget.client', 'eventType')->where('token', $token)->first();
+        $logisticsSheet = LogisticsSheet::with(
+            'budget.client',
+            'budget.place',
+            'budget.budgetDeliveryData.eventType'
+        )->where('token', $token)->first();
 
         if (!$logisticsSheet) {
             return response()->json(['code' => 0, 'response' => 'Ficha logística no encontrada'], 404);
@@ -42,13 +58,14 @@ class LogisticsSheetPublicController extends Controller
             'code' => 1,
             'response' => 'ok',
             'data' => [
-                'logistics_sheet' => $logisticsSheet,
+                'logistics_sheet' => $logisticsSheet->toPresentedArray(),
                 'read_only' => $this->isReadOnly($logisticsSheet),
                 'budget' => [
                     'id' => $budget->id,
                     'client_name' => $budget->client_name ?? optional($budget->client)->name,
                     'date_event' => $budget->date_event,
                     'time_event' => $budget->time_event,
+                    'address' => optional($budget->place)->address,
                     'pdf_url' => file_exists(public_path($budgetPdfPath)) ? asset($budgetPdfPath) : null,
                 ],
                 'event_types' => EventType::all(['id', 'name']),
@@ -59,7 +76,7 @@ class LogisticsSheetPublicController extends Controller
     public function update(Request $request, $token)
     {
         try {
-            $logisticsSheet = LogisticsSheet::with('budget')->where('token', $token)->first();
+            $logisticsSheet = LogisticsSheet::with('budget.place')->where('token', $token)->first();
 
             if (!$logisticsSheet) {
                 return response()->json(['code' => 0, 'response' => 'Ficha logística no encontrada'], 404);
@@ -75,9 +92,7 @@ class LogisticsSheetPublicController extends Controller
                 'budget_ratified' => 'sometimes|boolean',
                 'id_event_type' => 'sometimes|nullable|exists:event_types,id',
                 'event_type_other' => 'sometimes|nullable|string|max:255',
-                'event_start_datetime' => 'sometimes|nullable|date',
                 'event_end_datetime' => 'sometimes|nullable|date',
-                'address' => 'sometimes|nullable|string|max:255',
                 'address_maps_link' => 'sometimes|nullable|string|max:500',
                 'accessibility_comments' => 'sometimes|nullable|string|max:500',
                 'order_contact_name' => 'sometimes|nullable|string|max:255',
@@ -111,21 +126,13 @@ class LogisticsSheetPublicController extends Controller
 
             $logisticsSheet->fill($request->only([
                 'budget_ratified',
-                'id_event_type',
                 'event_type_other',
-                'event_start_datetime',
                 'event_end_datetime',
-                'address',
                 'address_maps_link',
                 'accessibility_comments',
-                'order_contact_name',
-                'order_contact_phone',
                 'delivery_windows',
                 'pickup_windows',
-                'reception_contact_name',
-                'reception_contact_phone',
                 'cushion_color',
-                'additional_order_details',
                 'insurance_required',
                 'additional_requirements',
             ]));
@@ -135,13 +142,18 @@ class LogisticsSheetPublicController extends Controller
 
             $this->applyFieldStatus($request, $logisticsSheet);
 
+            $syncError = $this->syncBudgetDeliveryData($request, $logisticsSheet);
+            if ($syncError) {
+                return response()->json(['code' => 0, 'response' => $syncError['message']], $syncError['status']);
+            }
+
             $logisticsSheet->recalculateCompletion();
             $logisticsSheet->save();
 
             return response()->json([
                 'code' => 1,
                 'response' => 'Ficha logística actualizada correctamente',
-                'data' => $logisticsSheet,
+                'data' => $logisticsSheet->toPresentedArray(),
             ]);
         } catch (Throwable $e) {
             return response()->json([
@@ -199,5 +211,96 @@ class LogisticsSheetPublicController extends Controller
         }
 
         $logisticsSheet->field_status = $fieldStatus;
+    }
+
+    /**
+     * Escribe directo en budget_delivery_data (Ficha de Entrega) los campos
+     * que son duplicados con la ficha logística (tipo de evento, contactos,
+     * additional_order_details) — no se guardan en logistics_sheets.
+     *
+     * id_event_type e id_locality son NOT NULL en budget_delivery_data: si
+     * todavía no hay forma de resolverlos y el request está mandando alguno
+     * de estos campos, se devuelve un error explícito en vez de perder la
+     * información en silencio.
+     *
+     * @return array{message: string, status: int}|null null si se sincronizó
+     *   bien (o no había nada que sincronizar en este request).
+     */
+    private function syncBudgetDeliveryData(Request $request, LogisticsSheet $logisticsSheet): ?array
+    {
+        $touchesDeliveryData = collect(self::DELIVERY_DATA_BOUND_FIELDS)
+            ->contains(fn ($field) => $request->has($field));
+
+        $budget = $logisticsSheet->budget;
+        $place = optional($budget)->place;
+        $existing = BudgetDeliveryData::where('id_budget', $logisticsSheet->id_budget)->first();
+
+        if (!$existing && !$touchesDeliveryData) {
+            // Nada de lo duplicado con budget_delivery_data se está
+            // mandando en este request, y todavía no existe el registro:
+            // no hay nada que sincronizar.
+            return null;
+        }
+
+        $idEventType = $request->input('id_event_type', optional($existing)->id_event_type);
+        $idLocality = optional($place)->id_locality ?? optional($existing)->id_locality;
+
+        if (!$existing) {
+            if (!$idEventType) {
+                return [
+                    'status' => 422,
+                    'message' => 'No se pudo guardar el tipo de evento ni los contactos: elegí un tipo de evento del listado (con "otra opción" el sector operativo todavía tiene que cargar el tipo definitivo antes de poder registrar estos datos).',
+                ];
+            }
+            if (!$idLocality) {
+                return [
+                    'status' => 422,
+                    'message' => 'No se pudo guardar el tipo de evento ni los contactos: el presupuesto todavía no tiene un lugar (place) asignado. Contactá a Galpón Pueyrredón para que lo carguen.',
+                ];
+            }
+        }
+
+        $mapped = array_filter([
+            'id_event_type' => $idEventType,
+            'id_locality' => $idLocality,
+            'address' => optional($place)->address,
+            'event_time' => optional($budget)->time_event ? substr($budget->time_event, 0, 5) : null,
+            'coordination_contact' => $request->input('order_contact_name'),
+            'cellphone_coordination' => $request->input('order_contact_phone'),
+            'reception_contact' => $request->input('reception_contact_name'),
+            'cellphone_reception' => $request->input('reception_contact_phone'),
+            'additional_order_details' => $request->input('additional_order_details'),
+            'additional_delivery_details' => $logisticsSheet->additional_requirements,
+            'delivery_datetime' => $this->formatWindows($logisticsSheet->delivery_windows),
+            'widthdrawal_datetime' => $this->formatWindows($logisticsSheet->pickup_windows),
+        ], fn ($value) => $value !== null && $value !== '');
+
+        BudgetDeliveryData::updateOrCreate(['id_budget' => $logisticsSheet->id_budget], $mapped);
+
+        return null;
+    }
+
+    private function formatWindows(?array $windows): ?string
+    {
+        if (!$windows) {
+            return null;
+        }
+
+        $parts = [];
+        foreach ($windows as $window) {
+            $from = $window['datetime_from'] ?? null;
+            $to = $window['datetime_to'] ?? null;
+            if (!$from || !$to) {
+                continue;
+            }
+            try {
+                $parts[] = \Illuminate\Support\Carbon::parse($from)->format('d/m/Y H:i')
+                    . ' a ' . \Illuminate\Support\Carbon::parse($to)->format('d/m/Y H:i');
+            } catch (Throwable $e) {
+                continue;
+            }
+        }
+
+        return $parts ? implode('; ', $parts) : null;
     }
 }
