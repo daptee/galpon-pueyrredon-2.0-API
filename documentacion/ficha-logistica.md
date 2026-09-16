@@ -216,9 +216,11 @@ un mensaje de "ficha completa" al cliente.
 
 ## Plazo de edición
 
-Pasado un número de días configurable antes de `event_start_datetime`
-(`LOGISTICS_SHEET_EDIT_CUTOFF_DAYS`, default 2), la ficha pasa a ser de solo
-lectura:
+Pasado un número de días configurable antes de la fecha del evento
+(`date_event` + `time_event` del presupuesto en la tabla `budgets` — no el
+`event_start_datetime` que carga el cliente en la ficha, ya que ese campo
+puede no estar completado todavía) (`LOGISTICS_SHEET_EDIT_CUTOFF_DAYS`,
+default 2), la ficha pasa a ser de solo lectura:
 
 - El `GET` devuelve `read_only: true`.
 - El `POST` devuelve `403`.

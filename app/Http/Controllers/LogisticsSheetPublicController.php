@@ -12,11 +12,13 @@ class LogisticsSheetPublicController extends Controller
 {
     private function editCutoffDate(LogisticsSheet $logisticsSheet): ?\Illuminate\Support\Carbon
     {
-        if (!$logisticsSheet->event_start_datetime) {
+        $budget = $logisticsSheet->budget;
+        if (!$budget || !$budget->date_event) {
             return null;
         }
         $days = (int) env('LOGISTICS_SHEET_EDIT_CUTOFF_DAYS', 2);
-        return $logisticsSheet->event_start_datetime->copy()->subDays($days);
+        $eventDateTime = \Illuminate\Support\Carbon::parse($budget->date_event . ' ' . ($budget->time_event ?? '00:00:00'));
+        return $eventDateTime->subDays($days);
     }
 
     private function isReadOnly(LogisticsSheet $logisticsSheet): bool
@@ -27,13 +29,11 @@ class LogisticsSheetPublicController extends Controller
 
     public function show(Request $request, $token)
     {
-        $logisticsSheet = LogisticsSheet::where('token', $token)->first();
+        $logisticsSheet = LogisticsSheet::with('budget.client', 'eventType')->where('token', $token)->first();
 
         if (!$logisticsSheet) {
             return response()->json(['code' => 0, 'response' => 'Ficha logística no encontrada'], 404);
         }
-
-        $logisticsSheet->load('budget.client', 'eventType');
 
         $budget = $logisticsSheet->budget;
         $budgetPdfPath = "storage/budgets/budget-{$budget->id}.pdf";
@@ -59,7 +59,7 @@ class LogisticsSheetPublicController extends Controller
     public function update(Request $request, $token)
     {
         try {
-            $logisticsSheet = LogisticsSheet::where('token', $token)->first();
+            $logisticsSheet = LogisticsSheet::with('budget')->where('token', $token)->first();
 
             if (!$logisticsSheet) {
                 return response()->json(['code' => 0, 'response' => 'Ficha logística no encontrada'], 404);
