@@ -100,8 +100,8 @@ class LogisticsSheet extends Model
 
     private function hasFirstWindow(?array $windows): bool
     {
-        return isset($windows[0]['date'], $windows[0]['time_from'], $windows[0]['time_to'])
-            && $windows[0]['date'] && $windows[0]['time_from'] && $windows[0]['time_to'];
+        return isset($windows[0]['datetime_from'], $windows[0]['datetime_to'])
+            && $windows[0]['datetime_from'] && $windows[0]['datetime_to'];
     }
 
     /**

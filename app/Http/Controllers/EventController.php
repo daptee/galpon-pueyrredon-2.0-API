@@ -126,7 +126,8 @@ class EventController extends Controller
                 'budgetProducts.product',
                 'payments.paymentType',
                 'payments.paymentMethod',
-                'payments.paymentStatus'
+                'payments.paymentStatus',
+                'logisticsSheet.eventType'
             ])->where('id_budget_status', 3) // O ID del estado aprobado
                 ->findOrFail($id);
 

@@ -113,8 +113,9 @@ Se puede llamar con:
 - `multipart/form-data` cuando el request incluye `insurance_document` y/o
   `assembly_plan_document` (obligatorio usar form-data para que viajen los
   archivos; los arrays como `delivery_windows` se mandan con notación de
-  corchetes: `delivery_windows[0][date]`, `delivery_windows[0][time_from]`,
-  etc., ver ejemplos en la colección de Postman).
+  corchetes: `delivery_windows[0][datetime_from]`,
+  `delivery_windows[0][datetime_to]`, etc., ver ejemplos en la colección de
+  Postman).
 
 Respuesta 200 con la ficha actualizada completa. Si la ficha quedó completa
 (ver "¿Cuándo se considera completa?"), viene `is_completed: true` y
@@ -148,11 +149,14 @@ Se agrupan en las mismas 4 secciones/pantallas sugeridas para el form. **M**
 ### b) Armado y desarme
 | Campo | M/O | Tipo |
 |---|---|---|
-| `delivery_windows` | M (solo la 1ra) | array de hasta 3 `{date, time_from, time_to}` |
-| `pickup_windows` | M (solo la 1ra) | array de hasta 3 `{date, time_from, time_to}` |
+| `delivery_windows` | M (solo la 1ra) | array de hasta 3 `{datetime_from, datetime_to}` |
+| `pickup_windows` | M (solo la 1ra) | array de hasta 3 `{datetime_from, datetime_to}` |
 | `reception_contact_name` / `reception_contact_phone` | M | string |
 | `cushion_color` | O | string |
 | `additional_order_details` | M | string |
+
+`datetime_from`/`datetime_to` son fecha+hora completos (no fecha y hora por
+separado). `datetime_to` tiene que ser igual o posterior a `datetime_from`.
 
 ### c) Requerimientos
 | Campo | M/O | Tipo |
