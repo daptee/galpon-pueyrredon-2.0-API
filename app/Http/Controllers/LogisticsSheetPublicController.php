@@ -70,7 +70,7 @@ class LogisticsSheetPublicController extends Controller
                     'address' => optional($budget->place)->address,
                     'pdf_url' => file_exists(public_path($budgetPdfPath)) ? asset($budgetPdfPath) : null,
                 ],
-                'event_types' => EventType::all(['id', 'name']),
+                'event_types' => EventType::all(['id', 'name', 'status']),
             ],
         ]);
     }

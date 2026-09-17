@@ -93,7 +93,9 @@ autenticación. Devuelve:
   `date_event`, `time_event`, `address` — la dirección del lugar del evento,
   sacada del `place` del presupuesto —, `pdf_url` con el link al PDF del
   presupuesto para que el cliente lo pueda ver/ratificar).
-- `event_types`: catálogo `[{id, name}]` para el combo de "Tipo de evento".
+- `event_types`: catálogo `[{id, name, status}]` para el combo de "Tipo de
+  evento" (`status` es el estado del tipo de evento — mismo campo que en el
+  resto de los catálogos del sistema).
 
 Si el token no existe, responde `404`.
 
