@@ -99,11 +99,16 @@
                 <td style="width: 10%; text-align: left; vertical-align: top;">
                     <p style="padding: 0 0 0 4px; margin: 2px 0 2px 0;">Presupuesto: </p>
                     <p style="padding: 0 0 0 4px; margin: 2px 0;">Volumen: </p>
+                    <p style="padding: 0 0 0 4px; margin: 2px 0;">Ficha logística: </p>
                 </td>
                 <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="margin: 2px 0 2px 0; font-weight: bold;">{{ str_pad($budget->id, 8, '0', STR_PAD_LEFT) }}
                     </p>
                     <p style="margin: 2px 0; font-weight: bold;">{{ number_format($budget->volume / 1000, 1) }}m<sup>3</sup></p>
+                    <p style="margin: 2px 0; font-weight: bold;">
+                        {{ ($budget->logisticsSheet->is_completed ?? false) ? 'Completa' : 'Incompleta' }}
+                        {{ ($budget->logisticsSheet->budget_ratified ?? false) ? '(ratificada)' : '' }}
+                    </p>
                 </td>
             </tr>
         </table>
@@ -113,19 +118,27 @@
                 <td style="width: 6%; vertical-align: top;">
                     <p style="margin: 2px 0;">Cliente: </p>
                     <p style="margin: 2px 0;">Lugar: </p>
+                    <p style="margin: 2px 0;">Tipo de evento: </p>
                 </td>
                 <td style="width: 60%; vertical-align: top;">
                     <p style="margin: 2px 0;"><strong>{{ $budget->client->name ?? $budget->client_mail }}</strong></p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->place->name }}</strong></p>
+                    <p style="margin: 2px 0;">
+                        <strong>{{ $budget->budgetDeliveryData->eventType->name ?? ($budget->logisticsSheet->event_type_other ?? "") }}</strong>
+                    </p>
                 </td>
                 <td style="width: 10%; text-align: left; vertical-align: top;">
-                    <p style="padding: 0 0 0 2px; margin: 2px 0;">Fecha y hora: </p>
+                    <p style="padding: 0 0 0 2px; margin: 2px 0;">Inicio: </p>
+                    <p style="padding: 0 0 0 2px; margin: 2px 0;">Fin: </p>
                     <p style="padding: 0 0 0 2px; margin: 2px 0;">Duración: </p>
                 </td>
                 <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="margin: 2px 0;">
                         <strong>{{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }} -
                             {{ $budget->budgetDeliveryData->event_time ?? "" }}</strong>
+                    </p>
+                    <p style="margin: 2px 0;">
+                        <strong>{{ optional($budget->logisticsSheet->event_end_datetime ?? null)->format('d-M-Y H:i') ?? "" }}</strong>
                     </p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->days }} día/s</strong></p>
                 </td>
@@ -135,11 +148,18 @@
             <tr>
                 <td style="width: 15%; vertical-align: top;">
                     <p style="margin: 2px 0;">Dirección: </p>
+                    <p style="margin: 2px 0;">Accesibilidad: </p>
                     <p style="margin: 2px 0;">Opciones de entrega: </p>
                     <p style="margin: 2px 0;">Opciones de retiro: </p>
                 </td>
                 <td style="width: 61%; vertical-align: top;">
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->address ?? "" }}</strong></p>
+                    <p style="margin: 2px 0;">
+                        <strong>{{ $budget->budgetDeliveryData->address ?? "" }}</strong>
+                        @if($budget->logisticsSheet->address_maps_link ?? null)
+                            &nbsp;-&nbsp;<a href="{{ $budget->logisticsSheet->address_maps_link }}">Ver en Maps</a>
+                        @endif
+                    </p>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->logisticsSheet->accessibility_comments ?? "" }}</strong></p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->delivery_options ?? "" }}</strong></p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_options ?? "" }}</strong>
                     </p>
@@ -235,6 +255,50 @@
         <p style="margin: 8px 0;">Detalles adicionales de entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <strong>
                 {{ $budget->budgetDeliveryData->additional_delivery_details ?? "" }}
+            </strong>
+        </p>
+    </div>
+
+    @php
+        $insuranceLabels = [
+            'yes' => 'Sí',
+            'not_applicable' => 'No aplica',
+            'later' => 'Se informará luego',
+        ];
+        $insuranceRequired = $budget->logisticsSheet->insurance_required ?? null;
+    @endphp
+    <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
+        <tr>
+            <td style="width: 25%;">
+                Color de almohadones:&nbsp;&nbsp;&nbsp;&nbsp;
+                <strong>
+                    {{ $budget->logisticsSheet->cushion_color ?? "" }}
+                </strong>
+            </td>
+            <td style="width: 25%;">
+                Seguros:&nbsp;&nbsp;&nbsp;&nbsp;
+                <strong>
+                    {{ $insuranceRequired ? ($insuranceLabels[$insuranceRequired] ?? $insuranceRequired) : "" }}
+                    @if($budget->logisticsSheet->insurance_document_path ?? null)
+                        &nbsp;-&nbsp;<a href="{{ asset($budget->logisticsSheet->insurance_document_path) }}">Ver documento</a>
+                    @endif
+                </strong>
+            </td>
+            <td style="width: 50%;">
+                Plano de armado:&nbsp;&nbsp;&nbsp;&nbsp;
+                <strong>
+                    @if($budget->logisticsSheet->assembly_plan_path ?? null)
+                        <a href="{{ asset($budget->logisticsSheet->assembly_plan_path) }}">Ver plano</a>
+                    @endif
+                </strong>
+            </td>
+        </tr>
+    </table>
+
+    <div class="budget">
+        <p style="margin: 8px 0;">Requerimientos adicionales:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <strong>
+                {{ $budget->logisticsSheet->additional_requirements ?? "" }}
             </strong>
         </p>
     </div>

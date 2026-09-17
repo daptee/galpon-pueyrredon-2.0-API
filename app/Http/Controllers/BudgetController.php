@@ -2224,7 +2224,8 @@ class BudgetController extends Controller
                 'client',
                 'budgetProducts.product.attributeValues',
                 'budgetProducts.product.comboItems.product.attributeValues',
-                'budgetDeliveryData'
+                'budgetDeliveryData.eventType',
+                'logisticsSheet'
             ])->find($id);
 
             // Si el evento NO tiene cargado los datos de entrega, retornar un error en la peticion de que no hay datos de entrega cargados.
