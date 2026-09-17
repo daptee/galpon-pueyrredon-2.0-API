@@ -21,6 +21,7 @@ class LogisticsSheetPublicController extends Controller
         'reception_contact_name',
         'reception_contact_phone',
         'additional_order_details',
+        'delivery_options',
     ];
 
     private function editCutoffDate(LogisticsSheet $logisticsSheet): ?\Illuminate\Support\Carbon
@@ -108,6 +109,7 @@ class LogisticsSheetPublicController extends Controller
                 'reception_contact_phone' => 'sometimes|nullable|string|max:20',
                 'cushion_color' => 'sometimes|nullable|string|max:100',
                 'additional_order_details' => 'sometimes|nullable|string|max:500',
+                'delivery_options' => 'sometimes|nullable|string|max:255',
                 'insurance_required' => 'sometimes|nullable|in:yes,not_applicable,later',
                 'additional_requirements' => 'sometimes|nullable|string|max:500',
                 'completion_percentage' => 'sometimes|nullable|integer|min:0|max:100',
@@ -273,6 +275,7 @@ class LogisticsSheetPublicController extends Controller
             'reception_contact' => $request->input('reception_contact_name'),
             'cellphone_reception' => $request->input('reception_contact_phone'),
             'additional_order_details' => $request->input('additional_order_details'),
+            'delivery_options' => $request->input('delivery_options'),
             'additional_delivery_details' => $logisticsSheet->additional_requirements,
             'delivery_datetime' => $this->formatPrimaryWindow($logisticsSheet->delivery_windows),
             'widthdrawal_datetime' => $this->formatPrimaryWindow($logisticsSheet->pickup_windows),

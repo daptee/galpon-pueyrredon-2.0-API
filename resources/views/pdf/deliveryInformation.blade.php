@@ -149,20 +149,15 @@
                 <td style="width: 15%; vertical-align: top;">
                     <p style="margin: 2px 0;">Dirección: </p>
                     <p style="margin: 2px 0;">Accesibilidad: </p>
-                    <p style="margin: 2px 0;">Opciones de entrega: </p>
-                    <p style="margin: 2px 0;">Opciones de retiro: </p>
                 </td>
                 <td style="width: 61%; vertical-align: top;">
                     <p style="margin: 2px 0;">
-                        <strong>{{ $budget->budgetDeliveryData->address ?? "" }}</strong>
+                        <strong>{{ $budget->budgetDeliveryData->delivery_options ?? $budget->budgetDeliveryData->address ?? "" }}</strong>
                         @if($budget->logisticsSheet->address_maps_link ?? null)
                             &nbsp;-&nbsp;<a href="{{ $budget->logisticsSheet->address_maps_link }}">Ver en Maps</a>
                         @endif
                     </p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->logisticsSheet->accessibility_comments ?? "" }}</strong></p>
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->delivery_options ?? "" }}</strong></p>
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_options ?? "" }}</strong>
-                    </p>
                 </td>
             </tr>
         </table>

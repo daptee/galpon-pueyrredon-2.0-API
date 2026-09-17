@@ -167,6 +167,7 @@ tenga `date_event` y un `place` con dirección cargados.
 | `reception_contact_name` / `reception_contact_phone` | M | string |
 | `cushion_color` | O | string |
 | `additional_order_details` | M | string |
+| `delivery_options` | O | string — dirección/nota de retiro, si es distinta a la del `place` del presupuesto |
 
 `datetime_from`/`datetime_to` son fecha+hora completos (no fecha y hora por
 separado). `datetime_to` tiene que ser igual o posterior a `datetime_from`.
@@ -223,8 +224,9 @@ columna individual) son:
 ```
 budget_ratified, event_type, event_end_datetime, accessibility_comments,
 order_contact, delivery_windows, pickup_windows, reception_contact,
-cushion_color, additional_order_details, insurance_required,
-insurance_document, additional_requirements, assembly_plan
+cushion_color, additional_order_details, delivery_options,
+insurance_required, insurance_document, additional_requirements,
+assembly_plan
 ```
 
 (`event_start_datetime` y `address` no están en esta lista — ver la nota en
@@ -263,14 +265,15 @@ inputs) en vez de esperar a que el guardado falle con 403.
 Esto sí es relevante para el frontend por los errores que puede devolver
 (ver más abajo), aunque el **nombre y la forma de los campos en la API no
 cambian** — `id_event_type`, `order_contact_name`/`order_contact_phone`,
-`reception_contact_name`/`reception_contact_phone` y
-`additional_order_details` se siguen mandando y recibiendo igual que
-cualquier otro campo de la ficha. Lo que cambia es dónde se guardan: como
-esos 6 campos son literalmente los mismos datos que ya existían en
-`budget_delivery_data` (la "Ficha de Entrega" que usa el panel admin para
-armar/cargar los camiones — modelo `BudgetDeliveryData`, gestionada aparte
-por `BudgetDeliveryDataController`), **no se duplican en `logistics_sheets`**:
-se leen y escriben directo en `budget_delivery_data`. Mapeo:
+`reception_contact_name`/`reception_contact_phone`,
+`additional_order_details` y `delivery_options` se siguen mandando y
+recibiendo igual que cualquier otro campo de la ficha. Lo que cambia es
+dónde se guardan: como esos campos son literalmente los mismos datos que ya
+existían en `budget_delivery_data` (la "Ficha de Entrega" que usa el panel
+admin para armar/cargar los camiones — modelo `BudgetDeliveryData`,
+gestionada aparte por `BudgetDeliveryDataController`), **no se duplican en
+`logistics_sheets`**: se leen y escriben directo en `budget_delivery_data`.
+Mapeo:
 
 | Campo en la API de la ficha | Columna real en `budget_delivery_data` |
 |---|---|
@@ -278,6 +281,13 @@ se leen y escriben directo en `budget_delivery_data`. Mapeo:
 | `order_contact_name` / `order_contact_phone` | `coordination_contact` / `cellphone_coordination` |
 | `reception_contact_name` / `reception_contact_phone` | `reception_contact` / `cellphone_reception` |
 | `additional_order_details` | `additional_order_details` |
+| `delivery_options` | `delivery_options` |
+
+`delivery_options` (string, opcional, max 255) es una dirección/nota de
+retiro alternativa a la dirección del `place` del presupuesto — por ejemplo
+cuando el retiro no es en la misma dirección del evento. Si se carga, el
+PDF de la Ficha de Entrega muestra `delivery_options` en el campo
+"Dirección"; si no, muestra la dirección del `place` como hasta ahora.
 
 Además, como mirror best-effort (no bloquean nada si fallan):
 

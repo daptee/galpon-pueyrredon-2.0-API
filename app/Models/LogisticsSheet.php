@@ -64,6 +64,7 @@ class LogisticsSheet extends Model
         'reception_contact' => ['reception_contact_name', 'reception_contact_phone'],
         'cushion_color' => ['cushion_color'],
         'additional_order_details' => ['additional_order_details'],
+        'delivery_options' => ['delivery_options'],
         'insurance_required' => ['insurance_required'],
         // Estos dos apuntan al nombre del campo de archivo tal como llega en
         // el request (no a la columna donde se guarda la ruta ya movida).
@@ -141,6 +142,7 @@ class LogisticsSheet extends Model
             'reception_contact_name' => optional($deliveryData)->reception_contact,
             'reception_contact_phone' => optional($deliveryData)->cellphone_reception,
             'additional_order_details' => optional($deliveryData)->additional_order_details,
+            'delivery_options' => optional($deliveryData)->delivery_options,
         ]);
     }
 
