@@ -338,7 +338,12 @@
                     {{ $insuranceRequired ? ($insuranceLabels[$insuranceRequired] ?? $insuranceRequired) : "" }}
                     @if($budget->logisticsSheet->insurance_document_path ?? null)
                         &nbsp;-&nbsp;<a href="{{ asset($budget->logisticsSheet->insurance_document_path) }}">Ver documento</a>
+                    @elseif($budget->logisticsSheet->insurance_request_text ?? null)
+                        &nbsp;-&nbsp;{{ $budget->logisticsSheet->insurance_request_text }}
                     @endif
+                    @foreach($budget->logisticsSheet->insurance_additional_documents ?? [] as $index => $document)
+                        &nbsp;-&nbsp;<a href="{{ asset($document['path']) }}">{{ $document['original_name'] ?? ('Adicional ' . ($index + 1)) }}</a>
+                    @endforeach
                 </strong>
             </td>
             <td style="width: 33.33%; vertical-align: top;">

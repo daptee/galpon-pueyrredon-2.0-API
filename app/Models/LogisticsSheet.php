@@ -21,6 +21,8 @@ class LogisticsSheet extends Model
         'cushion_color',
         'insurance_required',
         'insurance_document_path',
+        'insurance_additional_documents',
+        'insurance_request_text',
         'additional_requirements',
         'assembly_plan_path',
         'field_status',
@@ -38,6 +40,7 @@ class LogisticsSheet extends Model
         'delivery_windows' => 'array',
         'pickup_windows' => 'array',
         'field_status' => 'array',
+        'insurance_additional_documents' => 'array',
     ];
 
     // Campos aceptados en field_status ('later' | 'not_applicable') y los
@@ -66,9 +69,10 @@ class LogisticsSheet extends Model
         'additional_order_details' => ['additional_order_details'],
         'delivery_options' => ['delivery_options'],
         'insurance_required' => ['insurance_required'],
-        // Estos dos apuntan al nombre del campo de archivo tal como llega en
-        // el request (no a la columna donde se guarda la ruta ya movida).
-        'insurance_document' => ['insurance_document'],
+        // 'insurance_document' agrupa el archivo (input tal como llega en el
+        // request, no la columna insurance_document_path) y su alternativa en
+        // texto (insurance_request_text) — alcanza con uno de los dos.
+        'insurance_document' => ['insurance_document', 'insurance_request_text'],
         'additional_requirements' => ['additional_requirements'],
         'assembly_plan' => ['assembly_plan_document'],
     ];
@@ -172,7 +176,9 @@ class LogisticsSheet extends Model
             'reception_contact' => (bool) (optional($deliveryData)->reception_contact && optional($deliveryData)->cellphone_reception),
             'additional_order_details' => (bool) optional($deliveryData)->additional_order_details,
             'insurance_required' => (bool) $this->insurance_required,
-            'insurance_document' => $this->insurance_required !== 'yes' || (bool) $this->insurance_document_path,
+            'insurance_document' => $this->insurance_required !== 'yes'
+                || (bool) $this->insurance_document_path
+                || (bool) $this->insurance_request_text,
         ];
 
         foreach ($mandatoryChecks as $field => $hasValue) {

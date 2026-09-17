@@ -178,8 +178,36 @@ separado). `datetime_to` tiene que ser igual o posterior a `datetime_from`.
 | Campo | M/O | Tipo |
 |---|---|---|
 | `insurance_required` | M | `"yes"` \| `"not_applicable"` \| `"later"` |
-| `insurance_document` | M si `insurance_required = "yes"` | archivo (input `insurance_document`, se guarda como `insurance_document_path`) |
+| `insurance_document` **o** `insurance_request_text` | M si `insurance_required = "yes"` | archivo (input `insurance_document`, se guarda como `insurance_document_path`) o texto libre (`insurance_request_text`, max 1000) |
+| `insurance_additional_documents[]` | O | hasta 5 archivos por request (input array, ver abajo) |
 | `additional_requirements` | O | string |
+
+`insurance_document` e `insurance_request_text` son alternativas entre sí:
+alcanza con mandar **uno de los dos** para que ese requisito se dé por
+resuelto (por ejemplo, si el cliente todavía no tiene el archivo de la
+póliza pero puede describir la cobertura o decir que lo va a mandar por
+otro medio). Si se manda alguno de los dos, cualquier marca `later`/
+`not_applicable` que hubiera en `field_status` para `insurance_document`
+se limpia sola.
+
+`insurance_additional_documents` es para sumar documentos de seguro
+adicionales al principal (ej. ART, seguro de vehículos) — es un input de
+archivos **múltiple**: `insurance_additional_documents[]` con uno o varios
+archivos (máximo 5 por request, 10MB c/u). **Es acumulativo**: cada
+guardado agrega los nuevos a los que ya había, nunca los reemplaza. No hay
+forma de borrar uno ya subido desde este endpoint.
+
+Se guarda en `logistics_sheet.insurance_additional_documents` como un array
+de objetos `{path, original_name}`:
+
+```json
+{
+  "insurance_additional_documents": [
+    { "path": "storage/logistics_sheets/12/...art.pdf", "original_name": "ART Constructora.pdf" },
+    { "path": "storage/logistics_sheets/12/...rc-auto.pdf", "original_name": "RC Auto.pdf" }
+  ]
+}
+```
 
 ### d) Planos
 | Campo | M/O | Tipo |

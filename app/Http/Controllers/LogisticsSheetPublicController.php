@@ -111,12 +111,15 @@ class LogisticsSheetPublicController extends Controller
                 'additional_order_details' => 'sometimes|nullable|string|max:500',
                 'delivery_options' => 'sometimes|nullable|string|max:255',
                 'insurance_required' => 'sometimes|nullable|in:yes,not_applicable,later',
+                'insurance_request_text' => 'sometimes|nullable|string|max:1000',
                 'additional_requirements' => 'sometimes|nullable|string|max:500',
                 'completion_percentage' => 'sometimes|nullable|integer|min:0|max:100',
                 'field_status' => 'sometimes|array',
                 'field_status.*.field' => 'required_with:field_status|in:' . implode(',', array_keys(LogisticsSheet::GROUP_FIELDS)),
                 'field_status.*.status' => 'required_with:field_status|in:later,not_applicable,completed',
                 'insurance_document' => 'sometimes|file|max:10240',
+                'insurance_additional_documents' => 'sometimes|array|max:5',
+                'insurance_additional_documents.*' => 'file|max:10240',
                 'assembly_plan_document' => 'sometimes|file|max:10240',
             ]);
 
@@ -138,12 +141,14 @@ class LogisticsSheetPublicController extends Controller
                 'pickup_windows',
                 'cushion_color',
                 'insurance_required',
+                'insurance_request_text',
                 'additional_requirements',
                 'completion_percentage',
             ]));
 
             $this->storeAttachment($request, $logisticsSheet, 'insurance_document', 'insurance_document_path');
             $this->storeAttachment($request, $logisticsSheet, 'assembly_plan_document', 'assembly_plan_path');
+            $this->storeAdditionalInsuranceDocuments($request, $logisticsSheet);
 
             $this->applyFieldStatus($request, $logisticsSheet);
 
@@ -185,6 +190,41 @@ class LogisticsSheetPublicController extends Controller
         $file->move($storagePath, $filename);
 
         $logisticsSheet->{$column} = "storage/logistics_sheets/{$logisticsSheet->id_budget}/{$filename}";
+    }
+
+    /**
+     * `insurance_document` es la póliza principal (un solo archivo,
+     * obligatorio si insurance_required=yes). `insurance_additional_documents`
+     * es para sumar documentos de seguro extra (ART, seguro de vehículos,
+     * etc.) — son opcionales y se van acumulando entre distintos guardados,
+     * nunca se pisan entre sí.
+     */
+    private function storeAdditionalInsuranceDocuments(Request $request, LogisticsSheet $logisticsSheet): void
+    {
+        $files = $request->file('insurance_additional_documents', []);
+        if (empty($files)) {
+            return;
+        }
+
+        $storagePath = public_path("storage/logistics_sheets/{$logisticsSheet->id_budget}/");
+        if (!file_exists($storagePath)) {
+            mkdir($storagePath, 0777, true);
+        }
+
+        $documents = $logisticsSheet->insurance_additional_documents ?? [];
+
+        foreach ($files as $file) {
+            $originalName = $file->getClientOriginalName();
+            $filename = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
+            $file->move($storagePath, $filename);
+
+            $documents[] = [
+                'path' => "storage/logistics_sheets/{$logisticsSheet->id_budget}/{$filename}",
+                'original_name' => $originalName,
+            ];
+        }
+
+        $logisticsSheet->insurance_additional_documents = $documents;
     }
 
     private function applyFieldStatus(Request $request, LogisticsSheet $logisticsSheet): void

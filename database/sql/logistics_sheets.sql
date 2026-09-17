@@ -27,6 +27,15 @@ CREATE TABLE logistics_sheets (
     -- Requerimientos
     insurance_required ENUM('yes', 'not_applicable', 'later') NULL,
     insurance_document_path VARCHAR(255) NULL,
+    -- Documentos de seguro adicionales (ART, seguro de vehículos, etc.), más
+    -- allá del principal (insurance_document_path). Array JSON de objetos
+    -- {path, original_name}, se van agregando de a uno, nunca se pisan entre sí.
+    insurance_additional_documents JSON NULL,
+    -- Alternativa en texto al documento de seguro, para cuando el cliente
+    -- todavía no tiene el archivo pero puede describir la cobertura/solicitud.
+    -- Satisface el requisito de "Documento o texto de solicitud de seguros"
+    -- junto con insurance_document_path (alcanza con uno de los dos).
+    insurance_request_text VARCHAR(1000) NULL,
     additional_requirements VARCHAR(500) NULL,
 
     -- Plano de armado
