@@ -51,6 +51,12 @@ CREATE TABLE logistics_sheets (
     is_completed TINYINT(1) NOT NULL DEFAULT 0,
     completed_at DATETIME NULL,
 
+    -- Recordatorios automáticos por mail (cron). Array JSON de enteros con
+    -- los "días antes del evento" ya notificados (ej. [7,3]), para no
+    -- volver a mandar el mismo recordatorio si el cron corre más de una vez
+    -- el mismo día.
+    reminder_days_sent JSON NULL,
+
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 

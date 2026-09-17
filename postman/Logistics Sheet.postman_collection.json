@@ -94,6 +94,79 @@
       ]
     },
     {
+      "name": "Enviar recordatorios (cron, 7/3/1 días antes)",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{BASE_URL}}/logistics-sheet/send-reminders?secret={{LOGISTICS_SHEET_REMINDERS_SECRET}}",
+          "host": ["{{BASE_URL}}"],
+          "path": ["logistics-sheet", "send-reminders"],
+          "query": [
+            { "key": "secret", "value": "{{LOGISTICS_SHEET_REMINDERS_SECRET}}", "description": "Solo si se configuró LOGISTICS_SHEET_REMINDERS_SECRET en el .env. Si no, se puede omitir." }
+          ]
+        },
+        "description": "Sin autenticación (lo llama un cron externo, no un usuario logueado). Pensado para correr una vez por día. Revisa presupuestos Aprobados cuyo `date_event` es exactamente hoy+7, hoy+3 u hoy+1 día, y si la ficha logística no está completa le reenvía el link al cliente con un encabezado más urgente cuanto más cerca está el evento. Es idempotente: llamarlo de nuevo el mismo día no duplica envíos (`logistics_sheet.reminder_days_sent` lo recuerda). Detalle completo en `documentacion/recordatorios-ficha-logistica.md`."
+      },
+      "response": [
+        {
+          "name": "200 OK - Se mandó un recordatorio",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-sheet/send-reminders",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-sheet", "send-reminders"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"message\":\"Recordatorios procesados\",\"data\":{\"sent\":[{\"id_budget\":13007,\"days_remaining\":7,\"mail_sent_to\":\"cliente@correo.com\"}],\"skipped\":[],\"errors\":[]}}"
+        },
+        {
+          "name": "200 OK - Todo saltado (ya enviado o ficha completa)",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-sheet/send-reminders",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-sheet", "send-reminders"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"message\":\"Recordatorios procesados\",\"data\":{\"sent\":[],\"skipped\":[{\"id_budget\":13007,\"days_remaining\":7,\"reason\":\"ya_enviado\"},{\"id_budget\":13010,\"days_remaining\":3,\"reason\":\"ficha_completa\"}],\"errors\":[]}}"
+        },
+        {
+          "name": "403 Secret inválido o faltante",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/logistics-sheet/send-reminders",
+              "host": ["{{BASE_URL}}"],
+              "path": ["logistics-sheet", "send-reminders"]
+            }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "_postman_previewlanguage": "json",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "cookie": [],
+          "body": "{\"message\":\"No autorizado\",\"data\":null,\"error\":{\"error\":\"Secret inválido o faltante\"}}"
+        }
+      ]
+    },
+    {
       "name": "Ver ficha (público, por token)",
       "request": {
         "auth": { "type": "noauth" },
@@ -617,6 +690,10 @@
     {
       "key": "BASE_URL",
       "value": "http://127.0.0.1:8000/api"
+    },
+    {
+      "key": "LOGISTICS_SHEET_REMINDERS_SECRET",
+      "value": ""
     }
   ]
 }

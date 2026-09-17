@@ -387,6 +387,9 @@ Route::group([
     'prefix' => 'logistics-sheet'
 ], function () {
     Route::get('/budget/{idBudget}', [LogisticsSheetController::class, 'getOrCreate'])->middleware('admin');
+    // Sin middleware admin a propósito: la pega un cron externo, no un usuario logueado.
+    // Protegida por LOGISTICS_SHEET_REMINDERS_SECRET (ver .env.example) si está configurada.
+    Route::get('/send-reminders', [LogisticsSheetController::class, 'sendReminders']);
 });
 
 // Payment

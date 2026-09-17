@@ -29,6 +29,7 @@ class LogisticsSheet extends Model
         'completion_percentage',
         'is_completed',
         'completed_at',
+        'reminder_days_sent',
     ];
 
     protected $casts = [
@@ -41,6 +42,7 @@ class LogisticsSheet extends Model
         'pickup_windows' => 'array',
         'field_status' => 'array',
         'insurance_additional_documents' => 'array',
+        'reminder_days_sent' => 'array',
     ];
 
     // Campos aceptados en field_status ('later' | 'not_applicable') y los
