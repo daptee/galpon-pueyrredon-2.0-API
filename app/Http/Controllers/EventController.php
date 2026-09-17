@@ -24,6 +24,7 @@ class EventController extends Controller
             'client',
             'budgetStatus',
             'budgetDeliveryData',
+            'logisticsSheet',
             'payments.paymentType',
             'payments.paymentMethod',
             'payments.paymentStatus',
