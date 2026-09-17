@@ -222,9 +222,11 @@
     </p>
     @php
         // Formatea las hasta 3 ventanas de entrega/retiro de la ficha
-        // logística como "12 de marzo - 14:39 a 12 de marzo - 17:00", una
-        // por línea. Si la ficha no tiene ventanas cargadas (o no existe),
-        // devuelve null para caer al texto único legacy de budget_delivery_data.
+        // logística como "24 de octubre - 14:30 a 12:30" (la fecha se
+        // muestra una sola vez, ya que datetime_from y datetime_to son
+        // siempre del mismo día), una por línea. Si la ficha no tiene
+        // ventanas cargadas (o no existe), devuelve null para caer al texto
+        // único legacy de budget_delivery_data.
         $formatDeliveryWindows = function (?array $windows) {
             if (!$windows) {
                 return null;
@@ -237,10 +239,10 @@
                     continue;
                 }
                 try {
-                    $format = 'j \d\e F - H:i';
-                    $fromFmt = \Illuminate\Support\Carbon::parse($from)->locale('es')->translatedFormat($format);
-                    $toFmt = \Illuminate\Support\Carbon::parse($to)->locale('es')->translatedFormat($format);
-                    $lines[] = "{$fromFmt} a {$toFmt}";
+                    $fromCarbon = \Illuminate\Support\Carbon::parse($from)->locale('es');
+                    $toCarbon = \Illuminate\Support\Carbon::parse($to)->locale('es');
+                    $date = $fromCarbon->translatedFormat('j \d\e F');
+                    $lines[] = "{$date} - {$fromCarbon->format('H:i')} a {$toCarbon->format('H:i')}";
                 } catch (\Throwable $e) {
                     continue;
                 }
@@ -267,28 +269,38 @@
         </tr>
         <tr>
             <td style="width: 50%; vertical-align: top;">
-                Entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <strong>
+                <table style="border-collapse: collapse;">
                     @if($deliveryLines)
                         @foreach($deliveryLines as $line)
-                            {{ $line }}@if(!$loop->last)<br>@endif
+                            <tr>
+                                <td style="white-space: nowrap; vertical-align: top; padding: 0;">{{ $loop->first ? 'Entrega:' : '' }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                                <td style="padding: 0;"><strong>{{ $line }}</strong></td>
+                            </tr>
                         @endforeach
                     @else
-                        {{ $budget->budgetDeliveryData->delivery_datetime ?? "" }}
+                        <tr>
+                            <td style="white-space: nowrap; vertical-align: top; padding: 0;">Entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td style="padding: 0;"><strong>{{ $budget->budgetDeliveryData->delivery_datetime ?? "" }}</strong></td>
+                        </tr>
                     @endif
-                </strong>
+                </table>
             </td>
             <td style="width: 50%; vertical-align: top;">
-                Retiro:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <strong>
+                <table style="border-collapse: collapse;">
                     @if($pickupLines)
                         @foreach($pickupLines as $line)
-                            {{ $line }}@if(!$loop->last)<br>@endif
+                            <tr>
+                                <td style="white-space: nowrap; vertical-align: top; padding: 0;">{{ $loop->first ? 'Retiro:' : '' }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                                <td style="padding: 0;"><strong>{{ $line }}</strong></td>
+                            </tr>
                         @endforeach
                     @else
-                        {{ $budget->budgetDeliveryData->widthdrawal_datetime ?? "" }}
+                        <tr>
+                            <td style="white-space: nowrap; vertical-align: top; padding: 0;">Retiro:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td style="padding: 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_datetime ?? "" }}</strong></td>
+                        </tr>
                     @endif
-                </strong>
+                </table>
             </td>
         </tr>
     </table>

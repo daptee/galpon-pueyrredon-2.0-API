@@ -110,6 +110,7 @@ class LogisticsSheetPublicController extends Controller
                 'additional_order_details' => 'sometimes|nullable|string|max:500',
                 'insurance_required' => 'sometimes|nullable|in:yes,not_applicable,later',
                 'additional_requirements' => 'sometimes|nullable|string|max:500',
+                'completion_percentage' => 'sometimes|nullable|integer|min:0|max:100',
                 'field_status' => 'sometimes|array',
                 'field_status.*.field' => 'required_with:field_status|in:' . implode(',', array_keys(LogisticsSheet::GROUP_FIELDS)),
                 'field_status.*.status' => 'required_with:field_status|in:later,not_applicable,completed',
@@ -136,6 +137,7 @@ class LogisticsSheetPublicController extends Controller
                 'cushion_color',
                 'insurance_required',
                 'additional_requirements',
+                'completion_percentage',
             ]));
 
             $this->storeAttachment($request, $logisticsSheet, 'insurance_document', 'insurance_document_path');

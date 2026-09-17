@@ -171,7 +171,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"budget_ratified\": true,\r\n    \"id_event_type\": 2,\r\n    \"event_end_datetime\": \"2026-11-20 23:00:00\",\r\n    \"address_maps_link\": \"https://maps.app.goo.gl/abc123\",\r\n    \"order_contact_name\": \"Juan Pérez\",\r\n    \"order_contact_phone\": \"+5491123456789\"\r\n}",
+          "raw": "{\r\n    \"budget_ratified\": true,\r\n    \"id_event_type\": 2,\r\n    \"event_end_datetime\": \"2026-11-20 23:00:00\",\r\n    \"address_maps_link\": \"https://maps.app.goo.gl/abc123\",\r\n    \"order_contact_name\": \"Juan Pérez\",\r\n    \"order_contact_phone\": \"+5491123456789\",\r\n    \"completion_percentage\": 45\r\n}",
           "options": { "raw": { "language": "json" } }
         },
         "url": {
@@ -179,7 +179,7 @@
           "host": ["{{BASE_URL}}"],
           "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
         },
-        "description": "Sin autenticación. Carga incremental: se pueden mandar solo los campos de la sección \"Datos básicos\" que ya se conocen; el resto de la ficha no se modifica. Si se usa `id_event_type` no hace falta mandar `event_type_other` (y viceversa). No se manda `event_start_datetime` ni `address`: esos se muestran de solo lectura (vienen del presupuesto, ver endpoint \"Ver ficha\")."
+        "description": "Sin autenticación. Carga incremental: se pueden mandar solo los campos de la sección \"Datos básicos\" que ya se conocen; el resto de la ficha no se modifica. Si se usa `id_event_type` no hace falta mandar `event_type_other` (y viceversa). No se manda `event_start_datetime` ni `address`: esos se muestran de solo lectura (vienen del presupuesto, ver endpoint \"Ver ficha\"). `completion_percentage` (0-100) es opcional y puramente informativo: el % de avance que calcula el propio frontend, el backend solo lo guarda y lo devuelve, no lo usa para calcular `is_completed`."
       },
       "response": [
         {
@@ -189,7 +189,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"budget_ratified\": true,\r\n    \"id_event_type\": 2,\r\n    \"event_end_datetime\": \"2026-11-20 23:00:00\",\r\n    \"address_maps_link\": \"https://maps.app.goo.gl/abc123\",\r\n    \"order_contact_name\": \"Juan Pérez\",\r\n    \"order_contact_phone\": \"+5491123456789\"\r\n}",
+              "raw": "{\r\n    \"budget_ratified\": true,\r\n    \"id_event_type\": 2,\r\n    \"event_end_datetime\": \"2026-11-20 23:00:00\",\r\n    \"address_maps_link\": \"https://maps.app.goo.gl/abc123\",\r\n    \"order_contact_name\": \"Juan Pérez\",\r\n    \"order_contact_phone\": \"+5491123456789\",\r\n    \"completion_percentage\": 45\r\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -203,7 +203,7 @@
           "_postman_previewlanguage": "json",
           "header": [{ "key": "Content-Type", "value": "application/json" }],
           "cookie": [],
-          "body": "{\"code\":1,\"response\":\"Ficha logística actualizada correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":true,\"event_type_other\":null,\"event_end_datetime\":\"2026-11-20T23:00:00.000000Z\",\"address_maps_link\":\"https://maps.app.goo.gl/abc123\",\"accessibility_comments\":null,\"delivery_windows\":null,\"pickup_windows\":null,\"cushion_color\":null,\"insurance_required\":null,\"insurance_document_path\":null,\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"is_completed\":false,\"completed_at\":null,\"created_at\":\"2026-09-01T13:00:00.000000Z\",\"updated_at\":\"2026-09-08T13:10:00.000000Z\",\"id_event_type\":2,\"event_type\":{\"id\":2,\"name\":\"Corporativo\",\"status\":1},\"order_contact_name\":\"Juan Pérez\",\"order_contact_phone\":\"+5491123456789\",\"reception_contact_name\":null,\"reception_contact_phone\":null,\"additional_order_details\":null}}"
+          "body": "{\"code\":1,\"response\":\"Ficha logística actualizada correctamente\",\"data\":{\"id\":9,\"id_budget\":12,\"token\":\"3f2504e0-4f89-11ee-be56-0242ac120002\",\"budget_ratified\":true,\"event_type_other\":null,\"event_end_datetime\":\"2026-11-20T23:00:00.000000Z\",\"address_maps_link\":\"https://maps.app.goo.gl/abc123\",\"accessibility_comments\":null,\"delivery_windows\":null,\"pickup_windows\":null,\"cushion_color\":null,\"insurance_required\":null,\"insurance_document_path\":null,\"additional_requirements\":null,\"assembly_plan_path\":null,\"field_status\":null,\"completion_percentage\":45,\"is_completed\":false,\"completed_at\":null,\"created_at\":\"2026-09-01T13:00:00.000000Z\",\"updated_at\":\"2026-09-08T13:10:00.000000Z\",\"id_event_type\":2,\"event_type\":{\"id\":2,\"name\":\"Corporativo\",\"status\":1},\"order_contact_name\":\"Juan Pérez\",\"order_contact_phone\":\"+5491123456789\",\"reception_contact_name\":null,\"reception_contact_phone\":null,\"additional_order_details\":null}}"
         },
         {
           "name": "422 Error de validación",

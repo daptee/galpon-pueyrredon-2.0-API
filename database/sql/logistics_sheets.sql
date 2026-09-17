@@ -33,7 +33,12 @@ CREATE TABLE logistics_sheets (
     assembly_plan_path VARCHAR(255) NULL,
 
     -- Control de completitud (carga incremental)
+    -- completion_percentage lo manda el frontend (0-100): es el % de avance
+    -- que calcula la pantalla del formulario, distinto de is_completed (que
+    -- lo calcula el backend en base a los campos mandatorios). Puramente
+    -- informativo, no afecta is_completed/completed_at.
     field_status JSON NULL,
+    completion_percentage TINYINT UNSIGNED NULL,
     is_completed TINYINT(1) NOT NULL DEFAULT 0,
     completed_at DATETIME NULL,
 

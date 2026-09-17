@@ -24,6 +24,7 @@ class LogisticsSheet extends Model
         'additional_requirements',
         'assembly_plan_path',
         'field_status',
+        'completion_percentage',
         'is_completed',
         'completed_at',
     ];
@@ -31,6 +32,7 @@ class LogisticsSheet extends Model
     protected $casts = [
         'budget_ratified' => 'boolean',
         'is_completed' => 'boolean',
+        'completion_percentage' => 'integer',
         'event_end_datetime' => 'datetime',
         'completed_at' => 'datetime',
         'delivery_windows' => 'array',

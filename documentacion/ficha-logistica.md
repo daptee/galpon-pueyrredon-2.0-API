@@ -187,6 +187,21 @@ Los campos `*_path` que devuelve la API son rutas relativas servidas por el
 backend (ej. `storage/logistics_sheets/12/167_poliza.pdf`); para armar la URL
 completa hay que prefijarlas con la base del backend.
 
+### Progreso del formulario (opcional)
+
+| Campo | M/O | Tipo |
+|---|---|---|
+| `completion_percentage` | O | int, 0-100 |
+
+Es un campo puramente informativo: el frontend puede mandar ahí el % de
+avance que calcula la propia pantalla (por ejemplo, según cuántas
+secciones/pasos del wizard ya se completaron desde el punto de vista de la
+UI). El backend lo guarda tal cual y lo devuelve en el `GET`, pero **no lo
+usa para nada** — la ficha se considera completa (`is_completed`) según la
+regla mandatoria de siempre (ver más abajo), independientemente de lo que
+diga `completion_percentage`. Sirve para mostrar una barra de progreso más
+granular que el booleano `is_completed`.
+
 ## "Se completará más tarde" / "No aplica"
 
 Cada campo (mandatorio u opcional) puede quedar sin resolver todavía. En vez
