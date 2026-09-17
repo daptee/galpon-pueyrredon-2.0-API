@@ -210,11 +210,12 @@
 
     <!--     <p class="pedido" style="font-size: 12px; font-weight: bold; color: #8076F8;">Detalle de pedido:</p>
  -->
-    <p class="budget">Detalles adicionales de pedido:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <strong>
-            {{ $budget->budgetDeliveryData->additional_order_details ?? "" }}
-        </strong>
-    </p>
+    <table class="budget" style="border-collapse: collapse;">
+        <tr>
+            <td style="vertical-align: top; padding: 0; width: 200px;">Detalles adicionales de pedido:</td>
+            <td style="padding: 0;"><strong>{{ $budget->budgetDeliveryData->additional_order_details ?? "" }}</strong></td>
+        </tr>
+    </table>
     @php
         // Formatea las hasta 3 ventanas de entrega/retiro de la ficha
         // logística como "24 de octubre - 14:30 a 12:30" (la fecha se
@@ -249,17 +250,25 @@
     @endphp
     <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
         <tr>
-            <td style="width: 50%;">
-                Coordinación:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <strong>
-                    {{ $budget->budgetDeliveryData->coordination_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_coordination ?? "" }}
-                </strong>
+            <td style="width: 50%; vertical-align: top;">
+                <table style="border-collapse: collapse;">
+                    <tr>
+                        <td style="vertical-align: top; padding: 0; width: 200px;">Coordinación:</td>
+                        <td style="padding: 0;">
+                            <strong>{{ $budget->budgetDeliveryData->coordination_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_coordination ?? "" }}</strong>
+                        </td>
+                    </tr>
+                </table>
             </td>
-            <td style="width: 50%;">
-                Recepción:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <strong>
-                    {{ $budget->budgetDeliveryData->reception_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_reception ?? "" }}
-                </strong>
+            <td style="width: 50%; vertical-align: top;">
+                <table style="border-collapse: collapse;">
+                    <tr>
+                        <td style="vertical-align: top; padding: 0; width: 90px;">Recepción:</td>
+                        <td style="padding: 0;">
+                            <strong>{{ $budget->budgetDeliveryData->reception_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_reception ?? "" }}</strong>
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
         <tr>
@@ -268,13 +277,13 @@
                     @if($deliveryLines)
                         @foreach($deliveryLines as $line)
                             <tr>
-                                <td style="white-space: nowrap; vertical-align: top; padding: 0;">{{ $loop->first ? 'Entrega:' : '' }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                                <td style="vertical-align: top; padding: 0; width: 200px;">{{ $loop->first ? 'Entrega:' : '' }}</td>
                                 <td style="padding: 0;"><strong>{{ $line }}</strong></td>
                             </tr>
                         @endforeach
                     @else
                         <tr>
-                            <td style="white-space: nowrap; vertical-align: top; padding: 0;">Entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td style="vertical-align: top; padding: 0; width: 200px;">Entrega:</td>
                             <td style="padding: 0;"><strong>{{ $budget->budgetDeliveryData->delivery_datetime ?? "" }}</strong></td>
                         </tr>
                     @endif
@@ -285,13 +294,13 @@
                     @if($pickupLines)
                         @foreach($pickupLines as $line)
                             <tr>
-                                <td style="white-space: nowrap; vertical-align: top; padding: 0;">{{ $loop->first ? 'Retiro:' : '' }}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                                <td style="vertical-align: top; padding: 0; width: 90px;">{{ $loop->first ? 'Retiro:' : '' }}</td>
                                 <td style="padding: 0;"><strong>{{ $line }}</strong></td>
                             </tr>
                         @endforeach
                     @else
                         <tr>
-                            <td style="white-space: nowrap; vertical-align: top; padding: 0;">Retiro:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td style="vertical-align: top; padding: 0; width: 90px;">Retiro:</td>
                             <td style="padding: 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_datetime ?? "" }}</strong></td>
                         </tr>
                     @endif
@@ -300,13 +309,12 @@
         </tr>
     </table>
 
-    <div class="budget">
-        <p style="margin: 8px 0;">Detalles adicionales de entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            <strong>
-                {{ $budget->budgetDeliveryData->additional_delivery_details ?? "" }}
-            </strong>
-        </p>
-    </div>
+    <table class="budget" style="border-collapse: collapse;">
+        <tr>
+            <td style="vertical-align: top; padding: 0; width: 200px;">Detalles adicionales de entrega:</td>
+            <td style="padding: 0;"><strong>{{ $budget->budgetDeliveryData->additional_delivery_details ?? "" }}</strong></td>
+        </tr>
+    </table>
 
     @php
         $insuranceLabels = [
@@ -318,13 +326,13 @@
     @endphp
     <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
         <tr>
-            <td style="width: 25%;">
+            <td style="width: 33.33%; vertical-align: top;">
                 Color de almohadones:&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
                     {{ $budget->logisticsSheet->cushion_color ?? "" }}
                 </strong>
             </td>
-            <td style="width: 25%;">
+            <td style="width: 33.33%; vertical-align: top;">
                 Seguros:&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
                     {{ $insuranceRequired ? ($insuranceLabels[$insuranceRequired] ?? $insuranceRequired) : "" }}
@@ -333,7 +341,7 @@
                     @endif
                 </strong>
             </td>
-            <td style="width: 50%;">
+            <td style="width: 33.33%; vertical-align: top;">
                 Plano de armado:&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
                     @if($budget->logisticsSheet->assembly_plan_path ?? null)
@@ -344,13 +352,12 @@
         </tr>
     </table>
 
-    <div class="budget">
-        <p style="margin: 8px 0;">Requerimientos adicionales:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            <strong>
-                {{ $budget->logisticsSheet->additional_requirements ?? "" }}
-            </strong>
-        </p>
-    </div>
+    <table class="budget" style="border-collapse: collapse;">
+        <tr>
+            <td style="vertical-align: top; padding: 0; width: 200px;">Requerimientos adicionales:</td>
+            <td style="padding: 0;"><strong>{{ $budget->logisticsSheet->additional_requirements ?? "" }}</strong></td>
+        </tr>
+    </table>
 
     <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
 
