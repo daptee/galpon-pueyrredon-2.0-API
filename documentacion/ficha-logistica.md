@@ -269,16 +269,25 @@ Además, como mirror best-effort (no bloquean nada si fallan):
 | Ficha logística | `budget_delivery_data` |
 |---|---|
 | `additional_requirements` | `additional_delivery_details` |
-| `delivery_windows` (formateado a texto) | `delivery_datetime` |
-| `pickup_windows` (formateado a texto) | `widthdrawal_datetime` |
+| `delivery_windows[0]` (solo la 1ra opción, formateada a texto) | `delivery_datetime` |
+| `pickup_windows[0]` (solo la 1ra opción, formateada a texto) | `widthdrawal_datetime` |
 | `budget.place.address` | `address` |
 | `budget.place.id_locality` | `id_locality` |
 | `budget.time_event` | `event_time` |
 
+`delivery_datetime`/`widthdrawal_datetime` son texto libre pensado para
+**una sola** ventana (a diferencia de `delivery_windows`/`pickup_windows`,
+que soportan hasta 3): por eso solo se espeja ahí la primera opción — la
+obligatoria —, nunca las 3 concatenadas (eso desbordaba la columna y
+rompía el guardado; quedó corregido).
+
 Solo se pisan los campos para los que hay un valor nuevo en el request (no
 se borran datos existentes en `budget_delivery_data` sin equivalente en la
 ficha, como `delivery_options`/`widthdrawal_options`, que se siguen
-cargando a mano desde el panel).
+cargando a mano desde el panel). Si este mirror best-effort falla por
+cualquier motivo (por ejemplo alguna columna legacy más chica de lo
+esperado), no bloquea el guardado de la ficha logística — queda solo un
+warning en el log del backend.
 
 **Importante — nuevo caso de error**: `id_event_type` e `id_locality` son
 obligatorios (`NOT NULL`) en `budget_delivery_data`. Si todavía no existe el

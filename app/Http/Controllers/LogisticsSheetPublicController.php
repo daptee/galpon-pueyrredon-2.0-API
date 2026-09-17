@@ -6,6 +6,7 @@ use App\Models\BudgetDeliveryData;
 use App\Models\EventType;
 use App\Models\LogisticsSheet;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
 
@@ -271,36 +272,46 @@ class LogisticsSheetPublicController extends Controller
             'cellphone_reception' => $request->input('reception_contact_phone'),
             'additional_order_details' => $request->input('additional_order_details'),
             'additional_delivery_details' => $logisticsSheet->additional_requirements,
-            'delivery_datetime' => $this->formatWindows($logisticsSheet->delivery_windows),
-            'widthdrawal_datetime' => $this->formatWindows($logisticsSheet->pickup_windows),
+            'delivery_datetime' => $this->formatPrimaryWindow($logisticsSheet->delivery_windows),
+            'widthdrawal_datetime' => $this->formatPrimaryWindow($logisticsSheet->pickup_windows),
         ], fn ($value) => $value !== null && $value !== '');
 
-        BudgetDeliveryData::updateOrCreate(['id_budget' => $logisticsSheet->id_budget], $mapped);
+        try {
+            BudgetDeliveryData::updateOrCreate(['id_budget' => $logisticsSheet->id_budget], $mapped);
+        } catch (Throwable $e) {
+            // No dejamos que un problema al escribir el mirror (ej. una
+            // columna legacy más chica de lo esperado) tire abajo el
+            // guardado de la ficha logística en sí.
+            Log::warning('No se pudo sincronizar budget_delivery_data desde la ficha logística', [
+                'id_budget' => $logisticsSheet->id_budget,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return null;
     }
 
-    private function formatWindows(?array $windows): ?string
+    /**
+     * budget_delivery_data.delivery_datetime/widthdrawal_datetime son texto
+     * libre pensado para UNA sola ventana (a diferencia de
+     * logistics_sheets.delivery_windows/pickup_windows, que sí soporta hasta
+     * 3). Por eso solo se espeja la primera opción (la obligatoria), nunca
+     * las 3 concatenadas.
+     */
+    private function formatPrimaryWindow(?array $windows): ?string
     {
-        if (!$windows) {
+        $window = $windows[0] ?? null;
+        $from = $window['datetime_from'] ?? null;
+        $to = $window['datetime_to'] ?? null;
+        if (!$from || !$to) {
             return null;
         }
 
-        $parts = [];
-        foreach ($windows as $window) {
-            $from = $window['datetime_from'] ?? null;
-            $to = $window['datetime_to'] ?? null;
-            if (!$from || !$to) {
-                continue;
-            }
-            try {
-                $parts[] = \Illuminate\Support\Carbon::parse($from)->format('d/m/Y H:i')
-                    . ' a ' . \Illuminate\Support\Carbon::parse($to)->format('d/m/Y H:i');
-            } catch (Throwable $e) {
-                continue;
-            }
+        try {
+            return \Illuminate\Support\Carbon::parse($from)->format('d/m/Y H:i')
+                . ' a ' . \Illuminate\Support\Carbon::parse($to)->format('d/m/Y H:i');
+        } catch (Throwable $e) {
+            return null;
         }
-
-        return $parts ? implode('; ', $parts) : null;
     }
 }
