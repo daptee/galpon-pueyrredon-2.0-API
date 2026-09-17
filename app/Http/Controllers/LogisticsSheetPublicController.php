@@ -121,6 +121,10 @@ class LogisticsSheetPublicController extends Controller
                 'insurance_additional_documents' => 'sometimes|array|max:5',
                 'insurance_additional_documents.*' => 'file|max:10240',
                 'assembly_plan_document' => 'sometimes|file|max:10240',
+                'remove_insurance_document' => 'sometimes|boolean',
+                'remove_assembly_plan_document' => 'sometimes|boolean',
+                'remove_insurance_additional_documents' => 'sometimes|array',
+                'remove_insurance_additional_documents.*' => 'string',
             ]);
 
             if ($validator->fails()) {
@@ -145,6 +149,8 @@ class LogisticsSheetPublicController extends Controller
                 'additional_requirements',
                 'completion_percentage',
             ]));
+
+            $this->applyFileRemovals($request, $logisticsSheet);
 
             $this->storeAttachment($request, $logisticsSheet, 'insurance_document', 'insurance_document_path');
             $this->storeAttachment($request, $logisticsSheet, 'assembly_plan_document', 'assembly_plan_path');
@@ -186,10 +192,58 @@ class LogisticsSheetPublicController extends Controller
             mkdir($storagePath, 0777, true);
         }
 
+        // Si había un archivo cargado antes en este mismo campo, lo borramos
+        // del disco antes de guardar el nuevo (evita dejar huérfanos).
+        $this->deleteStoredFile($logisticsSheet->{$column});
+
         $filename = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
         $file->move($storagePath, $filename);
 
         $logisticsSheet->{$column} = "storage/logistics_sheets/{$logisticsSheet->id_budget}/{$filename}";
+    }
+
+    private function deleteStoredFile(?string $relativePath): void
+    {
+        if (!$relativePath) {
+            return;
+        }
+        $fullPath = public_path($relativePath);
+        if (file_exists($fullPath)) {
+            @unlink($fullPath);
+        }
+    }
+
+    /**
+     * Permite "quitar" adjuntos ya cargados: `remove_insurance_document` y
+     * `remove_assembly_plan_document` (booleanos) vacían el archivo único
+     * correspondiente; `remove_insurance_additional_documents[]` saca del
+     * array los que coincidan por `path`. En los tres casos se borra también
+     * el archivo físico del disco.
+     */
+    private function applyFileRemovals(Request $request, LogisticsSheet $logisticsSheet): void
+    {
+        if ($request->boolean('remove_insurance_document')) {
+            $this->deleteStoredFile($logisticsSheet->insurance_document_path);
+            $logisticsSheet->insurance_document_path = null;
+        }
+
+        if ($request->boolean('remove_assembly_plan_document')) {
+            $this->deleteStoredFile($logisticsSheet->assembly_plan_path);
+            $logisticsSheet->assembly_plan_path = null;
+        }
+
+        $pathsToRemove = $request->input('remove_insurance_additional_documents', []);
+        if (!empty($pathsToRemove)) {
+            $remaining = [];
+            foreach ($logisticsSheet->insurance_additional_documents ?? [] as $document) {
+                if (in_array($document['path'] ?? null, $pathsToRemove, true)) {
+                    $this->deleteStoredFile($document['path'] ?? null);
+                    continue;
+                }
+                $remaining[] = $document;
+            }
+            $logisticsSheet->insurance_additional_documents = $remaining;
+        }
     }
 
     /**
@@ -263,10 +317,12 @@ class LogisticsSheetPublicController extends Controller
      * que son duplicados con la ficha logística (tipo de evento, contactos,
      * additional_order_details) — no se guardan en logistics_sheets.
      *
-     * id_event_type e id_locality son NOT NULL en budget_delivery_data: si
-     * todavía no hay forma de resolverlos y el request está mandando alguno
-     * de estos campos, se devuelve un error explícito en vez de perder la
-     * información en silencio.
+     * Para CREAR el registro hace falta un id_event_type y un id_locality
+     * (aunque id_event_type ya admite null en updates posteriores, hace
+     * falta uno real la primera vez): si todavía no hay forma de
+     * resolverlos y el request está mandando alguno de estos campos, se
+     * devuelve un error explícito en vez de perder la información en
+     * silencio.
      *
      * @return array{message: string, status: int}|null null si se sincronizó
      *   bien (o no había nada que sincronizar en este request).
@@ -305,21 +361,44 @@ class LogisticsSheetPublicController extends Controller
             }
         }
 
+        // Estos se recalculan/derivan solos (no los manda el cliente
+        // directamente), así que si no hay nada que poner se omiten en vez
+        // de pisar con null lo que ya había.
         $mapped = array_filter([
-            'id_event_type' => $idEventType,
             'id_locality' => $idLocality,
             'address' => optional($place)->address,
             'event_time' => optional($budget)->time_event ? substr($budget->time_event, 0, 5) : null,
-            'coordination_contact' => $request->input('order_contact_name'),
-            'cellphone_coordination' => $request->input('order_contact_phone'),
-            'reception_contact' => $request->input('reception_contact_name'),
-            'cellphone_reception' => $request->input('reception_contact_phone'),
-            'additional_order_details' => $request->input('additional_order_details'),
-            'delivery_options' => $request->input('delivery_options'),
             'additional_delivery_details' => $logisticsSheet->additional_requirements,
             'delivery_datetime' => $this->formatPrimaryWindow($logisticsSheet->delivery_windows),
             'widthdrawal_datetime' => $this->formatPrimaryWindow($logisticsSheet->pickup_windows),
         ], fn ($value) => $value !== null && $value !== '');
+
+        // id_event_type ya es NULL-able en budget_delivery_data: si el
+        // registro es nuevo siempre va (recién validado que no sea null más
+        // arriba); si ya existe, solo se toca cuando la key vino explícita
+        // en el request — así "id_event_type": null lo vacía a propósito
+        // (por ejemplo, si el cliente pasa a usar "otra opción").
+        if (!$existing || $request->has('id_event_type')) {
+            $mapped['id_event_type'] = $idEventType;
+        }
+
+        // Estos sí los manda el cliente directamente: si el request trae la
+        // key (aunque el valor sea null), se aplica tal cual — permite
+        // vaciar el campo a propósito. Si el request no trae la key, no se
+        // toca lo que ya estaba guardado (carga incremental).
+        $directFields = [
+            'order_contact_name' => 'coordination_contact',
+            'order_contact_phone' => 'cellphone_coordination',
+            'reception_contact_name' => 'reception_contact',
+            'reception_contact_phone' => 'cellphone_reception',
+            'additional_order_details' => 'additional_order_details',
+            'delivery_options' => 'delivery_options',
+        ];
+        foreach ($directFields as $requestKey => $column) {
+            if ($request->has($requestKey)) {
+                $mapped[$column] = $request->input($requestKey);
+            }
+        }
 
         try {
             BudgetDeliveryData::updateOrCreate(['id_budget' => $logisticsSheet->id_budget], $mapped);

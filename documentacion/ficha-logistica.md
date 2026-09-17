@@ -110,6 +110,16 @@ envían en el body, el resto de la ficha queda igual. Esto permite que el
 frontend mande un guardado parcial cada vez que el cliente completa una
 pantalla del formulario (no hace falta juntar todo antes de guardar).
 
+**Un campo no enviado ≠ un campo enviado en `null`**: si una key directamente
+no está en el body, ese dato no se toca (queda como estaba). Si la key está
+mandada con valor `null`, se **vacía** ese campo a propósito — sirve para
+que el cliente pueda borrar algo que había cargado antes (por ejemplo, si
+cambia de opinión sobre el color de almohadones y quiere dejarlo en blanco
+de nuevo). Aplica tanto a los campos propios de la ficha como a los que
+viven en `budget_delivery_data` (`order_contact_name`/`phone`,
+`reception_contact_name`/`phone`, `additional_order_details`,
+`delivery_options`).
+
 Se puede llamar con:
 - `Content-Type: application/json` cuando no hay archivos adjuntos en ese
   guardado.
