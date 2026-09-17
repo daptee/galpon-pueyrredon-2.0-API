@@ -220,6 +220,36 @@
             {{ $budget->budgetDeliveryData->additional_order_details ?? "" }}
         </strong>
     </p>
+    @php
+        // Formatea las hasta 3 ventanas de entrega/retiro de la ficha
+        // logística como "12 de marzo - 14:39 a 12 de marzo - 17:00", una
+        // por línea. Si la ficha no tiene ventanas cargadas (o no existe),
+        // devuelve null para caer al texto único legacy de budget_delivery_data.
+        $formatDeliveryWindows = function (?array $windows) {
+            if (!$windows) {
+                return null;
+            }
+            $lines = [];
+            foreach ($windows as $window) {
+                $from = $window['datetime_from'] ?? null;
+                $to = $window['datetime_to'] ?? null;
+                if (!$from || !$to) {
+                    continue;
+                }
+                try {
+                    $format = 'j \d\e F - H:i';
+                    $fromFmt = \Illuminate\Support\Carbon::parse($from)->locale('es')->translatedFormat($format);
+                    $toFmt = \Illuminate\Support\Carbon::parse($to)->locale('es')->translatedFormat($format);
+                    $lines[] = "{$fromFmt} a {$toFmt}";
+                } catch (\Throwable $e) {
+                    continue;
+                }
+            }
+            return $lines ?: null;
+        };
+        $deliveryLines = $formatDeliveryWindows($budget->logisticsSheet->delivery_windows ?? null);
+        $pickupLines = $formatDeliveryWindows($budget->logisticsSheet->pickup_windows ?? null);
+    @endphp
     <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
         <tr>
             <td style="width: 50%;">
@@ -236,16 +266,28 @@
             </td>
         </tr>
         <tr>
-            <td style="width: 50%;">
+            <td style="width: 50%; vertical-align: top;">
                 Entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->delivery_datetime ?? "" }}
+                    @if($deliveryLines)
+                        @foreach($deliveryLines as $line)
+                            {{ $line }}@if(!$loop->last)<br>@endif
+                        @endforeach
+                    @else
+                        {{ $budget->budgetDeliveryData->delivery_datetime ?? "" }}
+                    @endif
                 </strong>
             </td>
-            <td style="width: 50%;">
+            <td style="width: 50%; vertical-align: top;">
                 Retiro:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->widthdrawal_datetime ?? "" }}
+                    @if($pickupLines)
+                        @foreach($pickupLines as $line)
+                            {{ $line }}@if(!$loop->last)<br>@endif
+                        @endforeach
+                    @else
+                        {{ $budget->budgetDeliveryData->widthdrawal_datetime ?? "" }}
+                    @endif
                 </strong>
             </td>
         </tr>
