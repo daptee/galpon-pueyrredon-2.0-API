@@ -74,15 +74,28 @@ class LogisticsSheetController extends Controller
         }
     }
 
-    // A cuántos días del evento se manda cada recordatorio.
-    private const REMINDER_DAYS = [7, 3, 1];
+    // Días antes del evento en los que se manda el recordatorio "de
+    // presentación" (15, 10 y 7 — mismo encabezado los 3), más todos los
+    // días desde DAILY_REMINDER_FROM_DAYS (inclusive) hasta el día del
+    // evento, con el encabezado de "último reclamo".
+    private const MILESTONE_REMINDER_DAYS = [15, 10, 7];
+    private const DAILY_REMINDER_FROM_DAYS = 5;
+
+    private static function reminderDaysToCheck(): array
+    {
+        return array_merge(
+            self::MILESTONE_REMINDER_DAYS,
+            range(self::DAILY_REMINDER_FROM_DAYS, 0)
+        );
+    }
 
     /**
      * Pensado para correr en un cron (una vez por día). Revisa los
-     * presupuestos aprobados cuyo evento es exactamente dentro de 7, 3 o 1
-     * día, y si la ficha logística todavía no está completa le reenvía el
-     * link al cliente (con un encabezado más urgente cuanto más cerca está
-     * el evento). No manda dos veces el mismo recordatorio (se guarda en
+     * presupuestos aprobados cuyo evento es exactamente dentro de 15, 10 o 7
+     * días (recordatorio de presentación), o de 5 días en adelante —todos
+     * los días hasta el día del evento— (último reclamo), y si la ficha
+     * logística todavía no está completa le reenvía el link al cliente. No
+     * manda dos veces el mismo recordatorio (se guarda en
      * `reminder_days_sent`), y no manda nada si la ficha ya está completa.
      *
      * Sin middleware admin a propósito: la llama un cron externo, no un
@@ -105,7 +118,7 @@ class LogisticsSheetController extends Controller
             $skipped = [];
             $errors = [];
 
-            foreach (self::REMINDER_DAYS as $daysRemaining) {
+            foreach (self::reminderDaysToCheck() as $daysRemaining) {
                 $targetDate = now()->addDays($daysRemaining)->toDateString();
 
                 $budgets = Budget::with(['logisticsSheet'])

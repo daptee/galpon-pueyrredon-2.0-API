@@ -1,10 +1,9 @@
 # Recordatorios automáticos de la Ficha Logística (cron)
 
 Endpoint pensado para dejarlo corriendo en un cron (una vez por día). Revisa
-los presupuestos aprobados cuyo evento es exactamente dentro de **7, 3 o 1
-día**, y si la ficha logística todavía no está completa, le reenvía el link
-al cliente por mail — con un encabezado más urgente cuanto más cerca está el
-evento.
+los presupuestos aprobados según qué tan cerca está su evento y, si la ficha
+logística todavía no está completa, le reenvía el link al cliente por mail
+— con un encabezado más urgente cuanto más cerca está el evento.
 
 ## Endpoint
 
@@ -40,18 +39,36 @@ ejemplo, un crontab de Linux:
 ```
 
 (a las 9am todos los días). Si el hosting tiene un panel de cron jobs
-(cPanel, etc.), se configura ahí apuntando a esa misma URL.
+(cPanel, etc.), se configura ahí apuntando a esa misma URL. Tiene que correr
+**todos los días** (no solo en fechas puntuales), porque es el propio
+endpoint el que decide, cada vez que corre, a quién le toca recordatorio hoy.
 
-## Qué hace exactamente
+## Cadencia (la que pidió el documento original)
 
-Para cada uno de los 3 "días antes" (7, 3, 1):
+| Cuándo | Qué manda |
+|---|---|
+| Presupuesto exactamente a **15, 10 o 7 días** del evento | Recordatorio de presentación (mismo encabezado los 3, solo cambia el número de días en el texto) |
+| Presupuesto a **5, 4, 3, 2, 1 o 0 días** del evento | Reclamo, **todos los días** (mismo encabezado urgente, "último reclamo") |
+
+En ambos casos, **solo si la ficha logística todavía no está completa** —
+apenas se completa, dejan de mandarse recordatorios (ver punto 3 más abajo).
+El día 0 es el día del evento; no se manda nada después de esa fecha.
+
+Esto reemplaza la versión anterior de este endpoint, que solo revisaba
+7/3/1 días — ahora es la cadencia completa: `MILESTONE_REMINDER_DAYS = [15, 10, 7]`
+y `DAILY_REMINDER_FROM_DAYS = 5` en
+[`LogisticsSheetController`](../app/Http/Controllers/LogisticsSheetController.php).
+
+## Qué hace exactamente (por cada uno de esos días)
 
 1. Busca presupuestos con `id_budget_status = 3` (Aprobado), `date_event`
    exactamente igual a *hoy + N días*, y que tengan `client_mail` cargado.
 2. Para cada uno, obtiene la ficha logística (la crea con un token nuevo si
    todavía no existía — igual que el endpoint admin de "obtener/crear ficha").
 3. Si la ficha ya está **completa** (`is_completed = true`) → no manda nada,
-   se registra como `skipped` con motivo `ficha_completa`.
+   se registra como `skipped` con motivo `ficha_completa`. Esto corta la
+   cadena de recordatorios apenas el cliente termina de completarla, sea
+   cual sea el día en el que la complete.
 4. Si ya se mandó el recordatorio de **ese mismo N de días** antes (se
    guarda en `logistics_sheet.reminder_days_sent`) → tampoco manda de nuevo,
    se registra como `skipped` con motivo `ya_enviado`.
@@ -66,16 +83,15 @@ salir como `skipped: ya_enviado`. Esto es importante porque significa que no
 hace falta preocuparse por reintentos del cron ni por llamarlo manualmente
 para probar sin miedo a espamear al cliente dos veces.
 
-## Los 3 encabezados
+## Los 2 encabezados
 
-Igual que pedía el documento original de la ficha logística, el mail cambia
-de tono según la proximidad:
+Igual que pedía el documento original de la ficha logística, el mail
+cambia de tono según la etapa:
 
-| Días antes | Asunto | Tono |
+| Etapa | Asunto | Tono |
 |---|---|---|
-| 7 | "Recordatorio: completá la ficha logística de tu evento" | Recordatorio amable, primera vez |
-| 3 | "¡Faltan 3 días! Todavía necesitamos los datos logísticos de tu evento" | Más urgente |
-| 1 | "Último aviso: mañana es tu evento y falta completar la ficha logística" | Último llamado |
+| 15, 10 o 7 días antes | "Recordatorio: completá la ficha logística de tu evento (faltan N días)" | Recordatorio de presentación, mismo tono los 3 |
+| 5 días antes en adelante, todos los días | "Último reclamo: todavía falta completar la ficha logística de tu evento" | Urgente, insistente |
 
 Se define en [`App\Mail\LogisticsSheetReminder`](../app/Mail/LogisticsSheetReminder.php)
 y la plantilla en [`emails/logistics-sheet/reminder.blade.php`](../resources/views/emails/logistics-sheet/reminder.blade.php).
@@ -104,11 +120,11 @@ el `id_budget` y el motivo, y sigue procesando el resto.
 
 ## Fuera de alcance de este endpoint (por si hace falta más adelante)
 
-El documento original de la ficha logística pedía una cadencia más completa
-(mail al aprobar el presupuesto, después 15/10/7 días antes, y diario desde
-los 5 días antes hasta completarla). Lo que se armó acá es específicamente
-lo que se pidió ahora: **7, 3 y 1 día antes**, sin el envío al aprobar ni el
-diario desde los 5 días. Si más adelante hace falta esa cadencia completa,
-es extender `LogisticsSheetController::REMINDER_DAYS` (y, para el envío al
-aprobar, enganchar la llamada a `getOrCreate`/el envío inicial en el flujo
-de aprobación de `BudgetController`).
+El documento original de la ficha logística también pedía un **primer**
+mail (con su propio "encabezado de presentación") disparado automáticamente
+**al aprobar el presupuesto**. Eso no está incluido acá — hoy ese primer
+envío se sigue haciendo a mano, llamando al endpoint admin
+`GET /logistics-sheet/budget/{id}` (ver [ficha-logistica.md](ficha-logistica.md)).
+Si más adelante se quiere automatizar también ese disparo, hay que
+engancharlo en el flujo de aprobación de `BudgetController` (cuando
+`id_budget_status` pasa a 3).

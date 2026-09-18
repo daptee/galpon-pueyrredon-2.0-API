@@ -94,7 +94,7 @@
       ]
     },
     {
-      "name": "Enviar recordatorios (cron, 7/3/1 días antes)",
+      "name": "Enviar recordatorios (cron, 15/10/7 y diario desde 5 días)",
       "request": {
         "auth": { "type": "noauth" },
         "method": "GET",
@@ -107,7 +107,7 @@
             { "key": "secret", "value": "{{LOGISTICS_SHEET_REMINDERS_SECRET}}", "description": "Solo si se configuró LOGISTICS_SHEET_REMINDERS_SECRET en el .env. Si no, se puede omitir." }
           ]
         },
-        "description": "Sin autenticación (lo llama un cron externo, no un usuario logueado). Pensado para correr una vez por día. Revisa presupuestos Aprobados cuyo `date_event` es exactamente hoy+7, hoy+3 u hoy+1 día, y si la ficha logística no está completa le reenvía el link al cliente con un encabezado más urgente cuanto más cerca está el evento. Es idempotente: llamarlo de nuevo el mismo día no duplica envíos (`logistics_sheet.reminder_days_sent` lo recuerda). Detalle completo en `documentacion/recordatorios-ficha-logistica.md`."
+        "description": "Sin autenticación (lo llama un cron externo, no un usuario logueado). Pensado para correr TODOS los días. Revisa presupuestos Aprobados cuyo `date_event` es exactamente hoy+15, hoy+10 u hoy+7 días (recordatorio de presentación, mismo encabezado los 3) o hoy+5 días hasta hoy+0 —el día del evento— (reclamo diario, encabezado urgente). En ambos casos, solo manda si la ficha logística todavía no está completa. Es idempotente: llamarlo de nuevo el mismo día no duplica envíos (`logistics_sheet.reminder_days_sent` lo recuerda). Detalle completo en `documentacion/recordatorios-ficha-logistica.md`."
       },
       "response": [
         {

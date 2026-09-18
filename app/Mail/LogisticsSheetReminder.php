@@ -14,21 +14,9 @@ class LogisticsSheetReminder extends Mailable
     public $publicUrl;
     public $daysRemaining;
 
-    // Encabezado y urgencia según cuán cerca está el evento.
-    private const HEADERS = [
-        7 => [
-            'subject' => 'Recordatorio: completá la ficha logística de tu evento',
-            'intro' => 'Faltan 7 días para tu evento y todavía nos falta información logística para poder organizar la entrega y el retiro.',
-        ],
-        3 => [
-            'subject' => '¡Faltan 3 días! Todavía necesitamos los datos logísticos de tu evento',
-            'intro' => 'Tu evento es en 3 días y la ficha logística sigue incompleta. Es importante que la completes cuanto antes para que podamos coordinar todo a tiempo.',
-        ],
-        1 => [
-            'subject' => 'Último aviso: mañana es tu evento y falta completar la ficha logística',
-            'intro' => 'Mañana es tu evento y todavía hay datos logísticos pendientes. Por favor completá la ficha hoy mismo para que podamos coordinar la entrega y el retiro sin inconvenientes.',
-        ],
-    ];
+    // Días antes del evento en los que se manda el recordatorio "de
+    // presentación" (segundo encabezado, mismo tono los 3).
+    public const MILESTONE_DAYS = [15, 10, 7];
 
     public function __construct($budget, $publicUrl, int $daysRemaining)
     {
@@ -39,9 +27,30 @@ class LogisticsSheetReminder extends Mailable
 
     public function build()
     {
-        $header = self::HEADERS[$this->daysRemaining] ?? self::HEADERS[7];
+        $isMilestone = in_array($this->daysRemaining, self::MILESTONE_DAYS, true);
 
-        return $this->subject($header['subject'] . ' - Presupuesto Nro ' . $this->budget->id)
-            ->markdown('emails.logistics-sheet.reminder', ['intro' => $header['intro']]);
+        if ($isMilestone) {
+            $subject = "Recordatorio: completá la ficha logística de tu evento (faltan {$this->daysRemaining} días)";
+            $intro = "Faltan {$this->daysRemaining} días para tu evento y todavía nos falta información logística "
+                . 'para poder organizar la entrega y el retiro.';
+        } else {
+            $subject = 'Último reclamo: todavía falta completar la ficha logística de tu evento';
+            $intro = $this->daysPhrase() . ' y la ficha logística de tu evento sigue incompleta. '
+                . 'Por favor completala hoy mismo para que podamos coordinar la entrega y el retiro sin inconvenientes.';
+        }
+
+        return $this->subject($subject . ' - Presupuesto Nro ' . $this->budget->id)
+            ->markdown('emails.logistics-sheet.reminder', ['intro' => $intro]);
+    }
+
+    private function daysPhrase(): string
+    {
+        if ($this->daysRemaining === 0) {
+            return 'Tu evento es hoy';
+        }
+        if ($this->daysRemaining === 1) {
+            return 'Tu evento es mañana';
+        }
+        return "Faltan solo {$this->daysRemaining} días para tu evento";
     }
 }
