@@ -113,3 +113,10 @@ CREATE TABLE budget_delivery_data (
 ALTER TABLE budget_delivery_data
 MODIFY COLUMN delivery_datetime VARCHAR(100),
 MODIFY COLUMN widthdrawal_datetime VARCHAR(100);
+
+-- La ficha logística permite que el cliente elija "otra opción" de tipo de
+-- evento (texto libre en logistics_sheets.event_type_other) en vez de un
+-- id_event_type del combo, y permite "quitar" un id_event_type ya cargado.
+-- Por eso deja de ser NOT NULL.
+ALTER TABLE budget_delivery_data
+MODIFY COLUMN id_event_type INT NULL;

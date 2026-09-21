@@ -99,11 +99,16 @@
                 <td style="width: 10%; text-align: left; vertical-align: top;">
                     <p style="padding: 0 0 0 4px; margin: 2px 0 2px 0;">Presupuesto: </p>
                     <p style="padding: 0 0 0 4px; margin: 2px 0;">Volumen: </p>
+                    <p style="padding: 0 0 0 4px; margin: 2px 0;">Ficha logística: </p>
                 </td>
                 <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="margin: 2px 0 2px 0; font-weight: bold;">{{ str_pad($budget->id, 8, '0', STR_PAD_LEFT) }}
                     </p>
                     <p style="margin: 2px 0; font-weight: bold;">{{ number_format($budget->volume / 1000, 1) }}m<sup>3</sup></p>
+                    <p style="margin: 2px 0; font-weight: bold;">
+                        {{ ($budget->logisticsSheet->is_completed ?? false) ? 'Completa' : 'Incompleta' }}
+                        {{ ($budget->logisticsSheet->budget_ratified ?? false) ? '(ratificada)' : '' }}
+                    </p>
                 </td>
             </tr>
         </table>
@@ -113,19 +118,27 @@
                 <td style="width: 6%; vertical-align: top;">
                     <p style="margin: 2px 0;">Cliente: </p>
                     <p style="margin: 2px 0;">Lugar: </p>
+                    <p style="margin: 2px 0;">Tipo de evento: </p>
                 </td>
                 <td style="width: 60%; vertical-align: top;">
                     <p style="margin: 2px 0;"><strong>{{ $budget->client->name ?? $budget->client_mail }}</strong></p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->place->name }}</strong></p>
+                    <p style="margin: 2px 0;">
+                        <strong>{{ $budget->budgetDeliveryData->eventType->name ?? ($budget->logisticsSheet->event_type_other ?? "") }}</strong>
+                    </p>
                 </td>
                 <td style="width: 10%; text-align: left; vertical-align: top;">
-                    <p style="padding: 0 0 0 2px; margin: 2px 0;">Fecha y hora: </p>
+                    <p style="padding: 0 0 0 2px; margin: 2px 0;">Inicio: </p>
+                    <p style="padding: 0 0 0 2px; margin: 2px 0;">Fin: </p>
                     <p style="padding: 0 0 0 2px; margin: 2px 0;">Duración: </p>
                 </td>
                 <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="margin: 2px 0;">
                         <strong>{{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }} -
                             {{ $budget->budgetDeliveryData->event_time ?? "" }}</strong>
+                    </p>
+                    <p style="margin: 2px 0;">
+                        <strong>{{ optional($budget->logisticsSheet->event_end_datetime ?? null)->format('d-M-Y H:i') ?? "" }}</strong>
                     </p>
                     <p style="margin: 2px 0;"><strong>{{ $budget->days }} día/s</strong></p>
                 </td>
@@ -135,14 +148,16 @@
             <tr>
                 <td style="width: 15%; vertical-align: top;">
                     <p style="margin: 2px 0;">Dirección: </p>
-                    <p style="margin: 2px 0;">Opciones de entrega: </p>
-                    <p style="margin: 2px 0;">Opciones de retiro: </p>
+                    <p style="margin: 2px 0;">Accesibilidad: </p>
                 </td>
                 <td style="width: 61%; vertical-align: top;">
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->address ?? "" }}</strong></p>
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->delivery_options ?? "" }}</strong></p>
-                    <p style="margin: 2px 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_options ?? "" }}</strong>
+                    <p style="margin: 2px 0;">
+                        <strong>{{ $budget->budgetDeliveryData->delivery_options ?? $budget->budgetDeliveryData->address ?? "" }}</strong>
+                        @if($budget->logisticsSheet->address_maps_link ?? null)
+                            &nbsp;-&nbsp;<a href="{{ $budget->logisticsSheet->address_maps_link }}">Ver en Maps</a>
+                        @endif
                     </p>
+                    <p style="margin: 2px 0;"><strong>{{ $budget->logisticsSheet->accessibility_comments ?? "" }}</strong></p>
                 </td>
             </tr>
         </table>
@@ -195,49 +210,159 @@
 
     <!--     <p class="pedido" style="font-size: 12px; font-weight: bold; color: #8076F8;">Detalle de pedido:</p>
  -->
-    <p class="budget">Detalles adicionales de pedido:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <strong>
-            {{ $budget->budgetDeliveryData->additional_order_details ?? "" }}
-        </strong>
-    </p>
+    <table class="budget" style="border-collapse: collapse;">
+        <tr>
+            <td style="vertical-align: top; padding: 0; width: 200px;">Detalles adicionales de pedido:</td>
+            <td style="padding: 0;"><strong>{{ $budget->budgetDeliveryData->additional_order_details ?? "" }}</strong></td>
+        </tr>
+    </table>
+    @php
+        // Formatea las hasta 3 ventanas de entrega/retiro de la ficha
+        // logística como "24 de octubre - 14:30 a 12:30" (la fecha se
+        // muestra una sola vez, ya que datetime_from y datetime_to son
+        // siempre del mismo día), una por línea. Si la ficha no tiene
+        // ventanas cargadas (o no existe), devuelve null para caer al texto
+        // único legacy de budget_delivery_data.
+        $formatDeliveryWindows = function (?array $windows) {
+            if (!$windows) {
+                return null;
+            }
+            $lines = [];
+            foreach ($windows as $window) {
+                $from = $window['datetime_from'] ?? null;
+                $to = $window['datetime_to'] ?? null;
+                if (!$from || !$to) {
+                    continue;
+                }
+                try {
+                    $fromCarbon = \Illuminate\Support\Carbon::parse($from)->locale('es');
+                    $toCarbon = \Illuminate\Support\Carbon::parse($to)->locale('es');
+                    $date = $fromCarbon->translatedFormat('j \d\e F');
+                    $lines[] = "{$date} - {$fromCarbon->format('H:i')} a {$toCarbon->format('H:i')}";
+                } catch (\Throwable $e) {
+                    continue;
+                }
+            }
+            return $lines ?: null;
+        };
+        $deliveryLines = $formatDeliveryWindows($budget->logisticsSheet->delivery_windows ?? null);
+        $pickupLines = $formatDeliveryWindows($budget->logisticsSheet->pickup_windows ?? null);
+    @endphp
     <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
         <tr>
-            <td style="width: 50%;">
-                Coordinación:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <strong>
-                    {{ $budget->budgetDeliveryData->coordination_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_coordination ?? "" }}
-                </strong>
+            <td style="width: 50%; vertical-align: top;">
+                <table style="border-collapse: collapse;">
+                    <tr>
+                        <td style="vertical-align: top; padding: 0; width: 200px;">Coordinación:</td>
+                        <td style="padding: 0;">
+                            <strong>{{ $budget->budgetDeliveryData->coordination_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_coordination ?? "" }}</strong>
+                        </td>
+                    </tr>
+                </table>
             </td>
-            <td style="width: 50%;">
-                Recepción:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <strong>
-                    {{ $budget->budgetDeliveryData->reception_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_reception ?? "" }}
-                </strong>
+            <td style="width: 50%; vertical-align: top;">
+                <table style="border-collapse: collapse;">
+                    <tr>
+                        <td style="vertical-align: top; padding: 0; width: 90px;">Recepción:</td>
+                        <td style="padding: 0;">
+                            <strong>{{ $budget->budgetDeliveryData->reception_contact ?? "" }}&nbsp;-&nbsp;{{ $budget->budgetDeliveryData->cellphone_reception ?? "" }}</strong>
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
         <tr>
-            <td style="width: 50%;">
-                Entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <td style="width: 50%; vertical-align: top;">
+                <table style="border-collapse: collapse;">
+                    @if($deliveryLines)
+                        @foreach($deliveryLines as $line)
+                            <tr>
+                                <td style="vertical-align: top; padding: 0; width: 200px;">{{ $loop->first ? 'Entrega:' : '' }}</td>
+                                <td style="padding: 0;"><strong>{{ $line }}</strong></td>
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <td style="vertical-align: top; padding: 0; width: 200px;">Entrega:</td>
+                            <td style="padding: 0;"><strong>{{ $budget->budgetDeliveryData->delivery_datetime ?? "" }}</strong></td>
+                        </tr>
+                    @endif
+                </table>
+            </td>
+            <td style="width: 50%; vertical-align: top;">
+                <table style="border-collapse: collapse;">
+                    @if($pickupLines)
+                        @foreach($pickupLines as $line)
+                            <tr>
+                                <td style="vertical-align: top; padding: 0; width: 90px;">{{ $loop->first ? 'Retiro:' : '' }}</td>
+                                <td style="padding: 0;"><strong>{{ $line }}</strong></td>
+                            </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <td style="vertical-align: top; padding: 0; width: 90px;">Retiro:</td>
+                            <td style="padding: 0;"><strong>{{ $budget->budgetDeliveryData->widthdrawal_datetime ?? "" }}</strong></td>
+                        </tr>
+                    @endif
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table class="budget" style="border-collapse: collapse;">
+        <tr>
+            <td style="vertical-align: top; padding: 0; width: 200px;">Detalles adicionales de entrega:</td>
+            <td style="padding: 0;"><strong>{{ $budget->budgetDeliveryData->additional_delivery_details ?? "" }}</strong></td>
+        </tr>
+    </table>
+
+    @php
+        $insuranceLabels = [
+            'yes' => 'Sí',
+            'not_applicable' => 'No aplica',
+            'later' => 'Se informará luego',
+        ];
+        $insuranceRequired = $budget->logisticsSheet->insurance_required ?? null;
+    @endphp
+    <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
+        <tr>
+            <td style="width: 33.33%; vertical-align: top;">
+                Color de almohadones:&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->delivery_datetime ?? "" }}
+                    {{ $budget->logisticsSheet->cushion_color ?? "" }}
                 </strong>
             </td>
-            <td style="width: 50%;">
-                Retiro:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <td style="width: 33.33%; vertical-align: top;">
+                Seguros:&nbsp;&nbsp;&nbsp;&nbsp;
                 <strong>
-                    {{ $budget->budgetDeliveryData->widthdrawal_datetime ?? "" }}
+                    {{ $insuranceRequired ? ($insuranceLabels[$insuranceRequired] ?? $insuranceRequired) : "" }}
+                    @if($budget->logisticsSheet->insurance_document_path ?? null)
+                        &nbsp;-&nbsp;<a href="{{ asset($budget->logisticsSheet->insurance_document_path) }}">Ver documento</a>
+                    @elseif($budget->logisticsSheet->insurance_request_text ?? null)
+                        &nbsp;-&nbsp;{{ $budget->logisticsSheet->insurance_request_text }}
+                    @endif
+                    @foreach($budget->logisticsSheet->insurance_additional_documents ?? [] as $index => $document)
+                        &nbsp;-&nbsp;<a href="{{ asset($document['path']) }}">{{ $document['original_name'] ?? ('Adicional ' . ($index + 1)) }}</a>
+                    @endforeach
+                </strong>
+            </td>
+            <td style="width: 33.33%; vertical-align: top;">
+                Plano de armado:&nbsp;&nbsp;&nbsp;&nbsp;
+                <strong>
+                    @if($budget->logisticsSheet->assembly_plan_path ?? null)
+                        <a href="{{ asset($budget->logisticsSheet->assembly_plan_path) }}">Ver plano</a>
+                    @endif
                 </strong>
             </td>
         </tr>
     </table>
 
-    <div class="budget">
-        <p style="margin: 8px 0;">Detalles adicionales de entrega:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            <strong>
-                {{ $budget->budgetDeliveryData->additional_delivery_details ?? "" }}
-            </strong>
-        </p>
-    </div>
+    <table class="budget" style="border-collapse: collapse;">
+        <tr>
+            <td style="vertical-align: top; padding: 0; width: 200px;">Requerimientos adicionales:</td>
+            <td style="padding: 0;"><strong>{{ $budget->logisticsSheet->additional_requirements ?? "" }}</strong></td>
+        </tr>
+    </table>
 
     <table class="budget" style="width: 100%; border-collapse: collapse; background-color: rgb(255, 255, 255);">
 
