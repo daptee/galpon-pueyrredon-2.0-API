@@ -73,9 +73,7 @@ class LogisticsSheetController extends Controller
 
         $publicUrl = rtrim(env('LOGISTICS_SHEET_FRONTEND_URL', ''), '/') . '/ficha-logistica/' . $logisticsSheet->token;
 
-        $mailTo = config('app.env') === 'testing' || config('app.env') === 'local'
-            ? env('MAIL_REDIRECT_TO', env('MAIL_FROM_ADDRESS'))
-            : $budget->client_mail;
+        $mailTo = self::resolveMailTo($budget->client_mail);
 
         MailService::sendAndSave($mailTo, new LogisticsSheetRequest($budget, $publicUrl));
 
@@ -84,6 +82,23 @@ class LogisticsSheetController extends Controller
         $result['mail_sent_to'] = $mailTo;
 
         return $result;
+    }
+
+    /**
+     * A qué dirección mandar los mails de la ficha logística. Si
+     * `LOGISTICS_SHEET_TEST_MODE=true` en el .env, todo va a
+     * `MAIL_REDIRECT_TO` (independientemente del entorno) — poniéndolo en
+     * `false` vuelve a mandarle al cliente real en producción.
+     */
+    private static function resolveMailTo(?string $clientMail): string
+    {
+        if (filter_var(env('LOGISTICS_SHEET_TEST_MODE', false), FILTER_VALIDATE_BOOLEAN)) {
+            return env('MAIL_REDIRECT_TO', env('MAIL_FROM_ADDRESS'));
+        }
+
+        return config('app.env') === 'testing' || config('app.env') === 'local'
+            ? env('MAIL_REDIRECT_TO', env('MAIL_FROM_ADDRESS'))
+            : $clientMail;
     }
 
     // Días antes del evento en los que se manda el recordatorio "de
@@ -158,9 +173,7 @@ class LogisticsSheetController extends Controller
 
                         $publicUrl = rtrim(env('LOGISTICS_SHEET_FRONTEND_URL', ''), '/') . '/ficha-logistica/' . $logisticsSheet->token;
 
-                        $mailTo = config('app.env') === 'testing' || config('app.env') === 'local'
-                            ? env('MAIL_REDIRECT_TO', env('MAIL_FROM_ADDRESS'))
-                            : $budget->client_mail;
+                        $mailTo = self::resolveMailTo($budget->client_mail);
 
                         MailService::sendAndSave($mailTo, new LogisticsSheetReminder($budget, $publicUrl, $daysRemaining));
 
