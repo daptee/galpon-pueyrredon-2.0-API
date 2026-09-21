@@ -41,24 +41,7 @@ class LogisticsSheetController extends Controller
                 ]);
             }
 
-            $logisticsSheet = LogisticsSheet::firstOrCreate(
-                ['id_budget' => $idBudget],
-                ['token' => (string) Str::uuid()]
-            );
-
-            $logisticsSheet->load('budget.place', 'budget.budgetDeliveryData.eventType');
-
-            $publicUrl = rtrim(env('LOGISTICS_SHEET_FRONTEND_URL', ''), '/') . '/ficha-logistica/' . $logisticsSheet->token;
-
-            $mailTo = config('app.env') === 'testing' || config('app.env') === 'local'
-                ? env('MAIL_REDIRECT_TO', env('MAIL_FROM_ADDRESS'))
-                : $budget->client_mail;
-
-            MailService::sendAndSave($mailTo, new LogisticsSheetRequest($budget, $publicUrl));
-
-            $result = $logisticsSheet->toPresentedArray();
-            $result['public_url'] = $publicUrl;
-            $result['mail_sent_to'] = $mailTo;
+            $result = self::sendForBudget($budget);
 
             return ApiResponse::create('Ficha logística enviada al cliente correctamente', 200, $result, [
                 'request' => $request,
@@ -72,6 +55,35 @@ class LogisticsSheetController extends Controller
                 'endpoint' => 'Obtener o crear ficha logística',
             ]);
         }
+    }
+
+    /**
+     * Crea (si no existe) la ficha logística del presupuesto y le manda el
+     * link público al cliente. Usado tanto por getOrCreate como al aprobar
+     * un presupuesto.
+     */
+    public static function sendForBudget(Budget $budget): array
+    {
+        $logisticsSheet = LogisticsSheet::firstOrCreate(
+            ['id_budget' => $budget->id],
+            ['token' => (string) Str::uuid()]
+        );
+
+        $logisticsSheet->load('budget.place', 'budget.budgetDeliveryData.eventType');
+
+        $publicUrl = rtrim(env('LOGISTICS_SHEET_FRONTEND_URL', ''), '/') . '/ficha-logistica/' . $logisticsSheet->token;
+
+        $mailTo = config('app.env') === 'testing' || config('app.env') === 'local'
+            ? env('MAIL_REDIRECT_TO', env('MAIL_FROM_ADDRESS'))
+            : $budget->client_mail;
+
+        MailService::sendAndSave($mailTo, new LogisticsSheetRequest($budget, $publicUrl));
+
+        $result = $logisticsSheet->toPresentedArray();
+        $result['public_url'] = $publicUrl;
+        $result['mail_sent_to'] = $mailTo;
+
+        return $result;
     }
 
     // Días antes del evento en los que se manda el recordatorio "de
