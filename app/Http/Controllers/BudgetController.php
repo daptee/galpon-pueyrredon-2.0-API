@@ -10,6 +10,7 @@ use App\Models\BudgetAudith;
 use App\Models\BudgetDeliveryData;
 use App\Models\BudgetProducts;
 use App\Models\ClientPlaceTransportPrice;
+use App\Models\LogisticsSheet;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductProducts;
@@ -419,6 +420,15 @@ class BudgetController extends Controller
 
             $budget = Budget::create($data);
 
+            try {
+                LogisticsSheetController::createForBudget($budget);
+            } catch (\Exception $e) {
+                Log::warning('No se pudo crear la ficha logística automáticamente al crear el presupuesto', [
+                    'error' => $e->getMessage(),
+                    'budget_id' => $budget->id,
+                ]);
+            }
+
             foreach ($data['product'] as $item) {
                 BudgetProducts::create([
                     'id_budget' => $budget->id,
@@ -487,9 +497,9 @@ class BudgetController extends Controller
                     ]);
 
                     // Delivery data
-                    $deliveryData = BudgetDeliveryData::where('id_budget', $b->id_budget)->first();
+                    $deliveryData = BudgetDeliveryData::where('id_budget', $b->id)->first();
                     if ($deliveryData) {
-                        $deliveryData->id_budget = $b->id;
+                        $deliveryData->id_budget = $budget->id;
                         $deliveryData->save();
 
                         BudgetAudith::create([
@@ -497,6 +507,29 @@ class BudgetController extends Controller
                             'action' => 'ACTUALIZACION DE DATOS DE DELIVERY',
                             'new_budget_status' => $b->id_budget_status,
                             'observations' => 'Se asigna delivery data al nuevo presupuesto',
+                            'user' => auth()->user()->id,
+                            'date' => now()->toDateString(),
+                            'time' => now()->toTimeString()
+                        ]);
+                    }
+
+                    // Ficha logística: igual que delivery data y pagos, se
+                    // reasigna al nuevo presupuesto aprobado. Si ese
+                    // presupuesto ya tenía su propia ficha (por ejemplo, la
+                    // vacía creada al hacer store()), se descarta esa antes
+                    // de reasignar — la de la versión cerrada es la que
+                    // puede tener datos reales cargados por el cliente.
+                    $logisticsSheet = LogisticsSheet::where('id_budget', $b->id)->first();
+                    if ($logisticsSheet) {
+                        LogisticsSheet::where('id_budget', $budget->id)->delete();
+                        $logisticsSheet->id_budget = $budget->id;
+                        $logisticsSheet->save();
+
+                        BudgetAudith::create([
+                            'id_budget' => $b->id,
+                            'action' => 'ACTUALIZACION DE FICHA LOGISTICA',
+                            'new_budget_status' => $b->id_budget_status,
+                            'observations' => 'Se asigna ficha logística al nuevo presupuesto',
                             'user' => auth()->user()->id,
                             'date' => now()->toDateString(),
                             'time' => now()->toTimeString()
@@ -740,9 +773,9 @@ class BudgetController extends Controller
                     ]);
 
                     // Delivery data
-                    $deliveryData = BudgetDeliveryData::where('id_budget', $b->id_budget)->first();
+                    $deliveryData = BudgetDeliveryData::where('id_budget', $b->id)->first();
                     if ($deliveryData) {
-                        $deliveryData->id_budget = $b->id;
+                        $deliveryData->id_budget = $budget->id;
                         $deliveryData->save();
 
                         BudgetAudith::create([
@@ -750,6 +783,29 @@ class BudgetController extends Controller
                             'action' => 'ACTUALIZACION DE DATOS DE DELIVERY',
                             'new_budget_status' => $b->id_budget_status,
                             'observations' => 'Se asigna delivery data al nuevo presupuesto',
+                            'user' => auth()->user()->id,
+                            'date' => now()->toDateString(),
+                            'time' => now()->toTimeString()
+                        ]);
+                    }
+
+                    // Ficha logística: igual que delivery data y pagos, se
+                    // reasigna al nuevo presupuesto aprobado. Si ese
+                    // presupuesto ya tenía su propia ficha (por ejemplo, la
+                    // vacía creada al hacer store()), se descarta esa antes
+                    // de reasignar — la de la versión cerrada es la que
+                    // puede tener datos reales cargados por el cliente.
+                    $logisticsSheet = LogisticsSheet::where('id_budget', $b->id)->first();
+                    if ($logisticsSheet) {
+                        LogisticsSheet::where('id_budget', $budget->id)->delete();
+                        $logisticsSheet->id_budget = $budget->id;
+                        $logisticsSheet->save();
+
+                        BudgetAudith::create([
+                            'id_budget' => $b->id,
+                            'action' => 'ACTUALIZACION DE FICHA LOGISTICA',
+                            'new_budget_status' => $b->id_budget_status,
+                            'observations' => 'Se asigna ficha logística al nuevo presupuesto',
                             'user' => auth()->user()->id,
                             'date' => now()->toDateString(),
                             'time' => now()->toTimeString()
@@ -985,9 +1041,9 @@ class BudgetController extends Controller
                     ]);
 
                     // Delivery data
-                    $deliveryData = BudgetDeliveryData::where('id_budget', $b->id_budget)->first();
+                    $deliveryData = BudgetDeliveryData::where('id_budget', $b->id)->first();
                     if ($deliveryData) {
-                        $deliveryData->id_budget = $b->id;
+                        $deliveryData->id_budget = $budget->id;
                         $deliveryData->save();
 
                         BudgetAudith::create([
@@ -995,6 +1051,29 @@ class BudgetController extends Controller
                             'action' => 'ACTUALIZACION DE DATOS DE DELIVERY',
                             'new_budget_status' => $b->id_budget_status,
                             'observations' => 'Se asigna delivery data al nuevo presupuesto',
+                            'user' => auth()->user()->id,
+                            'date' => now()->toDateString(),
+                            'time' => now()->toTimeString()
+                        ]);
+                    }
+
+                    // Ficha logística: igual que delivery data y pagos, se
+                    // reasigna al nuevo presupuesto aprobado. Si ese
+                    // presupuesto ya tenía su propia ficha (por ejemplo, la
+                    // vacía creada al hacer store()), se descarta esa antes
+                    // de reasignar — la de la versión cerrada es la que
+                    // puede tener datos reales cargados por el cliente.
+                    $logisticsSheet = LogisticsSheet::where('id_budget', $b->id)->first();
+                    if ($logisticsSheet) {
+                        LogisticsSheet::where('id_budget', $budget->id)->delete();
+                        $logisticsSheet->id_budget = $budget->id;
+                        $logisticsSheet->save();
+
+                        BudgetAudith::create([
+                            'id_budget' => $b->id,
+                            'action' => 'ACTUALIZACION DE FICHA LOGISTICA',
+                            'new_budget_status' => $b->id_budget_status,
+                            'observations' => 'Se asigna ficha logística al nuevo presupuesto',
                             'user' => auth()->user()->id,
                             'date' => now()->toDateString(),
                             'time' => now()->toTimeString()

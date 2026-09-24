@@ -17,7 +17,7 @@ class BudgetDeliveryDataController extends Controller
 
             $validator = Validator::make($data, [
                 'id_budget' => 'required|exists:budgets,id',
-                'id_event_type' => 'required|exists:event_types,id',
+                'id_event_type' => 'nullable|exists:event_types,id',
                 'delivery_options' => 'nullable|string|max:255',
                 'widthdrawal_options' => 'nullable|string|max:255',
                 'address' => 'nullable|string|max:255',
@@ -73,7 +73,7 @@ class BudgetDeliveryDataController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'id_budget' => 'sometimes|required|exists:budgets,id',
-                'id_event_type' => 'sometimes|required|exists:event_types,id',
+                'id_event_type' => 'nullable|exists:event_types,id',
                 'delivery_options' => 'nullable|string|max:255',
                 'widthdrawal_options' => 'nullable|string|max:255',
                 'address' => 'nullable|string|max:255',
