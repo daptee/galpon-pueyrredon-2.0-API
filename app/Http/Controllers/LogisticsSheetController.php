@@ -58,16 +58,27 @@ class LogisticsSheetController extends Controller
     }
 
     /**
+     * Crea (si no existe) la ficha logística del presupuesto, sin mandar
+     * ningún mail. Se usa apenas se crea el presupuesto (cualquier estado),
+     * para que el token/registro exista desde el principio — el link recién
+     * se manda por mail más adelante, al aprobarse (ver sendForBudget).
+     */
+    public static function createForBudget(Budget $budget): LogisticsSheet
+    {
+        return LogisticsSheet::firstOrCreate(
+            ['id_budget' => $budget->id],
+            ['token' => (string) Str::uuid()]
+        );
+    }
+
+    /**
      * Crea (si no existe) la ficha logística del presupuesto y le manda el
      * link público al cliente. Usado tanto por getOrCreate como al aprobar
      * un presupuesto.
      */
     public static function sendForBudget(Budget $budget): array
     {
-        $logisticsSheet = LogisticsSheet::firstOrCreate(
-            ['id_budget' => $budget->id],
-            ['token' => (string) Str::uuid()]
-        );
+        $logisticsSheet = self::createForBudget($budget);
 
         $logisticsSheet->load('budget.place', 'budget.budgetDeliveryData.eventType');
 
