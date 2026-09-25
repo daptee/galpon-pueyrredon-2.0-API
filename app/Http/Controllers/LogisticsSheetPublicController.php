@@ -346,19 +346,13 @@ class LogisticsSheetPublicController extends Controller
         $idEventType = $request->input('id_event_type', optional($existing)->id_event_type);
         $idLocality = optional($place)->id_locality ?? optional($existing)->id_locality;
 
-        if (!$existing) {
-            if (!$idEventType) {
-                return [
-                    'status' => 422,
-                    'message' => 'No se pudo guardar el tipo de evento ni los contactos: elegí un tipo de evento del listado (con "otra opción" el sector operativo todavía tiene que cargar el tipo definitivo antes de poder registrar estos datos).',
-                ];
-            }
-            if (!$idLocality) {
-                return [
-                    'status' => 422,
-                    'message' => 'No se pudo guardar el tipo de evento ni los contactos: el presupuesto todavía no tiene un lugar (place) asignado. Contactá a Galpón Pueyrredón para que lo carguen.',
-                ];
-            }
+        // id_event_type es NULL-able: con "otra opción" el registro se crea
+        // igual y el sector operativo carga el tipo definitivo después.
+        if (!$existing && !$idLocality) {
+            return [
+                'status' => 422,
+                'message' => 'No se pudo guardar el tipo de evento ni los contactos: el presupuesto todavía no tiene un lugar (place) asignado. Contactá a Galpón Pueyrredón para que lo carguen.',
+            ];
         }
 
         // Estos se recalculan/derivan solos (no los manda el cliente
@@ -374,8 +368,7 @@ class LogisticsSheetPublicController extends Controller
         ], fn ($value) => $value !== null && $value !== '');
 
         // id_event_type ya es NULL-able en budget_delivery_data: si el
-        // registro es nuevo siempre va (recién validado que no sea null más
-        // arriba); si ya existe, solo se toca cuando la key vino explícita
+        // registro es nuevo siempre va (aunque sea null); si ya existe, solo se toca cuando la key vino explícita
         // en el request — así "id_event_type": null lo vacía a propósito
         // (por ejemplo, si el cliente pasa a usar "otra opción").
         if (!$existing || $request->has('id_event_type')) {
