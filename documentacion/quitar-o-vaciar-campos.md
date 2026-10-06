@@ -15,6 +15,7 @@ Mandar la key con valor **`null`**.
 | Campo | Qué pasa al mandar `null` |
 |---|---|
 | `event_type_other` | Se vacía el texto libre del tipo de evento |
+| `event_start_datetime` | Se borra la fecha/hora editada y vuelve a mostrarse la del presupuesto (`date_event` + `time_event`) |
 | `event_end_datetime` | Se vacía la fecha/hora de fin |
 | `address_maps_link` | Se vacía el link de Maps |
 | `accessibility_comments` | Se vacía el comentario de accesibilidad |
@@ -94,9 +95,9 @@ solo (ya no quedan archivos huérfanos en el servidor).
 
 ## Campos que **no** se pueden vaciar/quitar
 
-- `event_start_datetime` y `address` (la dirección del evento): no son
-  campos editables de la ficha, se leen en vivo del presupuesto — no hay
-  nada que "quitar" del lado de la ficha.
+- `address` (la dirección del evento): no es un campo editable de la
+  ficha, se lee en vivo del presupuesto — no hay nada que "quitar" del lado
+  de la ficha.
 - `insurance_document_path`/`assembly_plan_path`/`insurance_additional_documents`
   como texto/JSON directo: no se pueden tocar mandando esas columnas
   directamente en el body, solo a través de las flags `remove_*` de arriba.

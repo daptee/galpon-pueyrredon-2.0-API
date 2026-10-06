@@ -252,7 +252,7 @@
           "host": ["{{BASE_URL}}"],
           "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
         },
-        "description": "Sin autenticación. Carga incremental: se pueden mandar solo los campos de la sección \"Datos básicos\" que ya se conocen; el resto de la ficha no se modifica. Si se usa `id_event_type` no hace falta mandar `event_type_other` (y viceversa). No se manda `event_start_datetime` ni `address`: esos se muestran de solo lectura (vienen del presupuesto, ver endpoint \"Ver ficha\"). `completion_percentage` (0-100) es opcional y puramente informativo: el % de avance que calcula el propio frontend, el backend solo lo guarda y lo devuelve, no lo usa para calcular `is_completed`."
+        "description": "Sin autenticación. Carga incremental: se pueden mandar solo los campos de la sección \"Datos básicos\" que ya se conocen; el resto de la ficha no se modifica. Si se usa `id_event_type` no hace falta mandar `event_type_other` (y viceversa). `event_start_datetime` es la fecha/hora de inicio propia de la ficha (aparte de `date_event`/`time_event` del presupuesto). No se manda `address`: se muestra de solo lectura (viene del presupuesto, ver endpoint \"Ver ficha\"). `completion_percentage` (0-100) es opcional y puramente informativo: el % de avance que calcula el propio frontend, el backend solo lo guarda y lo devuelve, no lo usa para calcular `is_completed`."
       },
       "response": [
         {
@@ -516,7 +516,7 @@
           "host": ["{{BASE_URL}}"],
           "path": ["v1", "logistics-sheet", "3f2504e0-4f89-11ee-be56-0242ac120002"]
         },
-        "description": "Sin autenticación. `field` debe ser uno de los nombres de grupo aceptados (ver `LogisticsSheet::GROUP_FIELDS` en el backend: budget_ratified, event_type, event_end_datetime, accessibility_comments, order_contact, delivery_windows, pickup_windows, reception_contact, cushion_color, additional_order_details, insurance_required, insurance_document, additional_requirements, assembly_plan — nótese que `event_start_datetime` y `address` NO están: esos ya no los carga el cliente, se toman del presupuesto). Si más adelante el cliente manda un valor real para un campo marcado, la marca se limpia automáticamente. Si un campo mandatorio queda marcado `later`, la ficha no se considera completa; si queda `not_applicable`, sí se considera resuelto."
+        "description": "Sin autenticación. `field` debe ser uno de los nombres de grupo aceptados (ver `LogisticsSheet::GROUP_FIELDS` en el backend: budget_ratified, event_type, event_start_datetime, event_end_datetime, accessibility_comments, order_contact, delivery_windows, pickup_windows, reception_contact, cushion_color, additional_order_details, delivery_options, insurance_required, insurance_document, additional_requirements, assembly_plan — nótese que `address` NO está: no la carga el cliente, se toma del presupuesto). Si más adelante el cliente manda un valor real para un campo marcado, la marca se limpia automáticamente. Si un campo mandatorio queda marcado `later`, la ficha no se considera completa; si queda `not_applicable`, sí se considera resuelto."
       },
       "response": [
         {

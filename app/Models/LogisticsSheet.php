@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class LogisticsSheet extends Model
 {
@@ -13,6 +14,7 @@ class LogisticsSheet extends Model
         'token',
         'budget_ratified',
         'event_type_other',
+        'event_start_datetime',
         'event_end_datetime',
         'address_maps_link',
         'accessibility_comments',
@@ -36,6 +38,7 @@ class LogisticsSheet extends Model
         'budget_ratified' => 'boolean',
         'is_completed' => 'boolean',
         'completion_percentage' => 'integer',
+        'event_start_datetime' => 'datetime',
         'event_end_datetime' => 'datetime',
         'completed_at' => 'datetime',
         'delivery_windows' => 'array',
@@ -50,8 +53,7 @@ class LogisticsSheet extends Model
     // uno agrupa. Si el cliente envía valor para alguno, la marca se limpia
     // automáticamente.
     //
-    // 'event_start_datetime' y 'address' no están: se toman del presupuesto
-    // (budget.date_event/time_event y budget.place.address).
+    // 'address' no está: se toma del presupuesto (budget.place.address).
     //
     // 'event_type', 'order_contact', 'reception_contact' y
     // 'additional_order_details' tampoco tienen columna propia acá: son
@@ -61,6 +63,7 @@ class LogisticsSheet extends Model
     public const GROUP_FIELDS = [
         'budget_ratified' => ['budget_ratified'],
         'event_type' => ['id_event_type', 'event_type_other'],
+        'event_start_datetime' => ['event_start_datetime'],
         'event_end_datetime' => ['event_end_datetime'],
         'accessibility_comments' => ['accessibility_comments'],
         'order_contact' => ['order_contact_name', 'order_contact_phone'],
@@ -107,9 +110,24 @@ class LogisticsSheet extends Model
             && $windows[0]['datetime_from'] && $windows[0]['datetime_to'];
     }
 
-    private function hasBudgetEventStart(): bool
+    /**
+     * Fecha/hora de inicio del evento: la que cargó el cliente en la ficha
+     * (event_start_datetime) o, si todavía no la editó, la del presupuesto
+     * (budget.date_event + budget.time_event). Mientras no se edite, la
+     * columna queda NULL para que un cambio de fecha en el presupuesto se
+     * siga reflejando en la ficha.
+     */
+    public function eventStartDatetime(): ?Carbon
     {
-        return (bool) ($this->budget && $this->budget->date_event);
+        if ($this->event_start_datetime) {
+            return $this->event_start_datetime;
+        }
+
+        if (!$this->budget || !$this->budget->date_event) {
+            return null;
+        }
+
+        return Carbon::parse(substr($this->budget->date_event, 0, 10) . ' ' . ($this->budget->time_event ?: '00:00:00'));
     }
 
     private function hasBudgetAddress(): bool
@@ -139,8 +157,11 @@ class LogisticsSheet extends Model
     public function toPresentedArray(): array
     {
         $deliveryData = $this->deliveryData();
+        $eventStart = $this->eventStartDatetime();
 
         return array_merge($this->toArray(), [
+            'event_start_datetime' => $eventStart ? $this->serializeDate($eventStart) : null,
+            'event_start_datetime_edited' => (bool) $this->event_start_datetime,
             'id_event_type' => optional($deliveryData)->id_event_type,
             'event_type' => optional($deliveryData)->eventType,
             'order_contact_name' => optional($deliveryData)->coordination_contact,
@@ -169,7 +190,7 @@ class LogisticsSheet extends Model
         $mandatoryChecks = [
             'budget_ratified' => (bool) $this->budget_ratified,
             'event_type' => (bool) (optional($deliveryData)->id_event_type || $this->event_type_other),
-            'event_start_datetime' => $this->hasBudgetEventStart(),
+            'event_start_datetime' => (bool) $this->eventStartDatetime(),
             'event_end_datetime' => (bool) $this->event_end_datetime,
             'address' => $this->hasBudgetAddress(),
             'order_contact' => (bool) (optional($deliveryData)->coordination_contact && optional($deliveryData)->cellphone_coordination),

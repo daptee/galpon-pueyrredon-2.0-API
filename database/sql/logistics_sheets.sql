@@ -4,13 +4,15 @@ CREATE TABLE logistics_sheets (
     token CHAR(36) NOT NULL UNIQUE,
 
     -- Datos básicos del evento
-    -- La fecha/hora de inicio y la dirección NO se guardan acá: se toman en
-    -- vivo de budgets.date_event/time_event y de la dirección del place del
-    -- presupuesto, para que si se edita el evento la ficha quede al día.
+    -- La dirección NO se guarda acá: se toma en vivo de la dirección del
+    -- place del presupuesto, para que si se edita el evento la ficha quede
+    -- al día. event_start_datetime queda NULL mientras el cliente no la edite
+    -- (se muestra budgets.date_event + time_event); si la edita, se guarda acá.
     -- El tipo de evento (cuando es del combo) tampoco: es el mismo dato que
     -- budget_delivery_data.id_event_type, se lee/escribe directo ahí.
     budget_ratified TINYINT(1) NOT NULL DEFAULT 0,
     event_type_other VARCHAR(255) NULL,
+    event_start_datetime DATETIME NULL,
     event_end_datetime DATETIME NULL,
     address_maps_link VARCHAR(500) NULL,
     accessibility_comments VARCHAR(500) NULL,
@@ -62,3 +64,6 @@ CREATE TABLE logistics_sheets (
 
     FOREIGN KEY (id_budget) REFERENCES budgets(id)
 );
+
+-- Fecha/hora de inicio del evento cargada en la ficha (aparte de la del presupuesto)
+-- ALTER TABLE logistics_sheets ADD COLUMN event_start_datetime DATETIME NULL AFTER event_type_other;

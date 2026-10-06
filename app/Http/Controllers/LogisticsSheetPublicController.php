@@ -94,6 +94,7 @@ class LogisticsSheetPublicController extends Controller
                 'budget_ratified' => 'sometimes|boolean',
                 'id_event_type' => 'sometimes|nullable|exists:event_types,id',
                 'event_type_other' => 'sometimes|nullable|string|max:255',
+                'event_start_datetime' => 'sometimes|nullable|date',
                 'event_end_datetime' => 'sometimes|nullable|date',
                 'address_maps_link' => 'sometimes|nullable|string|max:500',
                 'accessibility_comments' => 'sometimes|nullable|string|max:500',
@@ -138,6 +139,7 @@ class LogisticsSheetPublicController extends Controller
             $logisticsSheet->fill($request->only([
                 'budget_ratified',
                 'event_type_other',
+                'event_start_datetime',
                 'event_end_datetime',
                 'address_maps_link',
                 'accessibility_comments',
