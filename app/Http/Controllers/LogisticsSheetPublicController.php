@@ -43,11 +43,15 @@ class LogisticsSheetPublicController extends Controller
 
     public function show(Request $request, $token)
     {
-        $logisticsSheet = LogisticsSheet::with(
+        $logisticsSheet = LogisticsSheet::with([
             'budget.client',
+            // Mismo orden que GET /event/{id} (admin): el primero se precarga
+            // en el contacto del pedido y en el de recepción.
+            'budget.client.contacts:id,id_client,name,lastname,phone',
             'budget.place',
-            'budget.budgetDeliveryData.eventType'
-        )->where('token', $token)->first();
+            'budget.place.locality:id,locality',
+            'budget.budgetDeliveryData.eventType',
+        ])->where('token', $token)->first();
 
         if (!$logisticsSheet) {
             return response()->json(['code' => 0, 'response' => 'Ficha logística no encontrada'], 404);
