@@ -13,13 +13,17 @@ class BudgetApproved extends Mailable
 
     public $budget;
     public $pdfPath;
+    public $logisticsSheetUrl;
+    // Solo los presupuestos hijos (con id_budget) reemplazan a uno anterior:
+    // el padre directo.
     public $replacedBudgetId;
 
-    public function __construct($budget, $pdfPath, $replacedBudgetId = null)
+    public function __construct($budget, $pdfPath, $logisticsSheetUrl = null)
     {
         $this->budget = $budget;
         $this->pdfPath = $pdfPath;
-        $this->replacedBudgetId = $replacedBudgetId;
+        $this->logisticsSheetUrl = $logisticsSheetUrl;
+        $this->replacedBudgetId = $budget->id_budget ?: null;
     }
 
     public function build()

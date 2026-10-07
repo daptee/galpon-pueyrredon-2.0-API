@@ -596,19 +596,7 @@ class BudgetController extends Controller
                 ]);
 
                 if ($data['id_budget_status'] == 3) {
-                    $replacedBudgetId = isset($toClose) && $toClose->isNotEmpty() ? $toClose->first()->id : null;
-                    MailService::sendAndSave($to, new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
-
-                    if ($budget->client_mail) {
-                        try {
-                            LogisticsSheetController::sendForBudget($budget);
-                        } catch (\Exception $e) {
-                            Log::warning('No se pudo enviar la ficha logística automáticamente', [
-                                'error' => $e->getMessage(),
-                                'budget_id' => $budget->id,
-                            ]);
-                        }
-                    }
+                    MailService::sendAndSave($to, new \App\Mail\BudgetApproved($budget, $pdfPath, self::logisticsSheetUrl($budget)));
                 } else {
                     MailService::sendAndSave($to, new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
@@ -880,19 +868,7 @@ class BudgetController extends Controller
                 ]);
 
                 if ($request->id_budget_status == 3) {
-                    $replacedBudgetId = isset($toClose) && $toClose->isNotEmpty() ? $toClose->first()->id : null;
-                    MailService::sendAndSave($to, new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
-
-                    if ($budget->client_mail) {
-                        try {
-                            LogisticsSheetController::sendForBudget($budget);
-                        } catch (\Exception $e) {
-                            Log::warning('No se pudo enviar la ficha logística automáticamente', [
-                                'error' => $e->getMessage(),
-                                'budget_id' => $budget->id,
-                            ]);
-                        }
-                    }
+                    MailService::sendAndSave($to, new \App\Mail\BudgetApproved($budget, $pdfPath, self::logisticsSheetUrl($budget)));
                 } else {
                     MailService::sendAndSave($to, new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
@@ -1196,19 +1172,7 @@ class BudgetController extends Controller
                 ]);
 
                 if ($data['id_budget_status'] == 3) {
-                    $replacedBudgetId = isset($toClose) && $toClose->isNotEmpty() ? $toClose->first()->id : null;
-                    MailService::sendAndSave($to, new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
-
-                    if ($budget->client_mail) {
-                        try {
-                            LogisticsSheetController::sendForBudget($budget);
-                        } catch (\Exception $e) {
-                            Log::warning('No se pudo enviar la ficha logística automáticamente', [
-                                'error' => $e->getMessage(),
-                                'budget_id' => $budget->id,
-                            ]);
-                        }
-                    }
+                    MailService::sendAndSave($to, new \App\Mail\BudgetApproved($budget, $pdfPath, self::logisticsSheetUrl($budget)));
                 } else {
                     MailService::sendAndSave($to, new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
@@ -2412,18 +2376,12 @@ class BudgetController extends Controller
                 return ApiResponse::create('PDF no encontrado', 404, ['error' => 'PDF no encontrado'], []);
             }
 
-            // Buscar presupuesto reemplazado si es confirmación
-            $replacedBudgetId = null;
-            if ($budget->id_budget_status == 3) {
-                $allBudgets = $this->getBudgetTree($budget->id);
-                $replaced = $allBudgets->filter(fn($b) => $b->id !== $budget->id && $b->id_budget_status == 5)->first();
-                $replacedBudgetId = $replaced ? $replaced->id : null;
-            }
+            $logisticsSheetUrl = $budget->id_budget_status == 3 ? self::logisticsSheetUrl($budget) : null;
 
             // Enviar el email a cada dirección proporcionada
             foreach ($request->mails as $email) {
                 if ($budget->id_budget_status == 3) {
-                    MailService::sendAndSave($email, new \App\Mail\BudgetApproved($budget, $pdfPath, $replacedBudgetId));
+                    MailService::sendAndSave($email, new \App\Mail\BudgetApproved($budget, $pdfPath, $logisticsSheetUrl));
                 } else {
                     MailService::sendAndSave($email, new \App\Mail\BudgetCreated($budget, $pdfPath, auth()->user()));
                 }
@@ -2454,6 +2412,23 @@ class BudgetController extends Controller
                 'module' => 'budget',
                 'endpoint' => 'Enviar mails',
             ]);
+        }
+    }
+
+    /**
+     * Link público a la ficha logística (la crea si no existe) para incluir
+     * en el mail de confirmación. Si falla, el mail sale igual, sin botón.
+     */
+    private static function logisticsSheetUrl(Budget $budget): ?string
+    {
+        try {
+            return LogisticsSheetController::publicUrlForBudget($budget);
+        } catch (\Exception $e) {
+            Log::warning('No se pudo generar el link de la ficha logística para el mail de confirmación', [
+                'error' => $e->getMessage(),
+                'budget_id' => $budget->id,
+            ]);
+            return null;
         }
     }
 

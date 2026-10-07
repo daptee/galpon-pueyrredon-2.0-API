@@ -394,9 +394,8 @@ normal, sin la restricción de creación.
 
 ## Fuera de alcance de esta funcionalidad
 
-El envío del mail al llamar al endpoint admin es manual (lo dispara el admin
-a demanda, no hay todavía un disparador automático por fecha). No están
-implementados (se resuelven en otra tarea): el envío programado según la
-cadencia del documento original (al aprobar el presupuesto, 15/10/7/5 días
-antes del evento, diario desde los 5 días) ni la integración con WhatsApp o
-TEAM UP.
+Al aprobar el presupuesto, el link a la ficha va dentro del mail de
+confirmación (un solo mail, ver [recordatorios-ficha-logistica.md](recordatorios-ficha-logistica.md)).
+El endpoint admin sirve para reenviar solo la ficha a mano, y los
+recordatorios por fecha los manda el cron. No está implementada la
+integración con WhatsApp o TEAM UP.
