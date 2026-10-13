@@ -24,7 +24,7 @@ Ahora es un **campo editable** de la ficha: `event_start_datetime`.
 
 | Campo | Tipo | Qué es |
 |---|---|---|
-| `event_start_datetime` | string ISO 8601 (UTC) \| `null` | Fecha/hora de inicio a mostrar en el input. Si el cliente no la editó, es la del presupuesto. Solo es `null` si el presupuesto no tiene `date_event` |
+| `event_start_datetime` | string `YYYY-MM-DD HH:mm:ss` (hora de Argentina) \| `null` | Fecha/hora de inicio a mostrar en el input. Si el cliente no la editó, es la del presupuesto. Solo es `null` si el presupuesto no tiene `date_event` |
 | `event_start_datetime_edited` | boolean | `true` si el valor es uno que cargó el cliente; `false` si es el del presupuesto |
 
 Ejemplo (el presupuesto es del 20/11/2026 a las 18:00, el cliente no lo editó):
@@ -33,7 +33,7 @@ Ejemplo (el presupuesto es del 20/11/2026 a las 18:00, el cliente no lo editó):
 {
   "data": {
     "logistics_sheet": {
-      "event_start_datetime": "2026-11-20T21:00:00.000000Z",
+      "event_start_datetime": "2026-11-20 18:00:00",
       "event_start_datetime_edited": false,
       "event_end_datetime": null
     },
@@ -45,10 +45,12 @@ Ejemplo (el presupuesto es del 20/11/2026 a las 18:00, el cliente no lo editó):
 }
 ```
 
-> **Ojo con la zona horaria:** `event_start_datetime` viene en **UTC** (sufijo
-> `Z`), igual que `event_end_datetime`. 18:00 de Argentina = `21:00Z`.
-> Convertirlo a hora local antes de mostrarlo en el input, por ejemplo con
-> `new Date(value)` / dayjs / date-fns. **No** cortar el string a mano.
+> **Zona horaria:** `event_start_datetime` y `event_end_datetime` vienen en
+> **hora de Argentina, sin zona** (`YYYY-MM-DD HH:mm:ss`), el mismo formato en
+> que se mandan al guardar. Mostrarlos tal cual, **sin** convertir con
+> `new Date(value)` ni aplicar ningún corrimiento horario. (Antes venían en
+> UTC con sufijo `Z`, y eso hacía que el horario se corriera 3hs cada vez que
+> se guardaba la ficha.)
 
 Usá siempre `logistics_sheet.event_start_datetime` para el input, no
 `budget.date_event`/`time_event`: el backend ya resuelve cuál de los dos
@@ -100,8 +102,8 @@ queda completa hasta que se saque la marca.
 
 - [ ] Reemplazar el texto solo lectura de "Inicio del evento" por un input
       datetime editable.
-- [ ] Precargar el input con `logistics_sheet.event_start_datetime`,
-      convertido de UTC a hora local.
+- [ ] Precargar el input con `logistics_sheet.event_start_datetime` tal
+      cual viene (ya está en hora de Argentina, no convertir).
 - [ ] Al guardar, mandar `event_start_datetime` en formato
       `YYYY-MM-DD HH:mm:ss` (hora de Argentina).
 - [ ] Opcional: si `event_start_datetime_edited` es `true`, mostrar

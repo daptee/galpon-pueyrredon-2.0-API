@@ -65,7 +65,8 @@ y `DAILY_REMINDER_FROM_DAYS = 5` en
    exactamente igual a *hoy + N días*, y que tengan `client_mail` cargado.
 2. Para cada uno, obtiene la ficha logística (la crea con un token nuevo si
    todavía no existía — igual que el endpoint admin de "obtener/crear ficha").
-3. Si la ficha ya está **completa** (`is_completed = true`) → no manda nada,
+3. Si la ficha ya está **completa** (`is_completed = true`, o el % de avance
+   que guarda el front, `completion_percentage`, llegó a 100) → no manda nada,
    se registra como `skipped` con motivo `ficha_completa`. Esto corta la
    cadena de recordatorios apenas el cliente termina de completarla, sea
    cual sea el día en el que la complete.

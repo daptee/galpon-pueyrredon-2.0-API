@@ -188,7 +188,10 @@ class LogisticsSheetController extends Controller
                             ['token' => (string) Str::uuid()]
                         );
 
-                        if ($logisticsSheet->is_completed) {
+                        // Completa según el backend (mandatorios) o según el
+                        // % de avance que muestra el front: en cualquiera de
+                        // los dos casos no se le reclama nada al cliente.
+                        if ($logisticsSheet->is_completed || (int) $logisticsSheet->completion_percentage >= 100) {
                             $skipped[] = ['id_budget' => $budget->id, 'days_remaining' => $daysRemaining, 'reason' => 'ficha_completa'];
                             continue;
                         }

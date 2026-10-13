@@ -307,6 +307,26 @@ El frontend debería chequear `read_only` al cargar la pantalla y, si es
 `true`, deshabilitar el formulario (mostrar los datos como texto, sin
 inputs) en vez de esperar a que el guardado falle con 403.
 
+### Plazo extendido para el administrador
+
+Desde el panel admin la ficha se puede seguir cargando o corrigiendo hasta la
+**conclusión del evento**: el final del último día del evento
+(`date_event` + `budget.days` - 1, a las 23:59:59), o `event_end_datetime` de
+la ficha si es posterior.
+
+Para que el backend lo reconozca como admin, el panel tiene que llamar a los
+mismos endpoints (`GET`/`POST /api/v1/logistics-sheet/{token}`) mandando el
+JWT del usuario logueado:
+
+```
+Authorization: Bearer <token del admin>
+```
+
+Se considera admin a un usuario activo que no es cliente
+(`id_user_type != 3`). Sin ese header, o con un token inválido o de un
+cliente, aplica el plazo normal del cliente. `read_only` en el `GET` ya viene
+calculado según quién llama.
+
 ## Sincronización con la Ficha de Entrega (`budget_delivery_data`)
 
 Esto sí es relevante para el frontend por los errores que puede devolver

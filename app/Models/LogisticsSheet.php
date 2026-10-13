@@ -38,8 +38,11 @@ class LogisticsSheet extends Model
         'budget_ratified' => 'boolean',
         'is_completed' => 'boolean',
         'completion_percentage' => 'integer',
-        'event_start_datetime' => 'datetime',
-        'event_end_datetime' => 'datetime',
+        // Se devuelven en hora de Argentina, mismo formato en que se reciben
+        // (sin pasar a UTC): si no, el front mostraba la hora UTC (+3hs) y al
+        // volver a guardar la ficha el horario se corría 3hs cada vez.
+        'event_start_datetime' => 'datetime:Y-m-d H:i:s',
+        'event_end_datetime' => 'datetime:Y-m-d H:i:s',
         'completed_at' => 'datetime',
         'delivery_windows' => 'array',
         'pickup_windows' => 'array',
@@ -160,7 +163,7 @@ class LogisticsSheet extends Model
         $eventStart = $this->eventStartDatetime();
 
         return array_merge($this->toArray(), [
-            'event_start_datetime' => $eventStart ? $this->serializeDate($eventStart) : null,
+            'event_start_datetime' => $eventStart ? $eventStart->format('Y-m-d H:i:s') : null,
             'event_start_datetime_edited' => (bool) $this->event_start_datetime,
             'id_event_type' => optional($deliveryData)->id_event_type,
             'event_type' => optional($deliveryData)->eventType,
