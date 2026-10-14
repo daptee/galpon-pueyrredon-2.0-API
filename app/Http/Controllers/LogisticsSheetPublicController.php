@@ -7,7 +7,9 @@ use App\Models\EventType;
 use App\Models\LogisticsSheet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Throwable;
 
 class LogisticsSheetPublicController extends Controller
@@ -24,30 +26,71 @@ class LogisticsSheetPublicController extends Controller
         'delivery_options',
     ];
 
-    private function editCutoffDate(LogisticsSheet $logisticsSheet): ?\Illuminate\Support\Carbon
+    /**
+     * Las rutas de la ficha son públicas (por token), pero si la request
+     * trae un JWT válido de un usuario activo que no es cliente
+     * (id_user_type != 3), es el admin editando desde el panel.
+     */
+    private function isAdminRequest(Request $request): bool
+    {
+        if (!$request->bearerToken()) {
+            return false;
+        }
+
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+        } catch (Throwable $e) {
+            return false;
+        }
+
+        return $user && $user->status === 1 && $user->id_user_type != 3;
+    }
+
+    /**
+     * Hasta cuándo se puede editar la ficha.
+     * - Cliente: LOGISTICS_SHEET_EDIT_CUTOFF_DAYS (default 2) días antes del
+     *   inicio del evento.
+     * - Admin: hasta la conclusión del evento (el final del último día del
+     *   evento según budget.days, o event_end_datetime de la ficha si es
+     *   posterior).
+     */
+    private function editCutoffDate(LogisticsSheet $logisticsSheet, bool $isAdmin = false): ?Carbon
     {
         $budget = $logisticsSheet->budget;
         if (!$budget || !$budget->date_event) {
             return null;
         }
+        $eventDate = substr($budget->date_event, 0, 10);
+
+        if ($isAdmin) {
+            // El más tarde de los dos, por si event_end_datetime quedó mal
+            // cargado (anterior al evento).
+            $lastEventDay = Carbon::parse($eventDate)->addDays(max((int) $budget->days, 1) - 1)->endOfDay();
+            $eventEnd = $logisticsSheet->event_end_datetime;
+            return $eventEnd && $eventEnd->greaterThan($lastEventDay) ? $eventEnd->copy() : $lastEventDay;
+        }
+
         $days = (int) env('LOGISTICS_SHEET_EDIT_CUTOFF_DAYS', 2);
-        $eventDateTime = \Illuminate\Support\Carbon::parse($budget->date_event . ' ' . ($budget->time_event ?? '00:00:00'));
-        return $eventDateTime->subDays($days);
+        return Carbon::parse($eventDate . ' ' . ($budget->time_event ?: '00:00:00'))->subDays($days);
     }
 
-    private function isReadOnly(LogisticsSheet $logisticsSheet): bool
+    private function isReadOnly(LogisticsSheet $logisticsSheet, bool $isAdmin = false): bool
     {
-        $cutoff = $this->editCutoffDate($logisticsSheet);
+        $cutoff = $this->editCutoffDate($logisticsSheet, $isAdmin);
         return $cutoff !== null && now()->greaterThan($cutoff);
     }
 
     public function show(Request $request, $token)
     {
-        $logisticsSheet = LogisticsSheet::with(
+        $logisticsSheet = LogisticsSheet::with([
             'budget.client',
+            // Mismo orden que GET /event/{id} (admin): el primero se precarga
+            // en el contacto del pedido y en el de recepción.
+            'budget.client.contacts:id,id_client,name,lastname,phone',
             'budget.place',
-            'budget.budgetDeliveryData.eventType'
-        )->where('token', $token)->first();
+            'budget.place.locality:id,locality',
+            'budget.budgetDeliveryData.eventType',
+        ])->where('token', $token)->first();
 
         if (!$logisticsSheet) {
             return response()->json(['code' => 0, 'response' => 'Ficha logística no encontrada'], 404);
@@ -61,7 +104,7 @@ class LogisticsSheetPublicController extends Controller
             'response' => 'ok',
             'data' => [
                 'logistics_sheet' => $logisticsSheet->toPresentedArray(),
-                'read_only' => $this->isReadOnly($logisticsSheet),
+                'read_only' => $this->isReadOnly($logisticsSheet, $this->isAdminRequest($request)),
                 'budget' => [
                     'id' => $budget->id,
                     'client_name' => $budget->client_name ?? optional($budget->client)->name,
@@ -84,7 +127,7 @@ class LogisticsSheetPublicController extends Controller
                 return response()->json(['code' => 0, 'response' => 'Ficha logística no encontrada'], 404);
             }
 
-            if ($this->isReadOnly($logisticsSheet)) {
+            if ($this->isReadOnly($logisticsSheet, $this->isAdminRequest($request))) {
                 return response()->json(['code' => 0, 'response' => 'La ficha ya no admite modificaciones'], 403);
             }
 
@@ -94,6 +137,7 @@ class LogisticsSheetPublicController extends Controller
                 'budget_ratified' => 'sometimes|boolean',
                 'id_event_type' => 'sometimes|nullable|exists:event_types,id',
                 'event_type_other' => 'sometimes|nullable|string|max:255',
+                'event_start_datetime' => 'sometimes|nullable|date',
                 'event_end_datetime' => 'sometimes|nullable|date',
                 'address_maps_link' => 'sometimes|nullable|string|max:500',
                 'accessibility_comments' => 'sometimes|nullable|string|max:500',
@@ -138,6 +182,7 @@ class LogisticsSheetPublicController extends Controller
             $logisticsSheet->fill($request->only([
                 'budget_ratified',
                 'event_type_other',
+                'event_start_datetime',
                 'event_end_datetime',
                 'address_maps_link',
                 'accessibility_comments',

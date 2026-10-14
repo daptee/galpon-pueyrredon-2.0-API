@@ -65,7 +65,8 @@ y `DAILY_REMINDER_FROM_DAYS = 5` en
    exactamente igual a *hoy + N días*, y que tengan `client_mail` cargado.
 2. Para cada uno, obtiene la ficha logística (la crea con un token nuevo si
    todavía no existía — igual que el endpoint admin de "obtener/crear ficha").
-3. Si la ficha ya está **completa** (`is_completed = true`) → no manda nada,
+3. Si la ficha ya está **completa** (`is_completed = true`, o el % de avance
+   que guarda el front, `completion_percentage`, llegó a 100) → no manda nada,
    se registra como `skipped` con motivo `ficha_completa`. Esto corta la
    cadena de recordatorios apenas el cliente termina de completarla, sea
    cual sea el día en el que la complete.
@@ -118,13 +119,16 @@ Si falla el envío de un presupuesto puntual (por ejemplo, un problema
 puntual de mail), no frena a los demás — queda registrado en `errors` con
 el `id_budget` y el motivo, y sigue procesando el resto.
 
-## Fuera de alcance de este endpoint (por si hace falta más adelante)
+## Primer envío (al aprobar el presupuesto)
 
-El documento original de la ficha logística también pedía un **primer**
-mail (con su propio "encabezado de presentación") disparado automáticamente
-**al aprobar el presupuesto**. Eso no está incluido acá — hoy ese primer
-envío se sigue haciendo a mano, llamando al endpoint admin
-`GET /logistics-sheet/budget/{id}` (ver [ficha-logistica.md](ficha-logistica.md)).
-Si más adelante se quiere automatizar también ese disparo, hay que
-engancharlo en el flujo de aprobación de `BudgetController` (cuando
-`id_budget_status` pasa a 3).
+El primer link a la ficha no lo manda este endpoint: va dentro del **mail de
+confirmación** ([`App\Mail\BudgetApproved`](../app/Mail/BudgetApproved.php),
+plantilla [`emails/budget/approved.blade.php`](../resources/views/emails/budget/approved.blade.php)),
+que se envía al aprobar el presupuesto (`id_budget_status` pasa a 3) y
+también al reenviar la confirmación con "Enviar mails". Confirmación y ficha
+son **un solo mail**, con el botón "Completar ficha logística". La "Nota:
+Esta confirmación reemplaza al presupuesto anterior GPxxxxx" solo aparece si
+el presupuesto es hijo (tiene `id_budget`), y el número es el del padre.
+
+El endpoint admin `GET /logistics-sheet/budget/{id}` sigue existiendo para
+reenviar solo la ficha a mano (mail `LogisticsSheetRequest`).

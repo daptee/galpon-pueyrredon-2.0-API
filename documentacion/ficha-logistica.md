@@ -150,7 +150,7 @@ Se agrupan en las mismas 4 secciones/pantallas sugeridas para el form. **M**
 | `budget_ratified` | M | boolean — el cliente confirma que ratifica el presupuesto (mostrar el link `budget.pdf_url` antes de este check) |
 | `id_event_type` | M* | int — id de `event_types` (combo) |
 | `event_type_other` | M* | string — texto libre si el cliente elige "otra opción" en vez de un tipo del combo |
-| ~~`event_start_datetime`~~ | M | **no se manda**: se toma de `budget.date_event` + `budget.time_event` (solo lectura, ver endpoint 2) |
+| `event_start_datetime` | M | datetime — por defecto viene precargado con `budget.date_event` + `budget.time_event`, pero el cliente lo puede editar. Mandar `null` vuelve al valor del presupuesto |
 | `event_end_datetime` | M | datetime |
 | ~~`address`~~ | M | **no se manda**: se toma de `budget.address` (la dirección del `place` del presupuesto, solo lectura) |
 | `address_maps_link` | O | string — link a Google Maps (esto sí lo carga el cliente, es un adicional a la dirección del presupuesto) |
@@ -159,17 +159,23 @@ Se agrupan en las mismas 4 secciones/pantallas sugeridas para el form. **M**
 
 \* Se manda `id_event_type` **o** `event_type_other`, no hace falta ambos.
 
-`event_start_datetime` y `address` **ya no son campos editables de la
-ficha**: se calculan en vivo a partir del presupuesto (`budgets.date_event` +
-`budgets.time_event`, y la dirección del `place` asociado al presupuesto).
-Así, si un admin edita la fecha/hora o el lugar del evento en el presupuesto,
-el cambio se refleja automáticamente en la ficha logística sin que el
-cliente tenga que volver a cargar nada. El frontend los debe mostrar como
-solo lectura usando los valores que vienen en `budget` (endpoint 2). Por lo
-mismo, `event_start_datetime`/`address` **no son válidos** en `field_status`
-(no tiene sentido marcarlos "later"/"not_applicable" si no los completa el
-cliente) — igual la ficha no se considera completa hasta que el presupuesto
-tenga `date_event` y un `place` con dirección cargados.
+`address` **no es un campo editable de la ficha**: se calcula en vivo a
+partir de la dirección del `place` asociado al presupuesto. Así, si un admin
+edita el lugar del evento en el presupuesto, el cambio se refleja
+automáticamente en la ficha logística. El frontend la debe mostrar como solo
+lectura usando el valor que viene en `budget` (endpoint 2). Por lo mismo,
+`address` **no es válido** en `field_status` — igual la ficha no se
+considera completa hasta que el presupuesto tenga un `place` con dirección
+cargada.
+
+`event_start_datetime` se devuelve siempre precargado: si el cliente no lo
+editó, es `budget.date_event` + `budget.time_event` (y si un admin cambia la
+fecha del presupuesto, la ficha lo refleja). Si el cliente lo edita, se
+guarda en `logistics_sheets.event_start_datetime` y desde ahí manda ese
+valor, sin tocar el presupuesto. La respuesta trae además
+`event_start_datetime_edited` (boolean) para saber si es un valor propio de
+la ficha o el del presupuesto. Mandar `"event_start_datetime": null` borra
+el valor propio y vuelve al del presupuesto.
 
 ### b) Armado y desarme
 | Campo | M/O | Tipo |
@@ -262,15 +268,16 @@ aplica). Los nombres válidos de `field` (uno por grupo de campos, no por
 columna individual) son:
 
 ```
-budget_ratified, event_type, event_end_datetime, accessibility_comments,
+budget_ratified, event_type, event_start_datetime, event_end_datetime,
+accessibility_comments,
 order_contact, delivery_windows, pickup_windows, reception_contact,
 cushion_color, additional_order_details, delivery_options,
 insurance_required, insurance_document, additional_requirements,
 assembly_plan
 ```
 
-(`event_start_datetime` y `address` no están en esta lista — ver la nota en
-"Datos básicos del evento" más arriba.)
+(`address` no está en esta lista — ver la nota en "Datos básicos del
+evento" más arriba.)
 
 Si en un guardado posterior el cliente manda un valor real para alguno de
 esos campos, la marca se limpia sola — no hace falta que el frontend la
@@ -299,6 +306,26 @@ lectura:
 El frontend debería chequear `read_only` al cargar la pantalla y, si es
 `true`, deshabilitar el formulario (mostrar los datos como texto, sin
 inputs) en vez de esperar a que el guardado falle con 403.
+
+### Plazo extendido para el administrador
+
+Desde el panel admin la ficha se puede seguir cargando o corrigiendo hasta la
+**conclusión del evento**: el final del último día del evento
+(`date_event` + `budget.days` - 1, a las 23:59:59), o `event_end_datetime` de
+la ficha si es posterior.
+
+Para que el backend lo reconozca como admin, el panel tiene que llamar a los
+mismos endpoints (`GET`/`POST /api/v1/logistics-sheet/{token}`) mandando el
+JWT del usuario logueado:
+
+```
+Authorization: Bearer <token del admin>
+```
+
+Se considera admin a un usuario activo que no es cliente
+(`id_user_type != 3`). Sin ese header, o con un token inválido o de un
+cliente, aplica el plazo normal del cliente. `read_only` en el `GET` ya viene
+calculado según quién llama.
 
 ## Sincronización con la Ficha de Entrega (`budget_delivery_data`)
 
@@ -387,9 +414,8 @@ normal, sin la restricción de creación.
 
 ## Fuera de alcance de esta funcionalidad
 
-El envío del mail al llamar al endpoint admin es manual (lo dispara el admin
-a demanda, no hay todavía un disparador automático por fecha). No están
-implementados (se resuelven en otra tarea): el envío programado según la
-cadencia del documento original (al aprobar el presupuesto, 15/10/7/5 días
-antes del evento, diario desde los 5 días) ni la integración con WhatsApp o
-TEAM UP.
+Al aprobar el presupuesto, el link a la ficha va dentro del mail de
+confirmación (un solo mail, ver [recordatorios-ficha-logistica.md](recordatorios-ficha-logistica.md)).
+El endpoint admin sirve para reenviar solo la ficha a mano, y los
+recordatorios por fecha los manda el cron. No está implementada la
+integración con WhatsApp o TEAM UP.

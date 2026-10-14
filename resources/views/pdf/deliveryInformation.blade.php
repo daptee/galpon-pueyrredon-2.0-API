@@ -134,8 +134,12 @@
                 </td>
                 <td style="width: 14%; text-align: left; vertical-align: top;">
                     <p style="margin: 2px 0;">
-                        <strong>{{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }} -
-                            {{ $budget->budgetDeliveryData->event_time ?? "" }}</strong>
+                        @if ($budget->logisticsSheet)
+                            <strong>{{ optional($budget->logisticsSheet->eventStartDatetime())->format('d-M-Y H:i') ?? "" }}</strong>
+                        @else
+                            <strong>{{ \Carbon\Carbon::parse($budget->date_event)->format('d-M-Y') }} -
+                                {{ $budget->budgetDeliveryData->event_time ?? "" }}</strong>
+                        @endif
                     </p>
                     <p style="margin: 2px 0;">
                         <strong>{{ optional($budget->logisticsSheet->event_end_datetime ?? null)->format('d-M-Y H:i') ?? "" }}</strong>

@@ -71,10 +71,26 @@ class LogisticsSheetController extends Controller
         );
     }
 
+    public static function publicUrl(LogisticsSheet $logisticsSheet): string
+    {
+        return rtrim(env('LOGISTICS_SHEET_FRONTEND_URL', ''), '/') . '/ficha-logistica/' . $logisticsSheet->token;
+    }
+
+    /**
+     * Link público de la ficha logística del presupuesto (la crea si no
+     * existe). Lo usa el mail de confirmación al aprobar un presupuesto,
+     * que ya incluye el botón a la ficha (no se manda un mail aparte).
+     */
+    public static function publicUrlForBudget(Budget $budget): string
+    {
+        return self::publicUrl(self::createForBudget($budget));
+    }
+
     /**
      * Crea (si no existe) la ficha logística del presupuesto y le manda el
-     * link público al cliente. Usado tanto por getOrCreate como al aprobar
-     * un presupuesto.
+     * link público al cliente en un mail propio. Lo usa getOrCreate para
+     * reenviar la ficha a mano; al aprobar, el link va dentro del mail de
+     * confirmación (BudgetApproved).
      */
     public static function sendForBudget(Budget $budget): array
     {
@@ -82,7 +98,7 @@ class LogisticsSheetController extends Controller
 
         $logisticsSheet->load('budget.place', 'budget.budgetDeliveryData.eventType');
 
-        $publicUrl = rtrim(env('LOGISTICS_SHEET_FRONTEND_URL', ''), '/') . '/ficha-logistica/' . $logisticsSheet->token;
+        $publicUrl = self::publicUrl($logisticsSheet);
 
         $mailTo = self::resolveMailTo($budget->client_mail);
 
@@ -172,7 +188,10 @@ class LogisticsSheetController extends Controller
                             ['token' => (string) Str::uuid()]
                         );
 
-                        if ($logisticsSheet->is_completed) {
+                        // Completa según el backend (mandatorios) o según el
+                        // % de avance que muestra el front: en cualquiera de
+                        // los dos casos no se le reclama nada al cliente.
+                        if ($logisticsSheet->is_completed || (int) $logisticsSheet->completion_percentage >= 100) {
                             $skipped[] = ['id_budget' => $budget->id, 'days_remaining' => $daysRemaining, 'reason' => 'ficha_completa'];
                             continue;
                         }
@@ -182,7 +201,7 @@ class LogisticsSheetController extends Controller
                             continue;
                         }
 
-                        $publicUrl = rtrim(env('LOGISTICS_SHEET_FRONTEND_URL', ''), '/') . '/ficha-logistica/' . $logisticsSheet->token;
+                        $publicUrl = self::publicUrl($logisticsSheet);
 
                         $mailTo = self::resolveMailTo($budget->client_mail);
 
