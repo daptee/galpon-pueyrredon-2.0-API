@@ -35,22 +35,11 @@ class LogisticsSheetReminder extends Mailable
                 . 'para poder organizar la entrega y el retiro.';
         } else {
             $subject = 'Último reclamo: todavía falta completar la ficha logística de tu evento';
-            $intro = $this->daysPhrase() . ' y la ficha logística de tu evento sigue incompleta. '
+            $intro = "Faltan solo {$this->daysRemaining} días para tu evento y la ficha logística sigue incompleta. "
                 . 'Por favor completala hoy mismo para que podamos coordinar la entrega y el retiro sin inconvenientes.';
         }
 
         return $this->subject($subject . ' - Presupuesto Nro ' . $this->budget->id)
             ->markdown('emails.logistics-sheet.reminder', ['intro' => $intro]);
-    }
-
-    private function daysPhrase(): string
-    {
-        if ($this->daysRemaining === 0) {
-            return 'Tu evento es hoy';
-        }
-        if ($this->daysRemaining === 1) {
-            return 'Tu evento es mañana';
-        }
-        return "Faltan solo {$this->daysRemaining} días para tu evento";
     }
 }
