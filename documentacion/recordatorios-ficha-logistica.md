@@ -43,20 +43,21 @@ ejemplo, un crontab de Linux:
 **todos los días** (no solo en fechas puntuales), porque es el propio
 endpoint el que decide, cada vez que corre, a quién le toca recordatorio hoy.
 
-## Cadencia (la que pidió el documento original)
+## Cadencia
+
+Son **5 días puntuales**, no un envío diario:
 
 | Cuándo | Qué manda |
 |---|---|
 | Presupuesto exactamente a **15, 10 o 7 días** del evento | Recordatorio de presentación (mismo encabezado los 3, solo cambia el número de días en el texto) |
-| Presupuesto a **5, 4, 3, 2, 1 o 0 días** del evento | Reclamo, **todos los días** (mismo encabezado urgente, "último reclamo") |
+| Presupuesto exactamente a **5 o 3 días** del evento | Reclamo (encabezado urgente, "último reclamo") |
 
 En ambos casos, **solo si la ficha logística todavía no está completa** —
 apenas se completa, dejan de mandarse recordatorios (ver punto 3 más abajo).
-El día 0 es el día del evento; no se manda nada después de esa fecha.
+Fuera de estos 5 días puntuales (por ejemplo a 14, 9, 6, 4, 2, 1 o 0 días) no
+se manda nada.
 
-Esto reemplaza la versión anterior de este endpoint, que solo revisaba
-7/3/1 días — ahora es la cadencia completa: `MILESTONE_REMINDER_DAYS = [15, 10, 7]`
-y `DAILY_REMINDER_FROM_DAYS = 5` en
+Se define en `REMINDER_DAYS = [15, 10, 7, 5, 3]` en
 [`LogisticsSheetController`](../app/Http/Controllers/LogisticsSheetController.php).
 
 ## Qué hace exactamente (por cada uno de esos días)
@@ -92,7 +93,7 @@ cambia de tono según la etapa:
 | Etapa | Asunto | Tono |
 |---|---|---|
 | 15, 10 o 7 días antes | "Recordatorio: completá la ficha logística de tu evento (faltan N días)" | Recordatorio de presentación, mismo tono los 3 |
-| 5 días antes en adelante, todos los días | "Último reclamo: todavía falta completar la ficha logística de tu evento" | Urgente, insistente |
+| 5 o 3 días antes | "Último reclamo: todavía falta completar la ficha logística de tu evento" | Urgente, insistente |
 
 Se define en [`App\Mail\LogisticsSheetReminder`](../app/Mail/LogisticsSheetReminder.php)
 y la plantilla en [`emails/logistics-sheet/reminder.blade.php`](../resources/views/emails/logistics-sheet/reminder.blade.php).
@@ -107,8 +108,8 @@ y la plantilla en [`emails/logistics-sheet/reminder.blade.php`](../resources/vie
       { "id_budget": 13007, "days_remaining": 7, "mail_sent_to": "cliente@correo.com" }
     ],
     "skipped": [
-      { "id_budget": 13010, "days_remaining": 3, "reason": "ficha_completa" },
-      { "id_budget": 13011, "days_remaining": 1, "reason": "ya_enviado" }
+      { "id_budget": 13010, "days_remaining": 5, "reason": "ficha_completa" },
+      { "id_budget": 13011, "days_remaining": 3, "reason": "ya_enviado" }
     ],
     "errors": []
   }

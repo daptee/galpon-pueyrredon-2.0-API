@@ -133,11 +133,6 @@ class LogisticsSheet extends Model
         return Carbon::parse(substr($this->budget->date_event, 0, 10) . ' ' . ($this->budget->time_event ?: '00:00:00'));
     }
 
-    private function hasBudgetAddress(): bool
-    {
-        return (bool) ($this->budget && $this->budget->place && $this->budget->place->address);
-    }
-
     /**
      * Datos que hoy viven en budget_delivery_data (Ficha de Entrega) porque
      * son duplicados con esa tabla: tipo de evento, contacto del pedido,
@@ -190,17 +185,23 @@ class LogisticsSheet extends Model
 
         $deliveryData = $this->deliveryData();
 
+        // Mismos 12 chequeos que calcula el front en
+        // calculateLogisticsCompletion (ver documentacion/porcentaje-ficha-logistica.md).
+        // budget_ratified, address y additional_order_details NO están acá
+        // porque el front no los considera obligatorios (no suman al
+        // porcentaje) — si se los dejaba como mandatorios acá, la ficha
+        // podía llegar al 100% en el front y sin embargo nunca marcarse
+        // is_completed=true en el back, haciendo que el cron de
+        // recordatorios siguiera mandando mails de por vida.
         $mandatoryChecks = [
-            'budget_ratified' => (bool) $this->budget_ratified,
             'event_type' => (bool) (optional($deliveryData)->id_event_type || $this->event_type_other),
             'event_start_datetime' => (bool) $this->eventStartDatetime(),
             'event_end_datetime' => (bool) $this->event_end_datetime,
-            'address' => $this->hasBudgetAddress(),
+            'delivery_options' => (bool) optional($deliveryData)->delivery_options,
             'order_contact' => (bool) (optional($deliveryData)->coordination_contact && optional($deliveryData)->cellphone_coordination),
             'delivery_windows' => $this->hasFirstWindow($this->delivery_windows),
             'pickup_windows' => $this->hasFirstWindow($this->pickup_windows),
             'reception_contact' => (bool) (optional($deliveryData)->reception_contact && optional($deliveryData)->cellphone_reception),
-            'additional_order_details' => (bool) optional($deliveryData)->additional_order_details,
             'insurance_required' => (bool) $this->insurance_required,
             'insurance_document' => $this->insurance_required !== 'yes'
                 || (bool) $this->insurance_document_path

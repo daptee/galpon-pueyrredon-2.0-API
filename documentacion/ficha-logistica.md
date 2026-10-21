@@ -147,12 +147,12 @@ Se agrupan en las mismas 4 secciones/pantallas sugeridas para el form. **M**
 ### a) Datos básicos del evento
 | Campo | M/O | Tipo |
 |---|---|---|
-| `budget_ratified` | M | boolean — el cliente confirma que ratifica el presupuesto (mostrar el link `budget.pdf_url` antes de este check) |
+| `budget_ratified` | O | boolean — el cliente confirma que ratifica el presupuesto (mostrar el link `budget.pdf_url` antes de este check). No cuenta para `is_completed` ni para el % del front |
 | `id_event_type` | M* | int — id de `event_types` (combo) |
 | `event_type_other` | M* | string — texto libre si el cliente elige "otra opción" en vez de un tipo del combo |
 | `event_start_datetime` | M | datetime — por defecto viene precargado con `budget.date_event` + `budget.time_event`, pero el cliente lo puede editar. Mandar `null` vuelve al valor del presupuesto |
 | `event_end_datetime` | M | datetime |
-| ~~`address`~~ | M | **no se manda**: se toma de `budget.address` (la dirección del `place` del presupuesto, solo lectura) |
+| ~~`address`~~ | O | **no se manda**: se toma de `budget.address` (la dirección del `place` del presupuesto, solo lectura). No cuenta para `is_completed` (siempre hay una, viene del presupuesto) |
 | `address_maps_link` | O | string — link a Google Maps (esto sí lo carga el cliente, es un adicional a la dirección del presupuesto) |
 | `accessibility_comments` | O | string |
 | `order_contact_name` / `order_contact_phone` | M | string — contacto del pedido |
@@ -164,9 +164,8 @@ partir de la dirección del `place` asociado al presupuesto. Así, si un admin
 edita el lugar del evento en el presupuesto, el cambio se refleja
 automáticamente en la ficha logística. El frontend la debe mostrar como solo
 lectura usando el valor que viene en `budget` (endpoint 2). Por lo mismo,
-`address` **no es válido** en `field_status` — igual la ficha no se
-considera completa hasta que el presupuesto tenga un `place` con dirección
-cargada.
+`address` **no es válido** en `field_status` y no se tiene en cuenta para
+`is_completed` (no es algo que el cliente pueda dejar pendiente).
 
 `event_start_datetime` se devuelve siempre precargado: si el cliente no lo
 editó, es `budget.date_event` + `budget.time_event` (y si un admin cambia la
@@ -184,8 +183,8 @@ el valor propio y vuelve al del presupuesto.
 | `pickup_windows` | M (solo la 1ra) | array de hasta 3 `{datetime_from, datetime_to}` |
 | `reception_contact_name` / `reception_contact_phone` | M | string |
 | `cushion_color` | O | string |
-| `additional_order_details` | M | string |
-| `delivery_options` | O | string — dirección/nota de retiro, si es distinta a la del `place` del presupuesto |
+| `additional_order_details` | O | string. No cuenta para `is_completed` ni para el % del front |
+| `delivery_options` | M | string — dirección/nota de retiro, si es distinta a la del `place` del presupuesto |
 
 `datetime_from`/`datetime_to` son fecha+hora completos (no fecha y hora por
 separado). `datetime_to` tiene que ser igual o posterior a `datetime_from`.
@@ -292,6 +291,17 @@ ficha nunca se considera completa, aunque el resto esté lleno.
 
 El frontend puede usar `is_completed` para mostrar un indicador de progreso o
 un mensaje de "ficha completa" al cliente.
+
+La lista de campos mandatorios de acá es exactamente la misma que usa el
+front en `calculateLogisticsCompletion` para su % de avance (ver
+`documentacion/porcentaje-ficha-logistica.md`) — `budget_ratified`, `address`
+y `additional_order_details` quedan afuera de las dos porque son opcionales
+en ambos lados. Esto es a propósito: si alguna vez se agrega/saca un campo
+mandatorio de un lado, hay que replicarlo del otro, porque el cron de
+recordatorios (`LogisticsSheetController::sendReminders`) solo deja de
+mandar mails cuando `is_completed` pasa a `true` en el back — si el front
+llega al 100% pero el back nunca marca `is_completed`, el cliente sigue
+recibiendo recordatorios de una ficha que para él ya está terminada.
 
 ## Plazo de edición
 
