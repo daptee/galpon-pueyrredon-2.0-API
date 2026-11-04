@@ -29,6 +29,11 @@ class ProductFurnitureController extends Controller
                 $query->whereRaw('LOWER(name) LIKE ?', ["%$search%"]);
             }
 
+            // Filtro por estado
+            if ($request->filled('status')) {
+                $query->where('status', $request->query('status'));
+            }
+
             // Aplicar paginación si se especifica per_page
             if ($perPage) {
                 $products = $query->paginate($perPage, ['*'], 'page', $page);
@@ -51,7 +56,7 @@ class ProductFurnitureController extends Controller
                 'endpoint' => 'Obtener todos los muebles de productos',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product furniture',
                 'endpoint' => 'Obtener todos los muebles de productos',
@@ -117,7 +122,7 @@ class ProductFurnitureController extends Controller
                 'endpoint' => 'Crear mueble de producto',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product furniture',
                 'endpoint' => 'Crear mueble de producto',
@@ -154,7 +159,7 @@ class ProductFurnitureController extends Controller
                 'endpoint' => 'Actualizar mueble de producto',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product furniture',
                 'endpoint' => 'Actualizar mueble de producto',
@@ -185,7 +190,7 @@ class ProductFurnitureController extends Controller
                 'endpoint' => 'Eliminar mueble de producto',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product furniture',
                 'endpoint' => 'Eliminar mueble de producto',

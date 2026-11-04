@@ -58,7 +58,7 @@ class TransportationController extends Controller
                 'endpoint' => 'Obtener transportes',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener transportes', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener transportes', $e, [
                 'request' => $request,
                 'module' => 'transportations',
                 'endpoint' => 'Obtener transportes',
@@ -90,7 +90,7 @@ class TransportationController extends Controller
                 'endpoint' => 'Obtener un transporte',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener el transporte', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener el transporte', $e, [
                 'request' => $request,
                 'module' => 'transportations',
                 'endpoint' => 'Obtener un transporte',
@@ -131,7 +131,7 @@ class TransportationController extends Controller
                 'endpoint' => 'Crear un transporte',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el transporte', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el transporte', $e, [
                 'request' => $request,
                 'module' => 'transportations',
                 'endpoint' => 'Crear un transporte',
@@ -182,7 +182,7 @@ class TransportationController extends Controller
                 'endpoint' => 'Actualizar un transporte',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el transporte', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el transporte', $e, [
                 'request' => $request,
                 'module' => 'transportations',
                 'endpoint' => 'Actualizar un transporte',

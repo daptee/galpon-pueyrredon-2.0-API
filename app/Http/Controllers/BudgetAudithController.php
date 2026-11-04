@@ -36,7 +36,7 @@ class BudgetAudithController extends Controller
 
             return ApiResponse::create('Auditoría del presupuesto obtenida correctamente', 200, $audiths, []);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener la auditoría del presupuesto', 500, ['error' => $e->getMessage()], []);
+            return ApiResponse::exception('Error al obtener la auditoría del presupuesto', $e, []);
         }
     }
 

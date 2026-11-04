@@ -57,7 +57,7 @@ class BulkPriceUpdateController extends Controller
                 'endpoint' => 'Listado de cargas masivas de precios',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener las cargas masivas de precios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener las cargas masivas de precios', $e, [
                 'request' => $request,
                 'module' => 'bulk price update',
                 'endpoint' => 'Listado de cargas masivas de precios',
@@ -117,7 +117,7 @@ class BulkPriceUpdateController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return ApiResponse::create('Error al crear la actualización masiva de precios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear la actualización masiva de precios', $e, [
                 'request' => $request,
                 'module' => 'bulk price update',
                 'endpoint' => 'Crear actualización masiva de precios',
@@ -182,7 +182,7 @@ class BulkPriceUpdateController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return ApiResponse::create('Error al editar la carga masiva de precios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al editar la carga masiva de precios', $e, [
                 'request' => $request,
                 'module' => 'bulk price update',
                 'endpoint' => 'Editar actualización masiva de precios',
@@ -212,7 +212,7 @@ class BulkPriceUpdateController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return ApiResponse::create('Error al eliminar la carga masiva de precios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al eliminar la carga masiva de precios', $e, [
                 'module' => 'bulk price update',
                 'endpoint' => 'Eliminar carga masiva de precios',
             ]);

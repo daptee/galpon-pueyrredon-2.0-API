@@ -116,7 +116,7 @@ class BudgetController extends Controller
                 'endpoint' => 'Obtener todos los presupuestos agrupados',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los presupuestos', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los presupuestos', $e, [
                 'request' => $request,
                 'module' => 'budget',
                 'endpoint' => 'Obtener todos los presupuestos agrupados',
@@ -213,10 +213,9 @@ class BudgetController extends Controller
                 ]
             );
         } catch (\Exception $e) {
-            return ApiResponse::create(
+            return ApiResponse::exception(
                 'Error al obtener el presupuesto',
-                500,
-                ['error' => $e->getMessage()],
+                $e,
                 [
                     'request' => request(),
                     'module' => 'budget',
@@ -267,10 +266,9 @@ class BudgetController extends Controller
                 ]
             );
         } catch (\Exception $e) {
-            return ApiResponse::create(
+            return ApiResponse::exception(
                 'Error al validar presupuesto',
-                500,
-                ['error' => $e->getMessage()],
+                $e,
                 [
                     'request' => $request,
                     'module' => 'budget',
@@ -340,10 +338,9 @@ class BudgetController extends Controller
                 ]
             );
         } catch (\Exception $e) {
-            return ApiResponse::create(
+            return ApiResponse::exception(
                 'Error al obtener árbol de presupuesto',
-                500,
-                ['error' => $e->getMessage()],
+                $e,
                 [
                     'request' => $request,
                     'module' => 'budget',
@@ -634,7 +631,7 @@ class BudgetController extends Controller
                 'endpoint' => 'Crear presupuesto',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el presupuesto', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el presupuesto', $e, [
                 'request' => $request,
                 'module' => 'budget',
                 'endpoint' => 'Crear presupuesto',
@@ -679,7 +676,7 @@ class BudgetController extends Controller
                 'endpoint' => 'Actualizar observaciones',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar observaciones', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar observaciones', $e, [
                 'request' => $request,
                 'module' => 'budget',
                 'endpoint' => 'Actualizar observaciones',
@@ -891,7 +888,7 @@ class BudgetController extends Controller
                 'endpoint' => 'Actualizar estado del presupuesto',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el estado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el estado', $e, [
                 'request' => $request,
                 'module' => 'budget',
                 'endpoint' => 'Actualizar estado del presupuesto',
@@ -1195,7 +1192,7 @@ class BudgetController extends Controller
                 'endpoint' => 'Editar presupuesto',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el presupuesto', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el presupuesto', $e, [
                 'request' => $request,
                 'module' => 'budget',
                 'endpoint' => 'Editar presupuesto',
@@ -1389,7 +1386,7 @@ class BudgetController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al verificar el stock', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al verificar el stock', $e, [
                 'module' => 'budget',
                 'endpoint' => 'Verificar stock del producto',
             ]);
@@ -1585,7 +1582,7 @@ class BudgetController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al verificar el stock masivo', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al verificar el stock masivo', $e, [
                 'module' => 'budget',
                 'endpoint' => 'Verificar stock masivo del presupuesto',
             ]);
@@ -1737,7 +1734,7 @@ class BudgetController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al verificar el stock masivo', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al verificar el stock masivo', $e, [
                 'module' => 'budget',
                 'endpoint' => 'Verificar stock masivo sin presupuesto',
             ]);
@@ -1865,7 +1862,7 @@ class BudgetController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al verificar el precio', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al verificar el precio', $e, [
                 'module' => 'budget',
                 'endpoint' => 'Verificar precio del producto',
             ]);
@@ -2024,7 +2021,7 @@ class BudgetController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al verificar los precios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al verificar los precios', $e, [
                 'module' => 'budget',
                 'endpoint' => 'Verificar precios masivo del presupuesto',
             ]);
@@ -2181,7 +2178,7 @@ class BudgetController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al verificar los precios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al verificar los precios', $e, [
                 'module' => 'budget',
                 'endpoint' => 'Verificar precios masivo sin presupuesto',
             ]);
@@ -2231,7 +2228,7 @@ class BudgetController extends Controller
                 'endpoint' => 'Actualizar contacto del presupuesto',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el contacto', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el contacto', $e, [
                 'request' => $request,
                 'module' => 'budget',
                 'endpoint' => 'Actualizar contacto del presupuesto',
@@ -2282,7 +2279,7 @@ class BudgetController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al regenerar el PDF', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al regenerar el PDF', $e, [
                 'module' => 'budget',
                 'endpoint' => 'Regenerar PDF',
             ]);
@@ -2344,7 +2341,7 @@ class BudgetController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al regenerar el PDF', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al regenerar el PDF', $e, [
                 'module' => 'budget',
                 'endpoint' => 'Regenerar PDF',
             ]);
@@ -2408,7 +2405,7 @@ class BudgetController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al enviar los mails', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al enviar los mails', $e, [
                 'module' => 'budget',
                 'endpoint' => 'Enviar mails',
             ]);
@@ -2563,7 +2560,7 @@ class BudgetController extends Controller
                 'endpoint' => 'Calcular volumen',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al calcular volumen', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al calcular volumen', $e, [
                 'request' => $request,
                 'module' => 'budget',
                 'endpoint' => 'Calcular volumen',

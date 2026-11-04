@@ -26,7 +26,11 @@ class User extends Authenticatable implements JWTSubject
         'last_activity',
     ];
 
+    // password y remember_token nunca se serializan: el usuario viaja anidado en
+    // otras respuestas (pagos, presupuestos, etc.) donde no se llama a makeHidden.
     protected $hidden = [
+        'password',
+        'remember_token',
         'id_user_type',
         'id_client'
     ];

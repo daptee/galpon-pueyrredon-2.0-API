@@ -116,7 +116,7 @@ class ProductPriceController extends Controller
                 'endpoint' => 'Obtener precios por fecha',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los precios del producto', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los precios del producto', $e, [
                 'request' => $request,
                 'module' => 'product price',
                 'endpoint' => 'Obtener precios por fecha',
@@ -209,7 +209,7 @@ class ProductPriceController extends Controller
                 'endpoint' => 'Exportar precios por fecha',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al exportar los precios del producto', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al exportar los precios del producto', $e, [
                 'request' => $request,
                 'module' => 'product price',
                 'endpoint' => 'Exportar precios por fecha',

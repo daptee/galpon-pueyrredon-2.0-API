@@ -23,7 +23,7 @@ class ProvinceController extends Controller
                 'endpoint' => 'Obtener todas las provincias',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener las provincias', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener las provincias', $e, [
                 'request' => $request,
                 'module' => 'province',
                 'endpoint' => 'Obtener todas las provincias',
@@ -51,7 +51,7 @@ class ProvinceController extends Controller
                 'endpoint' => 'Obtener una provincia',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener la provincia', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener la provincia', $e, [
                 'request' => $request,
                 'module' => 'province',
                 'endpoint' => 'Obtener una provincia',

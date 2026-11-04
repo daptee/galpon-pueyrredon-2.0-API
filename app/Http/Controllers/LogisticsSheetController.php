@@ -49,7 +49,7 @@ class LogisticsSheetController extends Controller
                 'endpoint' => 'Obtener o crear ficha logística',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al enviar la ficha logística', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al enviar la ficha logística', $e, [
                 'request' => $request,
                 'module' => 'logistics sheet',
                 'endpoint' => 'Obtener o crear ficha logística',
@@ -73,7 +73,7 @@ class LogisticsSheetController extends Controller
 
     public static function publicUrl(LogisticsSheet $logisticsSheet): string
     {
-        return rtrim(env('LOGISTICS_SHEET_FRONTEND_URL', ''), '/') . '/ficha-logistica/' . $logisticsSheet->token;
+        return rtrim(config('logistics.frontend_url', ''), '/') . '/ficha-logistica/' . $logisticsSheet->token;
     }
 
     /**
@@ -119,7 +119,7 @@ class LogisticsSheetController extends Controller
      */
     private static function resolveMailTo(?string $clientMail): string
     {
-        if (filter_var(env('LOGISTICS_SHEET_TEST_MODE', false), FILTER_VALIDATE_BOOLEAN)) {
+        if (config('logistics.test_mode')) {
             return env('MAIL_REDIRECT_TO', env('MAIL_FROM_ADDRESS'));
         }
 
@@ -149,7 +149,7 @@ class LogisticsSheetController extends Controller
     public function sendReminders(Request $request)
     {
         try {
-            $secret = env('LOGISTICS_SHEET_REMINDERS_SECRET');
+            $secret = config('logistics.reminders_secret');
             if ($secret && $request->query('secret') !== $secret) {
                 return ApiResponse::create('No autorizado', 403, ['error' => 'Secret inválido o faltante'], [
                     'request' => $request,
@@ -224,7 +224,7 @@ class LogisticsSheetController extends Controller
                 'endpoint' => 'Enviar recordatorios de ficha logística',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al procesar los recordatorios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al procesar los recordatorios', $e, [
                 'request' => $request,
                 'module' => 'logistics sheet',
                 'endpoint' => 'Enviar recordatorios de ficha logística',

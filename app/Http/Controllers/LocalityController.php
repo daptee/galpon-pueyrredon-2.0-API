@@ -29,7 +29,7 @@ class LocalityController extends Controller
                 'endpoint' => 'Obtener una localidad',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener la localidad', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener la localidad', $e, [
                 'request' => $request,
                 'module' => 'locality',
                 'endpoint' => 'Obtener una localidad',

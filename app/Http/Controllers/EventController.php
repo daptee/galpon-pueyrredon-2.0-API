@@ -108,7 +108,7 @@ class EventController extends Controller
             'endpoint' => 'Obtener eventos aprobados',
         ]);
     } catch (\Exception $e) {
-        return ApiResponse::create('Error al obtener eventos', 500, ['error' => $e->getMessage()], [
+        return ApiResponse::exception('Error al obtener eventos', $e, [
             'request' => $request,
             'module' => 'event',
             'endpoint' => 'Obtener eventos aprobados',
@@ -137,7 +137,7 @@ class EventController extends Controller
                 'endpoint' => 'Obtener evento por ID',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener el evento', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener el evento', $e, [
                 'module' => 'event',
                 'endpoint' => 'Obtener evento por ID',
             ]);
@@ -183,7 +183,7 @@ class EventController extends Controller
                 'endpoint' => 'Exportar eventos por fecha',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al exportar eventos', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al exportar eventos', $e, [
                 'module' => 'event',
                 'endpoint' => 'Exportar eventos por fecha',
             ]);

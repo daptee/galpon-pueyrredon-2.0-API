@@ -38,7 +38,7 @@ class TutorialModuleController extends Controller
                 'endpoint' => 'Obtener módulos de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener los módulos', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los módulos', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Obtener módulos de tutorial',
@@ -75,7 +75,7 @@ class TutorialModuleController extends Controller
                 'endpoint' => 'Obtener módulo de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener el módulo', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener el módulo', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Obtener módulo de tutorial',
@@ -122,7 +122,7 @@ class TutorialModuleController extends Controller
                 'endpoint' => 'Crear módulo de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al crear el módulo', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el módulo', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Crear módulo de tutorial',
@@ -174,7 +174,7 @@ class TutorialModuleController extends Controller
                 'endpoint' => 'Actualizar módulo de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al actualizar el módulo', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el módulo', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Actualizar módulo de tutorial',
@@ -211,7 +211,7 @@ class TutorialModuleController extends Controller
                 'endpoint' => 'Eliminar módulo de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al eliminar el módulo', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al eliminar el módulo', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Eliminar módulo de tutorial',

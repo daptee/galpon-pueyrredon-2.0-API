@@ -105,10 +105,8 @@ class BackupController extends Controller
             );
         } catch (\Exception $e) {
             Log::error('Backup exception: ' . $e->getMessage());
-            return ApiResponse::create(
-                'Error al crear el backup',
-                500,
-                ['error' => $e->getMessage()]
+            return ApiResponse::exception(
+                'Error al crear el backup', $e
             );
         }
     }
@@ -150,10 +148,8 @@ class BackupController extends Controller
             );
         } catch (\Exception $e) {
             Log::error('Clean old backups exception: ' . $e->getMessage());
-            return ApiResponse::create(
-                'Error al limpiar backups antiguos',
-                500,
-                ['error' => $e->getMessage()]
+            return ApiResponse::exception(
+                'Error al limpiar backups antiguos', $e
             );
         }
     }

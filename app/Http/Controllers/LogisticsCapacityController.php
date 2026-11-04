@@ -55,7 +55,7 @@ class LogisticsCapacityController extends Controller
                 'endpoint' => 'Obtener configuración de capacidad logística',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener la configuración', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener la configuración', $e, [
                 'module' => 'logistics-capacity',
                 'endpoint' => 'Obtener configuración de capacidad logística',
             ]);
@@ -115,7 +115,7 @@ class LogisticsCapacityController extends Controller
                 'endpoint' => 'Actualizar configuración de capacidad logística',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar la configuración', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar la configuración', $e, [
                 'module' => 'logistics-capacity',
                 'endpoint' => 'Actualizar configuración de capacidad logística',
             ]);
@@ -146,7 +146,7 @@ class LogisticsCapacityController extends Controller
                 'endpoint' => 'Listar fechas cerradas',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener las fechas cerradas', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener las fechas cerradas', $e, [
                 'module' => 'logistics-capacity',
                 'endpoint' => 'Listar fechas cerradas',
             ]);
@@ -194,7 +194,7 @@ class LogisticsCapacityController extends Controller
                 'endpoint' => 'Cerrar fecha',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al cerrar la fecha', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al cerrar la fecha', $e, [
                 'module' => 'logistics-capacity',
                 'endpoint' => 'Cerrar fecha',
             ]);
@@ -225,7 +225,7 @@ class LogisticsCapacityController extends Controller
                 'endpoint' => 'Reabrir fecha',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al reabrir la fecha', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al reabrir la fecha', $e, [
                 'module' => 'logistics-capacity',
                 'endpoint' => 'Reabrir fecha',
             ]);
@@ -283,7 +283,7 @@ class LogisticsCapacityController extends Controller
                 'endpoint' => 'Chequear capacidad logística',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al chequear la capacidad logística', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al chequear la capacidad logística', $e, [
                 'module' => 'logistics-capacity',
                 'endpoint' => 'Chequear capacidad logística',
             ]);

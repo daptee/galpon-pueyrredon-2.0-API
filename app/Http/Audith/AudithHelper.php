@@ -13,8 +13,9 @@ class AudithHelper
     public static function create($audith, $response, $status)
     {
         try {
-            // Solo guardar auditorías en producción
-            if (config('app.env') !== 'production') {
+            // Se habilita/deshabilita con AUDIT_ENABLED (antes solo se guardaba si
+            // APP_ENV === 'production', y en cualquier otro entorno el log quedaba vacío)
+            if (!config('app.audit_enabled')) {
                 return $audith;
             }
 
@@ -35,9 +36,6 @@ class AudithHelper
                 Log::warning("No se pudo autenticar el usuario en la auditoría: " . $e->getMessage());
             }
 
-            Log::info("requesss");
-            Log::info(isset($audith['request']) ? 'Request presente' : 'Sin request');
-
             // Definir contenido del request
             if (isset($audith['request']) && $audith['request'] instanceof Request) {
                 $content = $audith['request']->getContent();
@@ -46,7 +44,14 @@ class AudithHelper
                     ? 'Ruta: ' . ($_SERVER['REQUEST_URI'] ?? '')
                     : array_diff_key(
                         json_decode($content, true) ?? [],
-                        ['password' => ''] // Elimina la contraseña
+                        // Nunca guardar contraseñas en la auditoría
+                        array_flip([
+                            'password',
+                            'password_confirmation',
+                            'current_password',
+                            'new_password',
+                            'new_password_confirmation',
+                        ])
                     );
             } else {
                 $bodyData = 'Ruta: ' . ($_SERVER['REQUEST_URI'] ?? '');

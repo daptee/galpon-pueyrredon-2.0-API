@@ -79,7 +79,7 @@ class PlaceController extends Controller
                 'endpoint' => 'Obtener lugares',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los lugares', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los lugares', $e, [
                 'request' => $request,
                 'module' => 'place',
                 'endpoint' => 'Obtener lugares',
@@ -117,7 +117,7 @@ class PlaceController extends Controller
                 'endpoint' => 'Obtener un lugar',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener el lugar', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener el lugar', $e, [
                 'request' => $request,
                 'module' => 'place',
                 'endpoint' => 'Obtener un luga',
@@ -141,6 +141,7 @@ class PlaceController extends Controller
                 'distance' => 'nullable|numeric|min:0',
                 'travel_time' => 'nullable|string|max:255',
                 'address' => 'nullable|string|max:255',
+                'maps_link' => 'nullable|string|max:500',
                 'phone' => 'nullable|string|max:20',
                 'complexity_factor' => 'nullable|numeric|min:0|max:99.99',
                 'observations' => 'nullable|string',
@@ -165,6 +166,7 @@ class PlaceController extends Controller
                 'distance' => $request->distance,
                 'travel_time' => $request->travel_time,
                 'address' => $request->address,
+                'maps_link' => $request->maps_link,
                 'phone' => $request->phone,
                 'complexity_factor' => $request->complexity_factor,
                 'observations' => $request->observations,
@@ -196,7 +198,7 @@ class PlaceController extends Controller
                 'endpoint' => 'Crear un lugar',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el lugar', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el lugar', $e, [
                 'request' => $request,
                 'module' => 'place',
                 'endpoint' => 'Crear un lugar',
@@ -230,6 +232,7 @@ class PlaceController extends Controller
                 'distance' => 'nullable|numeric|min:0',
                 'travel_time' => 'nullable|string|max:255',
                 'address' => 'nullable|string|max:255',
+                'maps_link' => 'nullable|string|max:500',
                 'phone' => 'nullable|string|max:20',
                 'complexity_factor' => 'nullable|numeric|min:0|max:99.99',
                 'observations' => 'nullable|string',
@@ -254,6 +257,7 @@ class PlaceController extends Controller
                 'distance',
                 'travel_time',
                 'address',
+                'maps_link',
                 'phone',
                 'complexity_factor',
                 'observations',
@@ -294,7 +298,7 @@ class PlaceController extends Controller
                 'endpoint' => 'Actualizar un lugar',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el lugar', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el lugar', $e, [
                 'request' => $request,
                 'module' => 'place',
                 'endpoint' => 'Actualizar un lugar',
@@ -384,7 +388,7 @@ class PlaceController extends Controller
                 'endpoint' => 'Exportar lugares',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al exportar los lugares', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al exportar los lugares', $e, [
                 'request' => $request,
                 'module' => 'place',
                 'endpoint' => 'Exportar lugares',

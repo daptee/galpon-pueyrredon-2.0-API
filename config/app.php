@@ -5,6 +5,9 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    // Registrar el log de actividades (tabla audith)
+    'audit_enabled' => (bool) env('AUDIT_ENABLED', true),
+
     'debug' => (bool) env('APP_DEBUG', false),
 
     'url' => env('APP_URL', 'http://localhost'),

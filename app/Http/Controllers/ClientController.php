@@ -63,7 +63,7 @@ class ClientController extends Controller
                 'endpoint' => 'Obtener todos los clientes',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los clientes', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los clientes', $e, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Obtener todos los clientes',
@@ -91,7 +91,7 @@ class ClientController extends Controller
                 'endpoint' => 'Obtener un cliente',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener el cliente', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener el cliente', $e, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Obtener un cliente',
@@ -179,7 +179,7 @@ class ClientController extends Controller
             ]);
         } catch (\Exception $e) {
             // Manejo de errores generales
-            return ApiResponse::create('Error al crear un cliente', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear un cliente', $e, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Crear un cliente',
@@ -284,7 +284,7 @@ class ClientController extends Controller
                 'endpoint' => 'Actualizar un cliente',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar un cliente', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar un cliente', $e, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Actualizar un cliente',
@@ -337,7 +337,7 @@ class ClientController extends Controller
                 'endpoint' => 'Obtener tipos de clientes',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los tipos de cliente', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los tipos de cliente', $e, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Obtener tipos de clientes',
@@ -375,7 +375,7 @@ class ClientController extends Controller
                 'endpoint' => 'Crear tipo de cliente',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear tipo de cliente', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear tipo de cliente', $e, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Crear tipo de cliente',
@@ -423,7 +423,7 @@ class ClientController extends Controller
                 'endpoint' => 'Actualizar tipo de cliente',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar tipo de cliente', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar tipo de cliente', $e, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Actualizar tipo de cliente',
@@ -475,7 +475,7 @@ class ClientController extends Controller
                 'endpoint' => 'Traer clases de clientes',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener las clases de los clientes', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener las clases de los clientes', $e, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Traer clases de clientes',
@@ -513,7 +513,7 @@ class ClientController extends Controller
                 'endpoint' => 'Crear clases de clientes',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear la clase del cliente', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear la clase del cliente', $e, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Crear clases de clientes',
@@ -561,7 +561,7 @@ class ClientController extends Controller
                 'endpoint' => 'Actualizar clases de clientes',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar la clase del cliente', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar la clase del cliente', $e, [
                 'request' => $request,
                 'module' => 'client',
                 'endpoint' => 'Actualizar clases de clientes',

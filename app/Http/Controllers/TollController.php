@@ -57,7 +57,7 @@ class TollController extends Controller
                 'endpoint' => 'Obtener los peajes',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los peajes', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los peajes', $e, [
                 'request' => $request,
                 'module' => 'toll',
                 'endpoint' => 'Obtener los peajes',
@@ -97,7 +97,7 @@ class TollController extends Controller
                 'endpoint' => 'Crear un peaje',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el peaje', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el peaje', $e, [
                 'request' => $request,
                 'module' => 'toll',
                 'endpoint' => 'Crear un peaje',
@@ -143,7 +143,7 @@ class TollController extends Controller
                 'endpoint' => 'Actualizar un peaje',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el peaje', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el peaje', $e, [
                 'request' => $request,
                 'module' => 'toll',
                 'endpoint' => 'Actualizar un peaje',

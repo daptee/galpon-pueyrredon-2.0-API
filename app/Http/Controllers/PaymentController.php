@@ -110,7 +110,7 @@ class PaymentController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los pagos', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los pagos', $e, [
                 'request' => $request,
                 'module' => 'payment',
                 'endpoint' => 'Obtener pagos',
@@ -178,7 +178,7 @@ class PaymentController extends Controller
                 'endpoint' => 'Registrar pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al registrar el pago', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al registrar el pago', $e, [
                 'request' => $request,
                 'module' => 'payment',
                 'endpoint' => 'Registrar pago',
@@ -240,7 +240,7 @@ class PaymentController extends Controller
                 'endpoint' => 'Actualizar estado del pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el estado del pago', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el estado del pago', $e, [
                 'request' => $request,
                 'module' => 'payment',
                 'endpoint' => 'Actualizar estado del pago',

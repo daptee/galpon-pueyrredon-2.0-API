@@ -30,7 +30,7 @@ class PaymentMethodController extends Controller
                 'endpoint' => 'Obtener métodos de pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los métodos de pago', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::exception('Error al obtener los métodos de pago', $e);
         }
     }
 
@@ -64,7 +64,7 @@ class PaymentMethodController extends Controller
                 'endpoint' => 'Crear método de pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear método de pago', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear método de pago', $e, [
                 'request' => $request,
                 'module' => 'payment method',
                 'endpoint' => 'Crear método de pago',
@@ -108,7 +108,7 @@ class PaymentMethodController extends Controller
                 'endpoint' => 'Actualizar método de pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar método de pago', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar método de pago', $e, [
                 'request' => $request,
                 'module' => 'payment method',
                 'endpoint' => 'Actualizar método de pago',

@@ -30,7 +30,7 @@ class PaymentStatusController extends Controller
                 'endpoint' => 'Obtener estados de pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los estados de pago', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::exception('Error al obtener los estados de pago', $e);
         }
     }
 
@@ -64,7 +64,7 @@ class PaymentStatusController extends Controller
                 'endpoint' => 'Crear estado de pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear estado de pago', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear estado de pago', $e, [
                 'request' => $request,
                 'module' => 'payment status',
                 'endpoint' => 'Crear estado de pago',
@@ -108,7 +108,7 @@ class PaymentStatusController extends Controller
                 'endpoint' => 'Actualizar estado de pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar estado de pago', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar estado de pago', $e, [
                 'request' => $request,
                 'module' => 'payment status',
                 'endpoint' => 'Actualizar estado de pago',

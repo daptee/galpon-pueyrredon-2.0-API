@@ -55,7 +55,7 @@ class PlacesAreaController extends Controller
                 'endpoint' => 'Obtener lugares de área',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los lugares de área', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los lugares de área', $e, [
                 'request' => $request,
                 'module' => 'places area',
                 'endpoint' => 'Obtener lugares de área',
@@ -92,7 +92,7 @@ class PlacesAreaController extends Controller
                 'endpoint' => 'Crear lugar de área',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el lugar de área', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el lugar de área', $e, [
                 'request' => $request,
                 'module' => 'places area',
                 'endpoint' => 'Crear lugar de área',
@@ -116,7 +116,7 @@ class PlacesAreaController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|required|string|max:255',
-                'status' => 'sometimes|integer|in:0,1',
+                'status' => 'sometimes|integer|in:1,2,3',
             ]);
 
             if ($validator->fails()) {
@@ -137,7 +137,7 @@ class PlacesAreaController extends Controller
                 'endpoint' => 'Actualizar lugar de área',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el lugar de área', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el lugar de área', $e, [
                 'request' => $request,
                 'module' => 'places area',
                 'endpoint' => 'Actualizar lugar de área',

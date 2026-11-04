@@ -6,6 +6,7 @@ use App\Http\Responses\ApiResponse;
 use App\Models\ClientPlaceTransportPrice;
 use App\Models\ClientPlaceTransportPriceItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class ClientPlaceTransportPriceController extends Controller
@@ -51,7 +52,7 @@ class ClientPlaceTransportPriceController extends Controller
                 'endpoint' => 'Listar precios fijos de traslado',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener precios fijos de traslado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener precios fijos de traslado', $e, [
                 'request' => $request,
                 'module' => 'client_place_transport_prices',
                 'endpoint' => 'Listar precios fijos de traslado',
@@ -113,7 +114,7 @@ class ClientPlaceTransportPriceController extends Controller
                 'endpoint' => 'Verificar precio fijo de traslado',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al verificar precio fijo de traslado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al verificar precio fijo de traslado', $e, [
                 'request' => $request,
                 'module' => 'client_place_transport_prices',
                 'endpoint' => 'Verificar precio fijo de traslado',
@@ -141,7 +142,7 @@ class ClientPlaceTransportPriceController extends Controller
                 'endpoint' => 'Obtener precio fijo de traslado',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener precio fijo de traslado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener precio fijo de traslado', $e, [
                 'request' => $request,
                 'module' => 'client_place_transport_prices',
                 'endpoint' => 'Obtener precio fijo de traslado',
@@ -210,7 +211,7 @@ class ClientPlaceTransportPriceController extends Controller
                 'endpoint' => 'Crear precio fijo de traslado',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear precio fijo de traslado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear precio fijo de traslado', $e, [
                 'request' => $request,
                 'module' => 'client_place_transport_prices',
                 'endpoint' => 'Crear precio fijo de traslado',
@@ -238,6 +239,7 @@ class ClientPlaceTransportPriceController extends Controller
                 'observations' => 'nullable|string',
                 'status'       => 'sometimes|integer|in:1,2',
                 'items'        => 'sometimes|array|min:1',
+                'items.*.id'         => 'sometimes|nullable|integer',
                 'items.*.max_volume' => 'required_with:items|numeric|min:0',
                 'items.*.price'      => 'required_with:items|numeric|min:0',
             ]);
@@ -272,20 +274,41 @@ class ClientPlaceTransportPriceController extends Controller
                 }
             }
 
-            $record->update($request->only(['id_client', 'id_place', 'observations', 'status']));
+            DB::transaction(function () use ($request, $record) {
+                $record->update($request->only(['id_client', 'id_place', 'observations', 'status']));
 
-            // Si vienen ítems, reemplazar todos
-            if ($request->has('items')) {
-                ClientPlaceTransportPriceItem::where('id_client_place_transport_price', $record->id)->delete();
+                // Si vienen ítems, sincronizar: se actualizan los que traen id,
+                // se crean los nuevos y se borran solo los que ya no vienen.
+                // No se recrean todos porque los presupuestos referencian el
+                // tramo aplicado (budgets.id_client_place_transport_price_item).
+                if ($request->has('items')) {
+                    $existing = ClientPlaceTransportPriceItem::where('id_client_place_transport_price', $record->id)
+                        ->get()
+                        ->keyBy('id');
+                    $keptIds = [];
 
-                foreach ($request->items as $item) {
-                    ClientPlaceTransportPriceItem::create([
-                        'id_client_place_transport_price' => $record->id,
-                        'max_volume' => $item['max_volume'],
-                        'price'      => $item['price'],
-                    ]);
+                    foreach ($request->items as $item) {
+                        $values = [
+                            'max_volume' => $item['max_volume'],
+                            'price'      => $item['price'],
+                        ];
+                        $itemId = $item['id'] ?? null;
+
+                        if ($itemId && $existing->has($itemId)) {
+                            $existing[$itemId]->update($values);
+                            $keptIds[] = (int) $itemId;
+                        } else {
+                            $keptIds[] = ClientPlaceTransportPriceItem::create($values + [
+                                'id_client_place_transport_price' => $record->id,
+                            ])->id;
+                        }
+                    }
+
+                    ClientPlaceTransportPriceItem::where('id_client_place_transport_price', $record->id)
+                        ->whereNotIn('id', $keptIds)
+                        ->delete();
                 }
-            }
+            });
 
             $record->load(['client', 'place', 'items']);
 
@@ -295,7 +318,7 @@ class ClientPlaceTransportPriceController extends Controller
                 'endpoint' => 'Actualizar precio fijo de traslado',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar precio fijo de traslado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar precio fijo de traslado', $e, [
                 'request' => $request,
                 'module' => 'client_place_transport_prices',
                 'endpoint' => 'Actualizar precio fijo de traslado',
@@ -326,7 +349,7 @@ class ClientPlaceTransportPriceController extends Controller
                 'endpoint' => 'Eliminar precio fijo de traslado',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al eliminar precio fijo de traslado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al eliminar precio fijo de traslado', $e, [
                 'request' => $request,
                 'module' => 'client_place_transport_prices',
                 'endpoint' => 'Eliminar precio fijo de traslado',

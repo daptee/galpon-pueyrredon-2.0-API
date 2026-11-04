@@ -50,7 +50,7 @@ class BudgetDeliveryDataController extends Controller
                 'endpoint' => 'Crear datos de entrega',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear los datos de entrega', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear los datos de entrega', $e, [
                 'request' => $request,
                 'module' => 'budget delivery data',
                 'endpoint' => 'Crear datos de entrega',
@@ -127,7 +127,7 @@ class BudgetDeliveryDataController extends Controller
                 'endpoint' => 'Actualizar datos de entrega',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar los datos de entrega', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar los datos de entrega', $e, [
                 'request' => $request,
                 'module' => 'budget delivery data',
                 'endpoint' => 'Actualizar datos de entrega',

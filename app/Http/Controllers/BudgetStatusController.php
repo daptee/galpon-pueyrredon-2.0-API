@@ -20,7 +20,7 @@ class BudgetStatusController extends Controller
                 'endpoint' => 'Obtener estado del presupuesto',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener el estado del presupuesto', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener el estado del presupuesto', $e, [
                 'request' => $request,
                 'module' => 'budget status',
                 'endpoint' => 'Obtener estado del presupuesto',

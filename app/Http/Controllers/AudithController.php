@@ -115,7 +115,7 @@ class AudithController extends Controller
 
             return ApiResponse::paginate('Registros de auditoría obtenidos correctamente', 200, $data, $meta_data);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los registros de auditoría', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::exception('Error al obtener los registros de auditoría', $e);
         }
     }
 
@@ -197,7 +197,7 @@ class AudithController extends Controller
                 $meta
             );
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener la auditoría del usuario', 500, ['error' => $e->getMessage()]);
+            return ApiResponse::exception('Error al obtener la auditoría del usuario', $e);
         }
     }
 

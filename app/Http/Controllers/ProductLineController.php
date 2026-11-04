@@ -29,6 +29,11 @@ class ProductLineController extends Controller
                 $query->whereRaw('LOWER(name) LIKE ?', ["%$search%"]);
             }
 
+            // Filtro por estado
+            if ($request->filled('status')) {
+                $query->where('status', $request->query('status'));
+            }
+
             // Aplicar paginación si se especifica per_page
             if ($perPage) {
                 $products = $query->paginate($perPage, ['*'], 'page', $page);
@@ -51,7 +56,7 @@ class ProductLineController extends Controller
                 'endpoint' => 'Obtener todas las lineas de productos',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product line',
                 'endpoint' => 'Obtener todas las lineas de productos',
@@ -116,7 +121,7 @@ class ProductLineController extends Controller
                 'endpoint' => 'Crear linea de productos',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product line',
                 'endpoint' => 'Crear linea de productos',
@@ -152,7 +157,7 @@ class ProductLineController extends Controller
                 'endpoint' => 'Actualizar linea de productos',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product line',
                 'endpoint' => 'Actualizar linea de productos',
@@ -183,7 +188,7 @@ class ProductLineController extends Controller
                 'endpoint' => 'Eliminar linea de productos',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product line',
                 'endpoint' => 'Eliminar linea de productos',

@@ -13,7 +13,7 @@ class Place extends Model
 
     protected $fillable = [
         'id_place_type', 'name', 'id_province', 'id_locality', 'id_place_collection_type', 'id_place_area',
-        'distance', 'travel_time', 'address', 'phone', 'complexity_factor', 'observations', 'status'
+        'distance', 'travel_time', 'address', 'maps_link', 'phone', 'complexity_factor', 'observations', 'status'
     ];
 
     protected $hidden = [

@@ -29,6 +29,11 @@ class ProductAttributeController extends Controller
                 $query->whereRaw('LOWER(name) LIKE ?', ["%$search%"]);
             }
 
+            // Filtro por estado
+            if ($request->filled('status')) {
+                $query->where('status', $request->query('status'));
+            }
+
             // Aplicar paginación si se especifica per_page
             if ($perPage) {
                 $products = $query->paginate($perPage, ['*'], 'page', $page);
@@ -51,7 +56,7 @@ class ProductAttributeController extends Controller
                 'endpoint' => 'Obtener todos los atributos de productos',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product attribute',
                 'endpoint' => 'Obtener todos los atributos de productos',
@@ -86,7 +91,7 @@ class ProductAttributeController extends Controller
                 'endpoint' => 'Crear atributo de producto',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product attribute',
                 'endpoint' => 'Crear atributo de producto',
@@ -123,7 +128,7 @@ class ProductAttributeController extends Controller
                 'endpoint' => 'Actualizar atributo de producto',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product attribute',
                 'endpoint' => 'Actualizar atributo de producto',
@@ -154,7 +159,7 @@ class ProductAttributeController extends Controller
                 'endpoint' => 'Eliminar atributo de producto',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product attribute',
                 'endpoint' => 'Eliminar atributo de producto',

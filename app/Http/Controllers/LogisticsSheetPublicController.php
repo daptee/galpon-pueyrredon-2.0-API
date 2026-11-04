@@ -70,7 +70,7 @@ class LogisticsSheetPublicController extends Controller
             return $eventEnd && $eventEnd->greaterThan($lastEventDay) ? $eventEnd->copy() : $lastEventDay;
         }
 
-        $days = (int) env('LOGISTICS_SHEET_EDIT_CUTOFF_DAYS', 2);
+        $days = (int) config('logistics.edit_cutoff_days', 2);
         return Carbon::parse($eventDate . ' ' . ($budget->time_event ?: '00:00:00'))->subDays($days);
     }
 

@@ -88,7 +88,7 @@ class UserController extends Controller
                 'endpoint' => 'Obtener usuarios',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener los usuarios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los usuarios', $e, [
                 'request' => $request,
                 'module' => 'user',
                 'endpoint' => 'Obtener usuarios',
@@ -104,7 +104,7 @@ class UserController extends Controller
             $user = User::with(['userType.status', 'client.status', 'theme', 'status'])->find($id);
 
             if (!$user) {
-                return ApiResponse::create('Usuario no encontrado', 500, [
+                return ApiResponse::create('Usuario no encontrado', 404, [], [
                     'request' => $request,
                     'module' => 'user',
                     'endpoint' => 'Obtener un usuario',
@@ -120,7 +120,7 @@ class UserController extends Controller
                 'endpoint' => 'Obtener un usuario',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener un usuario', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener un usuario', $e, [
                 'request' => $request,
                 'module' => 'user',
                 'endpoint' => 'Obtener un usuario',
@@ -179,7 +179,7 @@ class UserController extends Controller
                 'endpoint' => 'Crear un usuario',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al crear un usuario', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear un usuario', $e, [
                 'request' => $request,
                 'module' => 'user',
                 'endpoint' => 'Crear un usuario',
@@ -262,7 +262,7 @@ class UserController extends Controller
                 'endpoint' => 'Actualizar un usuario',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al actualizar el usuario', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el usuario', $e, [
                 'request' => $request,
                 'module' => 'user',
                 'endpoint' => 'Actualizar un usuario',
@@ -324,7 +324,7 @@ class UserController extends Controller
                 'endpoint' => 'Actualizar usuario propio',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al actualizar el usuario', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el usuario', $e, [
                 'request' => $request,
                 'module' => 'user',
                 'endpoint' => 'Actualizar usuario propio',
@@ -365,7 +365,7 @@ class UserController extends Controller
                 'endpoint' => 'Deshabilitar un usuario',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al deshabilitar el usuario', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al deshabilitar el usuario', $e, [
                 'request' => $request,
                 'module' => 'user',
                 'endpoint' => 'Deshabilitar un usuario',
@@ -406,7 +406,7 @@ class UserController extends Controller
                 'endpoint' => 'Habilitar un usuario',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al habilitar el usuario', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al habilitar el usuario', $e, [
                 'request' => $request,
                 'module' => 'user',
                 'endpoint' => 'Habilitar un usuario',
@@ -441,7 +441,7 @@ class UserController extends Controller
                 'endpoint' => 'Deshabilitar usuarios por tipo',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al deshabilitar los usuarios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al deshabilitar los usuarios', $e, [
                 'request' => $request,
                 'module' => 'user',
                 'endpoint' => 'Deshabilitar usuarios por tipo',
@@ -476,7 +476,7 @@ class UserController extends Controller
                 'endpoint' => 'Habilitar usuarios por tipo',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al habilitar los usuarios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al habilitar los usuarios', $e, [
                 'request' => $request,
                 'module' => 'user',
                 'endpoint' => 'Habilitar usuarios por tipo',

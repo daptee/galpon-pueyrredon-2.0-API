@@ -50,7 +50,7 @@ class PaymentTypeController extends Controller
                 'endpoint' => 'Traer tipos de pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer los tipos de pago', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al traer los tipos de pago', $e, [
                 'request' => $request,
                 'module' => 'payment type',
                 'endpoint' => 'Traer tipos de pago',
@@ -87,7 +87,7 @@ class PaymentTypeController extends Controller
                 'endpoint' => 'Crear tipo de pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el tipo de pago', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el tipo de pago', $e, [
                 'request' => $request,
                 'module' => 'payment type',
                 'endpoint' => 'Crear tipo de pago',
@@ -131,7 +131,7 @@ class PaymentTypeController extends Controller
                 'endpoint' => 'Actualizar tipo de pago',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el tipo de pago', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el tipo de pago', $e, [
                 'request' => $request,
                 'module' => 'payment type',
                 'endpoint' => 'Actualizar tipo de pago',

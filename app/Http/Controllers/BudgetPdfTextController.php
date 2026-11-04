@@ -22,7 +22,7 @@ class BudgetPdfTextController extends Controller
                 'endpoint' => 'Obtener texto en PDF del presupuesto',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener el texto en el PDF del presupuesto', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener el texto en el PDF del presupuesto', $e, [
                 'request' => $request,
                 'module' => 'budget pdf text',
                 'endpoint' => 'Obtener texto en PDF del presupuesto',
@@ -73,7 +73,7 @@ class BudgetPdfTextController extends Controller
                 'endpoint' => 'Actualizar texto del PDF',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el texto del PDF', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el texto del PDF', $e, [
                 'request' => $request,
                 'module' => 'budget pdf text',
                 'endpoint' => 'Actualizar texto del PDF',

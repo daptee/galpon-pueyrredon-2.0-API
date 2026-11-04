@@ -25,7 +25,7 @@ class ProductTypeController extends Controller
                 'endpoint' => 'Obtener todas los tipos de productos',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product type',
                 'endpoint' => 'Obtener todas los tipos de productos',
@@ -60,7 +60,7 @@ class ProductTypeController extends Controller
                 'endpoint' => 'Crear tipo de producto',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product type',
                 'endpoint' => 'Crear tipo de producto',
@@ -97,7 +97,7 @@ class ProductTypeController extends Controller
                 'endpoint' => 'Actualizar tipo de producto',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product type',
                 'endpoint' => 'Actualizar tipo de producto',
@@ -128,7 +128,7 @@ class ProductTypeController extends Controller
                 'endpoint' => 'Eliminar tipo de producto',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product type',
                 'endpoint' => 'Eliminar tipo de producto',

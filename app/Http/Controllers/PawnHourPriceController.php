@@ -28,6 +28,11 @@ class PawnHourPriceController extends Controller
                 $query->whereRaw('LOWER(price) LIKE ?', ["%$search%"]);
             }
 
+            // Filtro por estado
+            if ($request->filled('status')) {
+                $query->where('status', $request->query('status'));
+            }
+
             // Aplicar paginación si se especifica per_page
             if ($perPage) {
                 $pawnHourPrices = $query->paginate($perPage, ['*'], 'page', $page);
@@ -50,7 +55,7 @@ class PawnHourPriceController extends Controller
                 'endpoint' => 'Obtener todos los precios de hora de peón',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al obtener los precios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los precios', $e, [
                 'request' => $request,
                 'module' => 'pawn hour prices',
                 'endpoint' => 'Obtener todos los precios de hora de peón',
@@ -88,7 +93,7 @@ class PawnHourPriceController extends Controller
                 'endpoint' => 'Crear precio de hora de peón',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el precio', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el precio', $e, [
                 'request' => $request,
                 'module' => 'pawn hour prices',
                 'endpoint' => 'Crear precio de hora de peón',
@@ -133,7 +138,7 @@ class PawnHourPriceController extends Controller
                 'endpoint' => 'Actualizar precio de hora de peón',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el precio', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el precio', $e, [
                 'request' => $request,
                 'module' => 'pawn hour prices',
                 'endpoint' => 'Actualizar precio de hora de peón',

@@ -208,7 +208,7 @@ class ProductController extends Controller
                 'endpoint' => 'Obtener todos los productos',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Obtener todos los productos',
@@ -405,7 +405,7 @@ class ProductController extends Controller
                 'endpoint' => 'Obtener producto por ID',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Obtener producto por ID',
@@ -551,7 +551,7 @@ class ProductController extends Controller
                 'endpoint' => 'Crear producto',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Crear producto',
@@ -866,7 +866,7 @@ class ProductController extends Controller
             ]);
 
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Actualizar producto',
@@ -922,7 +922,7 @@ class ProductController extends Controller
                 'endpoint' => 'Actualizar estado del producto',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el estado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el estado', $e, [
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Actualizar estado del producto',
@@ -1065,7 +1065,7 @@ class ProductController extends Controller
                 ]
             );
         } catch (\Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Reporte de uso de stock por producto',
@@ -1174,7 +1174,7 @@ class ProductController extends Controller
                 'endpoint' => 'Reporte mensual agrupado por fecha y presupuesto',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Reporte mensual agrupado por fecha y presupuesto',
@@ -1323,7 +1323,7 @@ class ProductController extends Controller
                 'endpoint' => 'Catálogo de productos para clientes',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error inesperado', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error inesperado', $e, [
                 'request' => $request,
                 'module' => 'product',
                 'endpoint' => 'Catálogo de productos para clientes',
@@ -1399,7 +1399,7 @@ class ProductController extends Controller
                 'endpoint' => 'Exportar reporte de uso de stock',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al exportar el reporte de uso de stock', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al exportar el reporte de uso de stock', $e, [
                 'request' => $request,
                 'module' => 'product stock',
                 'endpoint' => 'Exportar reporte de uso de stock',

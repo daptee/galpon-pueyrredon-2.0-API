@@ -56,7 +56,7 @@ class PlaceTypeController extends Controller
                 'endpoint' => 'Traer tipos de lugares',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer los tipos de lugares', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al traer los tipos de lugares', $e, [
                 'request' => $request,
                 'module' => 'place type',
                 'endpoint' => 'Traer tipos de lugares',
@@ -94,7 +94,7 @@ class PlaceTypeController extends Controller
                 'endpoint' => 'Crear tipos de lugares',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el tipo de lugar', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el tipo de lugar', $e, [
                 'request' => $request,
                 'module' => 'place type',
                 'endpoint' => 'Crear tipos de lugares',
@@ -139,7 +139,7 @@ class PlaceTypeController extends Controller
                 'endpoint' => 'Actualizar tipos de lugares',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el tipo de lugar', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el tipo de lugar', $e, [
                 'request' => $request,
                 'module' => 'place type',
                 'endpoint' => 'Actualizar tipos de lugares',

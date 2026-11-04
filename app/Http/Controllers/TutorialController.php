@@ -58,7 +58,7 @@ class TutorialController extends Controller
                 'endpoint' => 'Árbol de tutoriales',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener el árbol de tutoriales', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener el árbol de tutoriales', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Árbol de tutoriales',
@@ -135,7 +135,7 @@ class TutorialController extends Controller
                 'endpoint' => 'Obtener tutoriales',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener los tutoriales', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los tutoriales', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Obtener tutoriales',
@@ -172,7 +172,7 @@ class TutorialController extends Controller
                 'endpoint' => 'Obtener tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener el tutorial', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener el tutorial', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Obtener tutorial',
@@ -248,7 +248,7 @@ class TutorialController extends Controller
                 'endpoint' => 'Crear tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al crear el tutorial', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el tutorial', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Crear tutorial',
@@ -342,7 +342,7 @@ class TutorialController extends Controller
                 'endpoint' => 'Actualizar tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al actualizar el tutorial', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el tutorial', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Actualizar tutorial',
@@ -383,7 +383,7 @@ class TutorialController extends Controller
                 'endpoint' => 'Eliminar tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al eliminar el tutorial', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al eliminar el tutorial', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Eliminar tutorial',
@@ -434,7 +434,7 @@ class TutorialController extends Controller
                 'endpoint' => 'Subir adjuntos de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al subir los adjuntos', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al subir los adjuntos', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Subir adjuntos de tutorial',
@@ -475,7 +475,7 @@ class TutorialController extends Controller
                 'endpoint' => 'Eliminar adjunto de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al eliminar el adjunto', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al eliminar el adjunto', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Eliminar adjunto de tutorial',

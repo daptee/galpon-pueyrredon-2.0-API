@@ -62,10 +62,8 @@ class PlaceCollectionTypeController extends Controller
                 ]
             );
         } catch (\Exception $e) {
-            return ApiResponse::create(
-                'Error al obtener los tipos de cobro de lugares',
-                500,
-                ['error' => $e->getMessage()],
+            return ApiResponse::exception(
+                'Error al obtener los tipos de cobro de lugares', $e,
                 [
                     'request' => $request,
                     'module' => 'place collection type',
@@ -106,7 +104,7 @@ class PlaceCollectionTypeController extends Controller
                 'endpoint' => 'Crear tipos de cobro de lugares',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el tipo de cobro de lugar', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el tipo de cobro de lugar', $e, [
                 'request' => $request,
                 'module' => 'place collection type',
                 'endpoint' => 'Crear tipos de cobro de lugares',
@@ -151,7 +149,7 @@ class PlaceCollectionTypeController extends Controller
                 'endpoint' => 'Actualizar tipos de cobro de lugares',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el tipo de cobro de lugar', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el tipo de cobro de lugar', $e, [
                 'request' => $request,
                 'module' => 'place collection type',
                 'endpoint' => 'Actualizar tipos de cobro de lugares',

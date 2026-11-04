@@ -57,7 +57,7 @@ class UserTypeController extends Controller
                 'endpoint' => 'Obtener tipos de usuarios',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener tipos de usuarios', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener tipos de usuarios', $e, [
                 'request' => $request,
                 'module' => 'user type',
                 'endpoint' => 'Obtener tipos de usuarios',
@@ -96,7 +96,7 @@ class UserTypeController extends Controller
                 'endpoint' => 'Crear tipo de usuario',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al crear un tipo de usuario', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear un tipo de usuario', $e, [
                 'request' => $request,
                 'module' => 'user type',
                 'endpoint' => 'Crear tipo de usuario',
@@ -138,7 +138,7 @@ class UserTypeController extends Controller
                 'endpoint' => 'Actualizar tipo de usuario',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al actualizar un tipo de usuario', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar un tipo de usuario', $e, [
                 'request' => $request,
                 'module' => 'user type',
                 'endpoint' => 'Actualizar tipo de usuario',

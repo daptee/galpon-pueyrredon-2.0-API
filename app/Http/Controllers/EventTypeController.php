@@ -14,24 +14,45 @@ class EventTypeController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = EventType::query();
+            $perPage = $request->query('per_page');
+            $page = $request->query('page', 1);
+
+            $query = EventType::with('status');
 
             if ($request->has('search')) {
                 $search = $request->input('search');
                 $query->where('name', 'like', '%' . $search . '%');
             }
 
-            $eventTypes = $query->orderBy('name')->get();
+            // Filtro por estado
+            if ($request->filled('status')) {
+                $query->where('status', $request->query('status'));
+            }
 
-            $eventTypes->load('status');
+            $query->orderBy('name');
 
-            return ApiResponse::create('Tipos de eventos traídos correctamente', 200, $eventTypes, [
+            // Aplicar paginación si se especifica per_page
+            if ($perPage) {
+                $eventTypes = $query->paginate($perPage, ['*'], 'page', $page);
+                $data = $eventTypes->items();
+                $meta_data = [
+                    'page' => $eventTypes->currentPage(),
+                    'per_page' => $eventTypes->perPage(),
+                    'total' => $eventTypes->total(),
+                    'last_page' => $eventTypes->lastPage(),
+                ];
+            } else {
+                $data = $query->get();
+                $meta_data = null;
+            }
+
+            return ApiResponse::paginate('Tipos de eventos traídos correctamente', 200, $data, $meta_data, [
                 'request' => $request,
                 'module' => 'event type',
                 'endpoint' => 'Traer tipos de eventos',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al traer los tipos de eventos', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al traer los tipos de eventos', $e, [
                 'request' => $request,
                 'module' => 'event type',
                 'endpoint' => 'Traer tipos de eventos',
@@ -69,7 +90,7 @@ class EventTypeController extends Controller
                 'endpoint' => 'Crear tipo de evento',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al crear el tipo de evento', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el tipo de evento', $e, [
                 'request' => $request,
                 'module' => 'event type',
                 'endpoint' => 'Crear tipo de evento',
@@ -114,7 +135,7 @@ class EventTypeController extends Controller
                 'endpoint' => 'Actualizar tipo de evento',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar el tipo de evento', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el tipo de evento', $e, [
                 'request' => $request,
                 'module' => 'event type',
                 'endpoint' => 'Actualizar tipo de evento',

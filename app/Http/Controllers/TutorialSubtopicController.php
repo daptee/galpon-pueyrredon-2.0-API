@@ -44,7 +44,7 @@ class TutorialSubtopicController extends Controller
                 'endpoint' => 'Obtener subtemas de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener los subtemas', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener los subtemas', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Obtener subtemas de tutorial',
@@ -81,7 +81,7 @@ class TutorialSubtopicController extends Controller
                 'endpoint' => 'Obtener subtema de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al obtener el subtema', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al obtener el subtema', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Obtener subtema de tutorial',
@@ -130,7 +130,7 @@ class TutorialSubtopicController extends Controller
                 'endpoint' => 'Crear subtema de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al crear el subtema', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al crear el subtema', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Crear subtema de tutorial',
@@ -184,7 +184,7 @@ class TutorialSubtopicController extends Controller
                 'endpoint' => 'Actualizar subtema de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al actualizar el subtema', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar el subtema', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Actualizar subtema de tutorial',
@@ -221,7 +221,7 @@ class TutorialSubtopicController extends Controller
                 'endpoint' => 'Eliminar subtema de tutorial',
             ]);
         } catch (Exception $e) {
-            return ApiResponse::create('Error al eliminar el subtema', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al eliminar el subtema', $e, [
                 'request'  => $request,
                 'module'   => 'tutorial',
                 'endpoint' => 'Eliminar subtema de tutorial',

@@ -66,7 +66,7 @@ class AuthController extends Controller
             ]);
 
         } catch (Exception $e) {
-            return ApiResponse::create('Error al iniciar sesión', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al iniciar sesión', $e, [
                 'request' => $request,
                 'module' => 'auth',
                 'endpoint' => 'Login',
@@ -85,8 +85,6 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request)
     {
-
-        Log::info("holaaaaaaaaaaaaaaaa");
         try {
             // Validar la entrada
             $request->validate([
@@ -126,7 +124,7 @@ class AuthController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al restablecer la contraseña', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al restablecer la contraseña', $e, [
                 'request' => $request,
                 'module' => 'auth',
                 'endpoint' => 'resetPassword',
@@ -147,12 +145,10 @@ class AuthController extends Controller
             // Obtener el usuario autenticado
             $user = User::where('email', $request->email)->first();
 
-            Log::info($user);
-
             // Verificar si la contraseña actual coincide
             if (!Hash::check($request->current_password, $user->password)) {
 
-                return ApiResponse::create('La contraseña actual es incorrecta', 500, [], [
+                return ApiResponse::create('La contraseña actual es incorrecta', 422, ['current_password' => ['La contraseña actual es incorrecta']], [
                     'request' => $request,
                     'module' => 'auth',
                     'endpoint' => 'changePassword',
@@ -170,7 +166,7 @@ class AuthController extends Controller
                 'endpoint' => 'changePassword',
             ]);
         } catch (\Exception $e) {
-            return ApiResponse::create('Error al actualizar la contraseña', 500, ['error' => $e->getMessage()], [
+            return ApiResponse::exception('Error al actualizar la contraseña', $e, [
                 'request' => $request,
                 'module' => 'auth',
                 'endpoint' => 'changePassword',
