@@ -51,6 +51,7 @@ class AudithHelper
                             'current_password',
                             'new_password',
                             'new_password_confirmation',
+                            'code',
                         ])
                     );
             } else {

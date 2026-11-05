@@ -39,6 +39,7 @@ class User extends Authenticatable implements JWTSubject
         'permissions' => 'array',
         'is_internal' => 'boolean',
         'last_activity' => 'datetime',
+        'two_factor_enabled' => 'boolean',
     ];
 
     // Métodos requeridos por la interfaz JWTSubject

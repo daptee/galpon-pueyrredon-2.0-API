@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Exception;
 use App\Http\Token\TokenService;
+use App\Services\VerificationCodeService;
 use Log;
 use Mail;
 use Str;
@@ -29,6 +30,7 @@ class AuthController extends Controller
             $request->validate([
                 'login' => 'required|string',
                 'password' => 'required|string',
+                'code' => 'nullable|string|max:10',
             ]);
 
             // Buscar por email o username (user)
@@ -51,6 +53,19 @@ class AuthController extends Controller
                     'module' => 'auth',
                     'endpoint' => 'Login',
                 ]);
+            }
+
+            // Verificación por código enviado al email (si el usuario la tiene activa).
+            // Primer llamado sin `code`: se envía el código y se responde
+            // requires_verification. Segundo llamado con `code`: se valida y sigue.
+            $challenge = VerificationCodeService::challenge(
+                $user,
+                VerificationCodeService::PURPOSE_LOGIN,
+                $request->input('code'),
+                ['request' => $request, 'module' => 'auth', 'endpoint' => 'Login']
+            );
+            if ($challenge) {
+                return $challenge;
             }
 
             // Generar el token usando el servicio TokenService
@@ -140,6 +155,7 @@ class AuthController extends Controller
                 'email' => 'required|email|exists:users,email',
                 'current_password' => 'required|string',
                 'new_password' => 'required|string|min:8|confirmed',
+                'code' => 'nullable|string|max:10',
             ]);
 
             // Obtener el usuario autenticado
@@ -153,6 +169,17 @@ class AuthController extends Controller
                     'module' => 'auth',
                     'endpoint' => 'changePassword',
                 ]);
+            }
+
+            // Acción sensible: pedir código si el usuario tiene la verificación activa
+            $challenge = VerificationCodeService::challenge(
+                $user,
+                VerificationCodeService::PURPOSE_SENSITIVE,
+                $request->input('code'),
+                ['request' => $request, 'module' => 'auth', 'endpoint' => 'changePassword']
+            );
+            if ($challenge) {
+                return $challenge;
             }
 
             $user->password = Hash::make($request->new_password);

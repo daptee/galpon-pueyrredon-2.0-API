@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use App\Models\UserType;
+use App\Services\VerificationCodeService;
 use Exception;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Illuminate\Http\Request;
@@ -291,7 +292,8 @@ class UserController extends Controller
                 'name' => 'sometimes|string|max:255',
                 'phone' => 'nullable|string|max:15',
                 'lastname' => 'sometimes|string|max:255',
-                'theme' => 'sometimes|integer'
+                'theme' => 'sometimes|integer',
+                'code' => 'nullable|string|max:10',
             ]);
 
             if ($validator->fails()) {
@@ -303,6 +305,24 @@ class UserController extends Controller
             }
 
             $data = $validator->validated();
+            unset($data['code']);
+
+            // Cambiar el email o la contraseña es una acción sensible: pide el
+            // código enviado al email actual (si la verificación está activa).
+            $changesEmail = isset($data['email']) && strcasecmp($data['email'], $user->email) !== 0;
+            $changesPassword = !empty($data['password']);
+
+            if ($changesEmail || $changesPassword) {
+                $challenge = VerificationCodeService::challenge(
+                    $user,
+                    VerificationCodeService::PURPOSE_SENSITIVE,
+                    $request->input('code'),
+                    ['request' => $request, 'module' => 'user', 'endpoint' => 'Actualizar usuario propio']
+                );
+                if ($challenge) {
+                    return $challenge;
+                }
+            }
 
             // Si el usuario envía una nueva contraseña, la hasheamos antes de actualizarla
             if (!empty($data['password'])) {
@@ -329,6 +349,57 @@ class UserController extends Controller
                 'module' => 'user',
                 'endpoint' => 'Actualizar usuario propio',
             ]);
+        }
+    }
+
+    // PUT - Configuración > Seguridad: activar o desactivar la verificación por código
+    // Desactivarla pide un código (acción sensible). Activarla no.
+    public function updateTwoFactor(Request $request)
+    {
+        $audith = [
+            'request' => $request,
+            'module' => 'user',
+            'endpoint' => 'Seguridad - verificación por código',
+        ];
+
+        try {
+            $user = auth()->user();
+
+            $validator = Validator::make($request->all(), [
+                'enabled' => 'required|boolean',
+                'code' => 'nullable|string|max:10',
+            ]);
+
+            if ($validator->fails()) {
+                return ApiResponse::create('Error de validación', 422, [$validator->errors()->toArray()], $audith);
+            }
+
+            $enabled = filter_var($request->input('enabled'), FILTER_VALIDATE_BOOLEAN);
+
+            if (!$enabled && $user->two_factor_enabled) {
+                $challenge = VerificationCodeService::challenge(
+                    $user,
+                    VerificationCodeService::PURPOSE_SENSITIVE,
+                    $request->input('code'),
+                    $audith
+                );
+                if ($challenge) {
+                    return $challenge;
+                }
+            }
+
+            $user->two_factor_enabled = $enabled;
+            $user->save();
+
+            $user->load('userType.status', 'client.status', 'theme', 'status');
+
+            $message = $enabled
+                ? 'Verificación por código activada'
+                : 'Verificación por código desactivada';
+
+            return ApiResponse::create($message, 200, $user, $audith);
+        } catch (Exception $e) {
+            return ApiResponse::exception('Error al actualizar la seguridad de la cuenta', $e, $audith);
         }
     }
 
