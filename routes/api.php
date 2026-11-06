@@ -11,6 +11,7 @@ use App\Http\Controllers\CacheController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventTypeController;
+use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\LocalityController;
 use App\Http\Controllers\LogisticsCapacityController;
 use App\Http\Controllers\LogisticsSheetController;
@@ -428,6 +429,15 @@ Route::group([
     Route::get('/', [PaymentController::class, 'index'])->middleware('admin');
     Route::post('/', [PaymentController::class, 'store'])->middleware('admin');
     Route::put('/update-status/{id}', [PaymentController::class, 'updateStatus'])->middleware('admin');
+});
+
+// Buscador global
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'search'
+], function () {
+    Route::get('/', [GlobalSearchController::class, 'search'])->middleware('admin');
+    Route::get('/modules', [GlobalSearchController::class, 'modules'])->middleware('admin');
 });
 
 // Backup
